@@ -565,12 +565,46 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
 
 bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *node )
 {
+  if( !node->container->invite( this ) ) return false;
+  Value container; container.swap( return_value );
+
+  CountPtr< Map > for_locals = new Map( scope->getGC(), scope->getCurr() );
+
+  const String *const identifier = node->identifier;
+
+  Value *const for_variable = for_locals->set( identifier, Value() );
+  if( 0 == for_variable )
+  {
+    throw "Could not create for-variable";
+  }
+
+  Scope::EnterLeaveGuard guard( scope, for_locals );
+
+  if( container.isArray() )
+  {
+    const Array *const array = container.getArray();
+
+    for( index_t i=0; i<array->size(); ++i )
+    {
+      const Value *const value = array->get( i );
+      (*for_variable) = (*value);
+
+      if( !node->body->invite( this ) ) return false;
+
+      if( return_encountered ) break;
+    }
+  }
+  else
+  {
+    throw "Invalid type for container after 'in'";
+  }
+
   return true;
 }
 
 bool InterpretingASTVisitor::visit( const AST::FunctionCallStatement        *node )
 {
-  return true;
+  return node->call->invite( this );
 }
 
 bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement    *node )
