@@ -35,7 +35,7 @@ public:
 
   virtual CountPtr< Children > getChildren( void ) const
   {
-    return new Children::NullIterator();
+    return new NullIterator< Children >();
   }
 
   virtual CountPtr< Sequence > clone( void ) const
@@ -126,7 +126,7 @@ void SequenceValueArray::gc_clear( void )
 
 CountPtr< Collectable::Children > SequenceValueArray::getChildren( void ) const
 {
-  return new Children::ItemIterator< 1 >( m_array.get() );
+  return new ItemIterator< Children, 1 >( m_array.get() );
 }
 
 CountPtr< Sequence > SequenceValueArray::clone( void ) const

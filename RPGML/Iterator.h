@@ -23,162 +23,168 @@ public:
   virtual Type get( void ) = 0;
 
   virtual CountPtr< Iterator > clone( void ) const = 0;
+};
 
-  class NullIterator : public Iterator
+template< class BaseIterator >
+class NullIterator : public BaseIterator
+{
+public:
+  typedef typename BaseIterator::Type Type;
+  NullIterator( void ) {}
+  virtual ~NullIterator( void ) {}
+  virtual bool done( void ) { return true; }
+  virtual void next( void ) {}
+  virtual Type get( void ) { return Type(); }
+  virtual CountPtr< BaseIterator > clone( void ) const { return new NullIterator(); }
+};
+
+template< class BaseIterator >
+class MultiIterator : public BaseIterator
+{
+public:
+  typedef typename BaseIterator::Type Type;
+  MultiIterator( void )
+  : i( 0 )
+  {}
+
+  explicit
+  MultiIterator( BaseIterator *i1, BaseIterator *i2=0, BaseIterator *i3=0, BaseIterator *i4=0 )
+  : i( 0 )
   {
-  public:
-    NullIterator( void ) {}
-    virtual ~NullIterator( void ) {}
-    virtual bool done( void ) { return true; }
-    virtual void next( void ) {}
-    virtual Type get( void ) { return Type(); }
-    virtual CountPtr< Iterator > clone( void ) const { return new NullIterator(); }
-  };
+    if( i1 ) iters.push_back( i1 );
+    if( i2 ) iters.push_back( i2 );
+    if( i3 ) iters.push_back( i3 );
+    if( i4 ) iters.push_back( i4 );
+    find_beginning();
+  }
 
-  class MultiIterator : public Iterator
+  explicit
+  MultiIterator( const BaseIterator *i1, const BaseIterator *i2=0, const BaseIterator *i3=0, const BaseIterator *i4=0 )
+  : i( 0 )
   {
-  public:
-    MultiIterator( void )
-    : i( 0 )
-    {}
+    if( i1 ) iters.push_back( i1->clone() );
+    if( i2 ) iters.push_back( i2->clone() );
+    if( i3 ) iters.push_back( i3->clone() );
+    if( i4 ) iters.push_back( i4->clone() );
+    find_beginning();
+  }
 
-    explicit
-    MultiIterator( Iterator *i1, Iterator *i2=0, Iterator *i3=0, Iterator *i4=0 )
-    : i( 0 )
-    {
-      if( i1 ) iters.push_back( i1 );
-      if( i2 ) iters.push_back( i2 );
-      if( i3 ) iters.push_back( i3 );
-      if( i4 ) iters.push_back( i4 );
-      find_beginning();
-    }
-
-    explicit
-    MultiIterator( const Iterator *i1, const Iterator *i2=0, const Iterator *i3=0, const Iterator *i4=0 )
-    : i( 0 )
-    {
-      if( i1 ) iters.push_back( i1->clone() );
-      if( i2 ) iters.push_back( i2->clone() );
-      if( i3 ) iters.push_back( i3->clone() );
-      if( i4 ) iters.push_back( i4->clone() );
-      find_beginning();
-    }
-
-    template< class _BeginEndIterator >
-    MultiIterator( _BeginEndIterator begin, const _BeginEndIterator &end, index_t _i=0 )
-    : i( _i )
-    {
-      for( ; begin != end; ++begin )
-      {
-        const Iterator *const iter = (*begin);
-        if( iter ) iters.push_back( iter->clone() );
-      }
-      find_beginning();
-    }
-
-    MultiIterator( const Iterator< const Iterator* > *_iteriter )
-    {
-      CountPtr< Iterator< const Iterator* > > iteriter( _iteriter->clone() );
-      for( ; !iteriter->done(); iteriter->next() )
-      {
-        const Iterator *const iter = iteriter->get();
-        if( iter ) iters.push_back( iter->clone() );
-      }
-      find_beginning();
-    }
-
-    virtual ~MultiIterator( void ) {}
-
-    virtual bool done( void )
-    {
-      return i >= iters.size();
-    }
-
-    virtual void next( void )
-    {
-      if( i < iters.size() )
-      {
-        iters[ i ]->next();
-        find_beginning();
-      }
-    }
-
-    virtual Type get( void )
-    {
-      return iters[ i ]->get();
-    }
-
-    virtual CountPtr< Iterator > clone( void ) const
-    {
-      if( i < iters.size() )
-      {
-        return new MultiIterator( &iters[ i ], &iters[ iters.size() ], 0 );
-      }
-      else
-      {
-        return new MultiIterator();
-      }
-    }
-
-  private:
-    void find_beginning( void )
-    {
-      while( i < iters.size() && iters[ i ]->done() ) ++i;
-    }
-
-    std::vector< CountPtr< Iterator > > iters;
-    index_t i;
-  };
-
-  template< int N >
-  class ItemIterator : public Iterator
+  template< class _BeginEndIterator >
+  MultiIterator( _BeginEndIterator begin, const _BeginEndIterator &end, index_t _i=0 )
+  : i( _i )
   {
-  public:
-    ItemIterator( void )
-    : m_i( 0 )
+    for( ; begin != end; ++begin )
     {
-      rpgml_static_assert( N == 0 );
+      const BaseIterator *const iter = (*begin);
+      if( iter ) iters.push_back( iter->clone() );
     }
+    find_beginning();
+  }
 
-    virtual ~ItemIterator( void ) {}
-
-    explicit
-    ItemIterator( const Type &item1 )
-    : m_i( 0 )
+  MultiIterator( const Iterator< const BaseIterator* > *_iteriter )
+  {
+    CountPtr< Iterator< const BaseIterator* > > iteriter( _iteriter->clone() );
+    for( ; !iteriter->done(); iteriter->next() )
     {
-      rpgml_static_assert( N == 1 );
-      m_items[ 0 ] = item1;
+      const BaseIterator *const iter = iteriter->get();
+      if( iter ) iters.push_back( iter->clone() );
     }
+    find_beginning();
+  }
 
-    explicit
-    ItemIterator( const Type &item1, const Type &item2 )
-    : m_i( 0 )
-    {
-      rpgml_static_assert( N == 2 );
-      m_items[ 0 ] = item1;
-      m_items[ 1 ] = item2;
-    }
+  virtual ~MultiIterator( void ) {}
 
-    explicit
-    ItemIterator( const Type &item1, const Type &item2, const Type &item3 )
-    : m_i( 0 )
-    {
-      rpgml_static_assert( N == 3 );
-      m_items[ 0 ] = item1;
-      m_items[ 1 ] = item2;
-      m_items[ 2 ] = item3;
-    }
+  virtual bool done( void )
+  {
+    return i >= iters.size();
+  }
 
-    explicit
-    ItemIterator( const Type &item1, const Type &item2, const Type &item3, const Type &item4 )
-    : m_i( 0 )
+  virtual void next( void )
+  {
+    if( i < iters.size() )
     {
-      rpgml_static_assert( N == 4 );
-      m_items[ 0 ] = item1;
-      m_items[ 1 ] = item2;
-      m_items[ 2 ] = item3;
-      m_items[ 3 ] = item4;
+      iters[ i ]->next();
+      find_beginning();
     }
+  }
+
+  virtual Type get( void )
+  {
+    return iters[ i ]->get();
+  }
+
+  virtual CountPtr< BaseIterator > clone( void ) const
+  {
+    if( i < iters.size() )
+    {
+      return new MultiIterator( &iters[ i ], &iters[ iters.size() ], 0 );
+    }
+    else
+    {
+      return new MultiIterator();
+    }
+  }
+
+private:
+  void find_beginning( void )
+  {
+    while( i < iters.size() && iters[ i ]->done() ) ++i;
+  }
+
+  std::vector< CountPtr< BaseIterator > > iters;
+  index_t i;
+};
+
+template< class BaseIterator, int N >
+class ItemIterator : public BaseIterator
+{
+public:
+  typedef typename BaseIterator::Type Type;
+  ItemIterator( void )
+  : m_i( 0 )
+  {
+    rpgml_static_assert( N == 0 );
+  }
+
+  virtual ~ItemIterator( void ) {}
+
+  explicit
+  ItemIterator( const Type &item1 )
+  : m_i( 0 )
+  {
+    rpgml_static_assert( N == 1 );
+    m_items[ 0 ] = item1;
+  }
+
+  explicit
+  ItemIterator( const Type &item1, const Type &item2 )
+  : m_i( 0 )
+  {
+    rpgml_static_assert( N == 2 );
+    m_items[ 0 ] = item1;
+    m_items[ 1 ] = item2;
+  }
+
+  explicit
+  ItemIterator( const Type &item1, const Type &item2, const Type &item3 )
+  : m_i( 0 )
+  {
+    rpgml_static_assert( N == 3 );
+    m_items[ 0 ] = item1;
+    m_items[ 1 ] = item2;
+    m_items[ 2 ] = item3;
+  }
+
+  explicit
+  ItemIterator( const Type &item1, const Type &item2, const Type &item3, const Type &item4 )
+  : m_i( 0 )
+  {
+    rpgml_static_assert( N == 4 );
+    m_items[ 0 ] = item1;
+    m_items[ 1 ] = item2;
+    m_items[ 2 ] = item3;
+    m_items[ 3 ] = item4;
+  }
 
 //    explicit
 //    ItemIterator( const std::vector< Type > &items, index_t i=0 )
@@ -192,33 +198,32 @@ public:
 //      }
 //    }
 
-    virtual bool done( void ) { return m_i >= N; }
-    virtual void next( void ) { ++m_i; }
-    virtual Type get( void ) { return m_items[ m_i ]; }
-    virtual CountPtr< Iterator > clone( void ) const { return new ItemIterator( *this ); }
+  virtual bool done( void ) { return m_i >= N; }
+  virtual void next( void ) { ++m_i; }
+  virtual Type get( void ) { return m_items[ m_i ]; }
+  virtual CountPtr< BaseIterator > clone( void ) const { return new ItemIterator( *this ); }
 
-  private:
-    Type m_items[ N ];
-    index_t m_i;
-  };
+private:
+  Type m_items[ N ];
+  index_t m_i;
+};
 
-  template< class iterator >
-  class BeginEndIterator : public Iterator
-  {
-  public:
-    BeginEndIterator( const iterator &begin, const iterator &end )
-    : m_curr( begin )
-    , m_end( end )
-    {}
-    virtual bool done( void ) { return !( m_curr != m_end ); }
-    virtual void next( void ) { ++m_curr; }
-    virtual Type get( void ) { return (*m_curr); }
-    virtual CountPtr< Iterator > clone( void ) const { return new BeginEndIterator( (*this) ); }
-  private:
-    iterator m_curr;
-    const iterator m_end;
-  };
-
+template< class BaseIterator, class iterator >
+class BeginEndIterator : public BaseIterator
+{
+public:
+  typedef typename BaseIterator::Type Type;
+  BeginEndIterator( const iterator &begin, const iterator &end )
+  : m_curr( begin )
+  , m_end( end )
+  {}
+  virtual bool done( void ) { return !( m_curr != m_end ); }
+  virtual void next( void ) { ++m_curr; }
+  virtual Type get( void ) { return (*m_curr); }
+  virtual CountPtr< BaseIterator > clone( void ) const { return new BeginEndIterator( (*this) ); }
+private:
+  iterator m_curr;
+  const iterator m_end;
 };
 
 } // namespace RPGML
