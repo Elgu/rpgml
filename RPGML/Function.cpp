@@ -118,9 +118,9 @@ void Function::gc_clear( void )
 CountPtr< Collectable::Children > Function::getChildren( void ) const
 {
   return
-    new Children::MultiIterator(
+    new MultiIterator< Children >(
         new ArgsChildren( m_decl )
-      , new Children::ItemIterator< 1 >( m_parent )
+      , new ItemIterator< Children, 1 >( m_parent )
       );
 }
 
