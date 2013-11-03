@@ -129,7 +129,7 @@ void SequenceValueArray::gc_clear( void )
 
 CountPtr< Collectable::Children > SequenceValueArray::getChildren( void ) const
 {
-  return new ItemIterator< Children, 1 >( m_array.get() );
+  return new ItemIterator< Children >( m_array.get() );
 }
 
 CountPtr< Sequence > SequenceValueArray::clone( void ) const

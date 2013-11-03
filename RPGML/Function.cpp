@@ -124,7 +124,7 @@ CountPtr< Collectable::Children > Function::getChildren( void ) const
   return
     new MultiIterator< Children >(
         new ArgsChildren( m_decl )
-      , new ItemIterator< Children, 1 >( m_parent )
+      , new ItemIterator< Children >( m_parent )
       );
 }
 

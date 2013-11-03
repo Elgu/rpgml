@@ -135,16 +135,14 @@ private:
   index_t i;
 };
 
-template< class BaseIterator, int N >
+template< class BaseIterator >
 class ItemIterator : public BaseIterator
 {
 public:
   typedef typename BaseIterator::Type Type;
   ItemIterator( void )
   : m_i( 0 )
-  {
-    rpgml_static_assert( N == 0 );
-  }
+  {}
 
   virtual ~ItemIterator( void ) {}
 
@@ -152,59 +150,71 @@ public:
   ItemIterator( const Type &item1 )
   : m_i( 0 )
   {
-    rpgml_static_assert( N == 1 );
-    m_items[ 0 ] = item1;
+    m_items.reserve( 1 );
+    m_items.push_back( item1 );
   }
 
   explicit
   ItemIterator( const Type &item1, const Type &item2 )
   : m_i( 0 )
   {
-    rpgml_static_assert( N == 2 );
-    m_items[ 0 ] = item1;
-    m_items[ 1 ] = item2;
+    m_items.reserve( 2 );
+    m_items.push_back( item1 );
+    m_items.push_back( item2 );
   }
 
   explicit
   ItemIterator( const Type &item1, const Type &item2, const Type &item3 )
   : m_i( 0 )
   {
-    rpgml_static_assert( N == 3 );
-    m_items[ 0 ] = item1;
-    m_items[ 1 ] = item2;
-    m_items[ 2 ] = item3;
+    m_items.reserve( 3 );
+    m_items.push_back( item1 );
+    m_items.push_back( item2 );
+    m_items.push_back( item3 );
   }
 
   explicit
   ItemIterator( const Type &item1, const Type &item2, const Type &item3, const Type &item4 )
   : m_i( 0 )
   {
-    rpgml_static_assert( N == 4 );
-    m_items[ 0 ] = item1;
-    m_items[ 1 ] = item2;
-    m_items[ 2 ] = item3;
-    m_items[ 3 ] = item4;
+    m_items.reserve( 4 );
+    m_items.push_back( item1 );
+    m_items.push_back( item2 );
+    m_items.push_back( item3 );
+    m_items.push_back( item4 );
   }
 
-//    explicit
-//    ItemIterator( const std::vector< Type > &items, index_t i=0 )
-//    : m_items( items )
-//    , m_i( i )
-//    {
-//      assert( items.size() == N );
-//      for( index_t j=i; j<N; ++j )
-//      {
-//        m_items[ j ] = items[ j ];
-//      }
-//    }
+  template< class item_iterator >
+  ItemIterator( const item_iterator &items_begin, const item_iterator &items_end, size_t reserve=0 )
+  : m_i( 0 )
+  {
+    m_items.reserve( reserve );
+    for( item_iterator i( items_begin ); i != items_end; ++i )
+    {
+      m_items.push_back( (*i) );
+    }
+  }
 
-  virtual bool done( void ) { return m_i >= N; }
+  virtual bool done( void ) { return m_i >= m_items.size(); }
   virtual void next( void ) { ++m_i; }
   virtual Type get( void ) { return m_items[ m_i ]; }
-  virtual CountPtr< BaseIterator > clone( void ) const { return new ItemIterator( *this ); }
+  virtual CountPtr< BaseIterator > clone( void ) const
+  {
+    if( m_i < m_items.size() )
+    {
+      const size_t n = m_items.size() - m_i;
+      const Type *const items_begin = &m_items[ m_i ];
+      const Type *const items_end = items_begin + n;
+      return new ItemIterator( items_begin, items_end, n );
+    }
+    else
+    {
+      return new NullIterator< BaseIterator >();
+    }
+  }
 
 private:
-  Type m_items[ N ];
+  std::vector< Type > m_items;
   index_t m_i;
 };
 

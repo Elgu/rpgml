@@ -16,6 +16,7 @@ SOURCE=\
 	InterpretingFunction.cpp\
 	UnaryOp.cpp\
 	Print.cpp\
+	Node.cpp\
 	main.cpp\
 
 OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(SOURCE)))
