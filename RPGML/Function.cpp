@@ -47,12 +47,14 @@ void Function::fill_args( Map &args, const Args &call_args )
   std::vector< int8_t > used( call_args.size(), int8_t( false ) );
 
   index_t pos = 0;
+
+  // positional arguments, no identifier
   for( ; pos < call_args.size(); ++pos )
   {
     const String *const call_identifier = call_args[ pos ].identifier;
     if( !call_identifier )
     {
-      args.set( call_identifier, call_args[ pos ].value );
+      args.set( decl_args[ pos ].identifier.get(), call_args[ pos ].value );
       used[ pos ] = true;
     }
     else
@@ -63,11 +65,12 @@ void Function::fill_args( Map &args, const Args &call_args )
 
   const index_t first_init = pos;
 
+  // identifier arguments
   for( ; pos < decl_args.size(); ++pos )
   {
     const String *const decl_identifier = decl_args[ pos ].identifier;
     bool found = false;
-    for( index_t i=first_init; i < call_args.size(); ++i )
+    for( index_t i=first_init; i < n_call_args; ++i )
     {
       const String *const call_identifier = call_args[ i ].identifier;
       if( call_identifier )
@@ -86,6 +89,7 @@ void Function::fill_args( Map &args, const Args &call_args )
       }
     }
 
+    // No identifier argument specified, try default value
     if( !found )
     {
       const Value &default_value = decl_args[ pos ].value;
