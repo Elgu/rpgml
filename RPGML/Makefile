@@ -14,6 +14,7 @@ SOURCE=\
 	InterpretingASTVisitor.cpp\
 	Sequence.cpp\
 	InterpretingFunction.cpp\
+	Node.cpp\
 	main.cpp\
 
 OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(SOURCE)))
