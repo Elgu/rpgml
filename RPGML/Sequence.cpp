@@ -3,6 +3,8 @@
 #include "Value.h"
 #include "Array.h"
 
+#include <iostream>
+
 #include <cassert>
 
 namespace RPGML {
@@ -57,6 +59,7 @@ private:
     , m_to( to )
     , m_step( step )
     {
+      std::cerr << "IteratorFromToStep( " << curr << ", " << to << ", " << step << std::endl;
       assert( step != 0 );
     }
 
@@ -67,11 +70,11 @@ private:
     {
       if( m_step > scalar_t( 0 ) )
       {
-        return m_curr < m_to;
+        return m_curr > m_to;
       }
       else
       {
-        return m_curr > m_to;
+        return m_curr < m_to;
       }
     }
 
