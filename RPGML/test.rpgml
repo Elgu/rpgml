@@ -1,5 +1,9 @@
-int i=0;
-a();
-Function f( x ) { return x+1; }
-Function g() { return 1; }
-Map m = {};
+Array a = [ 0 to 18 step 2 ];
+
+for i in a
+{
+  print( a[ i ] );
+  print( ": " );
+  print( "Hallo Welt!\n" );
+}
+

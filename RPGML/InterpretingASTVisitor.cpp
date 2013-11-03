@@ -114,7 +114,7 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
   }
   else
   {
-    step = -1;
+    step = 1;
   }
 
   if( from.isFloat() || to.isFloat() || step.isFloat() )
