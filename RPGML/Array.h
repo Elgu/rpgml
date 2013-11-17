@@ -16,15 +16,15 @@ public:
   index_t size( void ) const;
   Array &resize( index_t new_size );
 
-  Value       *set( index_t i, Value value );
+  Value       *set( index_t i, const Value &value );
   Value       *get( index_t i );
   const Value *get( index_t i ) const;
-  Value       *append( Value value );
+  Value       *append( const Value &value );
 
   void swap( Array &other );
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
   typedef Iterator< Value* > Elements;
   typedef Iterator< const Value* > ConstElements;
@@ -35,28 +35,11 @@ public:
 private:
   typedef std::vector< Value > values_t;
 
-  class _Children;
   class _Elements;
   class _ConstElements;
   friend class _Children;
   friend class _Elements;
   friend class _ConstElements;
-
-  class _Children : public Children
-  {
-  public:
-    _Children( const Array *array, index_t i=0 );
-    virtual ~_Children( void );
-
-    virtual bool done( void );
-    virtual void next( void );
-    virtual Type get( void );
-    virtual CountPtr< Children > clone( void ) const;
-
-  private:
-    CountPtr< const Array > m_array;
-    index_t m_i;
-  };
 
   class _ConstElements : public ConstElements
   {

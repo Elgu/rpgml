@@ -22,12 +22,12 @@ Array &Array::resize( index_t new_size )
   return (*this);
 }
 
-Value *Array::set( index_t i, Value value )
+Value *Array::set( index_t i, const Value &value )
 {
   if( i < size() )
   {
     Value &target = m_values[ i ];
-    target.swap( value );
+    target = value;
     return &target;
   }
   else
@@ -54,7 +54,7 @@ const Value *Array::get( index_t i ) const
   return 0;
 }
 
-Value *Array::append( Value value )
+Value *Array::append( const Value &value )
 {
   m_values.push_back( value );
   return &m_values.back();
@@ -65,9 +65,17 @@ void Array::swap( Array &other )
   std::swap( m_values, other.m_values );
 }
 
-CountPtr< Collectable::Children > Array::getChildren( void ) const
+void Array::getChildren( Children &children ) const
 {
-  return new _Children( this );
+  const Array::values_t &values = m_values;
+  for( index_t i( 0 ), end( index_t( values.size() ) ); i<end; ++i )
+  {
+    const Value &value = values[ i ];
+    if( values[ i ].isCollectable() )
+    {
+      children.push_back( value.getCollectable() );
+    }
+  }
 }
 
 void Array::gc_clear( void )
@@ -83,53 +91,6 @@ CountPtr< Array::Elements > Array::getElements( void )
 CountPtr< Array::ConstElements > Array::getElements( void ) const
 {
   return new _ConstElements( this );
-}
-
-Array::_Children::_Children( const Array *array, index_t i )
-: m_array( array )
-, m_i( i )
-{
-  const Array::values_t &values = m_array->m_values;
-  while(
-       m_i < values.size()
-    && !values[ m_i ].isCollectable()
-    )
-  {
-    ++m_i;
-  }
-}
-
-Array::_Children::~_Children( void )
-{}
-
-bool Array::_Children::done( void )
-{
-  const Array::values_t &values = m_array->m_values;
-  return ( m_i >= values.size() );
-}
-
-void Array::_Children::next( void )
-{
-  const Array::values_t &values = m_array->m_values;
-  do
-  {
-    ++m_i;
-  }
-  while(
-       m_i < values.size()
-    && !values[ m_i ].isCollectable()
-    );
-}
-
-const Collectable *Array::_Children::get( void )
-{
-  const Array::values_t &values = m_array->m_values;
-  return values[ m_i ].getCollectable();
-}
-
-CountPtr< Collectable::Children > Array::_Children::clone( void ) const
-{
-  return new _Children( m_array, m_i );
 }
 
 Array::_ConstElements::_ConstElements( const Array *array, index_t i )

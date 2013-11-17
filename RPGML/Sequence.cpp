@@ -3,7 +3,7 @@
 #include "Value.h"
 #include "Array.h"
 
-#include <iostream>
+// #include <iostream>
 
 #include <cassert>
 
@@ -35,9 +35,9 @@ public:
   virtual void gc_clear( void )
   {}
 
-  virtual CountPtr< Children > getChildren( void ) const
+  virtual void getChildren( Children & ) const
   {
-    return new NullIterator< Children >();
+    return;
   }
 
   virtual CountPtr< Sequence > clone( void ) const
@@ -59,7 +59,7 @@ private:
     , m_to( to )
     , m_step( step )
     {
-      std::cerr << "IteratorFromToStep( " << curr << ", " << to << ", " << step << std::endl;
+//      std::cerr << "IteratorFromToStep( " << curr << ", " << to << ", " << step << " )" << std::endl;
       assert( step != 0 );
     }
 
@@ -127,9 +127,9 @@ SequenceValueArray::~SequenceValueArray( void )
 void SequenceValueArray::gc_clear( void )
 {}
 
-CountPtr< Collectable::Children > SequenceValueArray::getChildren( void ) const
+void SequenceValueArray::getChildren( Children &children ) const
 {
-  return new ItemIterator< Children >( m_array.get() );
+  children.push_back( m_array );
 }
 
 CountPtr< Sequence > SequenceValueArray::clone( void ) const

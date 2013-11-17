@@ -73,7 +73,7 @@ struct Type
   static Type Output   ( void ) { return Type( Type::OUTPUT   ); }
   static Type Input    ( void ) { return Type( Type::INPUT    ); }
   static Type Param    ( void ) { return Type( Type::PARAM    ); }
-  static Type Sequecnce( void ) { return Type( Type::SEQUENCE ); }
+  static Type Sequence ( void ) { return Type( Type::SEQUENCE ); }
 
 private:
   Enum m_e;

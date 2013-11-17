@@ -159,13 +159,13 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
 {
   using namespace BinaryOp_impl;
 
-  if( n_args != 3 ) throw "BinaryOp requires 3 arguments.";
+  if( n_args != NUM_ARGS ) throw "wrong number of arguments.";
 
-  if( !args[ 1 ].isInt() ) throw "'op' argument must be int";
+  if( !args[ ARG_OP ].isInt() ) throw "'op' argument must be int";
 
-  const BOP op = BOP( args[ 1 ].getInt() );
-  const Value &left  = args[ 0 ];
-  const Value &right = args[ 2 ];
+  const BOP op = BOP( args[ ARG_OP ].getInt() );
+  const Value &left  = args[ ARG_LEFT ];
+  const Value &right = args[ ARG_RIGHT ];
 
   switch( op )
   {
@@ -197,10 +197,10 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
 
 CountPtr< Function::Args > BinaryOp::genDeclArgs( void )
 {
-  CountPtr< Args > args = new Args( 3 );
-  args->at( 0 ) = Arg( new String( "left" ) );
-  args->at( 1 ) = Arg( new String( "op" ) );
-  args->at( 2 ) = Arg( new String( "right" ) );
+  CountPtr< Args > args = new Args( NUM_ARGS );
+  args->at( ARG_LEFT  ) = Arg( new String( "left"  ) );
+  args->at( ARG_OP    ) = Arg( new String( "op"    ) );
+  args->at( ARG_RIGHT ) = Arg( new String( "right" ) );
   return args;
 }
 

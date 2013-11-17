@@ -119,54 +119,18 @@ void Function::gc_clear( void )
   m_decl.reset();
 }
 
-CountPtr< Collectable::Children > Function::getChildren( void ) const
+void Function::getChildren( Children &children ) const
 {
-  return
-    new MultiIterator< Children >(
-        new ArgsChildren( m_decl )
-      , new ItemIterator< Children >( m_parent )
-      );
-}
+  children.push_back( m_parent );
 
-Function::ArgsChildren::ArgsChildren( const Args *args, index_t i )
-: m_args( args )
-, m_i( i )
-{
-  find_next();
-}
-
-Function::ArgsChildren::~ArgsChildren( void )
-{}
-
-bool Function::ArgsChildren::done( void )
-{
-  return m_i >= m_args->size();
-}
-
-void Function::ArgsChildren::next( void )
-{
-  ++m_i;
-  find_next();
-}
-
-const Collectable *Function::ArgsChildren::get( void )
-{
-  return m_args->at( m_i ).value.getCollectable();
-}
-
-CountPtr< Collectable::Children > Function::ArgsChildren::clone( void ) const
-{
-  return new ArgsChildren( (*this) );
-}
-
-void Function::ArgsChildren::find_next( void )
-{
-  while(
-        m_i < m_args->size()
-    && !m_args->at( m_i ).value.isCollectable()
-    )
+  for( size_t i( 0 ), end( m_decl->size() ); i<end; ++i )
   {
-    ++m_i;
+    const Value &value = m_decl->at( i ).value;
+
+    if( value.isCollectable() )
+    {
+      children.push_back( value.getCollectable() );
+    }
   }
 }
 

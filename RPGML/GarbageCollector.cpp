@@ -54,7 +54,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new, const
   if( !root ) return;
 
   std::vector< const Collectable* > stack;
-  stack.reserve( 16 );
+  stack.reserve( 512 );
 
   // NOTE: This could also be done the other way, just schedule for checking,
   //       but there would be the risk of having a very large schedule stack
@@ -68,15 +68,22 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new, const
   // Schedule root
   stack.push_back( root );
 
+  Collectable::Children children;
+  children.reserve( 512 );
+
   // Process children of scheduled (already moved) Collectables
   while( !stack.empty() )
   {
     const Collectable *const c = stack.back();
     stack.pop_back();
 
-    for( CountPtr< Collectable::Children > iter( c->getChildren() ); !iter->done(); iter->next() )
+    children.clear();
+    c->getChildren( children );
+
+    for( size_t i( 0 ), end( children.size() ); i<end; ++i )
     {
-      const Collectable *const child = iter->get();
+      const Collectable *const child = children[ i ];
+      if( !child ) continue;
 
       // Check, if not compacted yet
       if( child->gc == this && m_cs[ child->gc_index ] == child )

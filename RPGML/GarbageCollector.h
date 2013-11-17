@@ -83,11 +83,21 @@ public:
     return gc;
   }
 
-  typedef Iterator< const Collectable* > Children;
-  //! Do not implement recursively, only clear, what is not reachable over getChildren()
+  class Children : public std::vector< const Collectable* >
+  {
+  public:
+    Children( void ) {}
+    ~Children( void ) {}
+
+    void add( const Collectable *c ) { if( c ) push_back( c ); }
+    template< class Value >
+    void add( const Value &v ) { add( v.getCollectable() ); }
+  };
+
+  //! Do not implement recursively, only clear, what is not reachable over getChildren(), clear references to those
   virtual void gc_clear( void ) = 0;
   //! Do not implement recursively
-  virtual CountPtr< Children > getChildren( void ) const = 0;
+  virtual void getChildren( Children &children ) const = 0;
 
 private:
   mutable GarbageCollector *gc;

@@ -24,9 +24,9 @@ void Port::gc_clear( void )
   m_identifier.reset();
 }
 
-CountPtr< Collectable::Children > Port::getChildren( void ) const
+void Port::getChildren( Children &children ) const
 {
-  return new ItemIterator< Children >( m_parent.get() );
+  children.push_back( m_parent );
 }
 
 Input::Input( GarbageCollector *_gc, Node *parent, const String *identifier )
@@ -44,19 +44,13 @@ void Input::gc_clear( void )
   disconnect();
 }
 
-CountPtr< Collectable::Children > Input::getChildren( void ) const
+void Input::getChildren( Children &children ) const
 {
+  Port::getChildren( children );
+
   if( isConnected() )
   {
-    return
-      new MultiIterator< Children >(
-          Port::getChildren()
-        , new ItemIterator< Children >( m_output.get() )
-        );
-  }
-  else
-  {
-    return Port::getChildren();
+    children.push_back( m_output.get() );
   }
 }
 
@@ -100,19 +94,17 @@ void Output::gc_clear( void )
   disconnect();
 }
 
-CountPtr< Collectable::Children > Output::getChildren( void ) const
+void Output::getChildren( Children &children ) const
 {
-  if( isConnected() )
+  Port::getChildren( children );
+
+  for( inputs_t::const_iterator i( m_inputs.begin() ), end( m_inputs.end() ); i != end; ++i )
   {
-    return
-      new MultiIterator< Children >(
-          Port::getChildren()
-        , new ItemIterator< Children >( m_inputs.begin(), m_inputs.end(), m_inputs.size() )
-        );
-  }
-  else
-  {
-    return Port::getChildren();
+    const Input *const input = i->get();
+    if( input )
+    {
+      children.push_back( input );
+    }
   }
 }
 
@@ -180,6 +172,95 @@ bool Output::isConnected( void ) const
   return false;
 }
 
+Param::Param( GarbageCollector *_gc, Node *parent, const String *identifier, Type type )
+: Collectable( _gc )
+, m_parent( parent )
+, m_identifier( identifier )
+, m_type( type )
+{}
+
+Param::~Param( void )
+{}
+
+Node *Param::getParent( void ) const
+{
+  return m_parent;
+}
+
+bool Param::set( const Value &value )
+{
+  if( m_type == Type::Invalid() )
+  {
+    m_value == value;
+  }
+  else
+  {
+    try
+    {
+      m_value = value.to( m_type );
+    }
+    catch( const char *e )
+    {
+      throw "Type of value does not match type for parameter.";
+    }
+  }
+
+  return m_parent->setParamRecord( this );
+}
+
+const Value &Param::get( void ) const
+{
+  return m_value;
+}
+
+void Param::gc_clear( void )
+{
+  m_parent.reset();
+  m_value.clear();
+}
+
+void Param::getChildren( Children &children ) const
+{
+  children.push_back( m_parent );
+  if( m_value.isCollectable() )
+  {
+    children.push_back( m_value.getCollectable() );
+  }
+}
+
+Node::Node( GarbageCollector *_gc, Map *_parent )
+: Map( _gc, _parent )
+{}
+
+Node::~Node( void )
+{}
+
+void Node::gc_clear( void )
+{
+  Map::gc_clear();
+  m_setParameters.clear();
+}
+
+void Node::getChildren( Children &children ) const
+{
+  Map::getChildren( children );
+
+  for( size_t i( 0 ), end( m_setParameters.size() ); i < end; ++i )
+  {
+    const SetParameter &s = m_setParameters[ i ];
+    children.push_back( s.param.get() );
+    if( s.value.isCollectable() )
+    {
+      children.push_back( s.value.getCollectable() );
+    }
+  }
+}
+
+bool Node::setParamRecord( const Param *param )
+{
+  m_setParameters.push_back( SetParameter( param, param->get() ) );
+  return true;
+}
 
 } // namespace RPGML
 

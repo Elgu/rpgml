@@ -55,28 +55,10 @@ public:
   };
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
 private:
   void fill_args( Map &args, const Args &call_args );
-
-  class ArgsChildren : public Children
-  {
-  public:
-    ArgsChildren( const Args *args, index_t i=0 );
-    virtual ~ArgsChildren( void );
-
-    virtual bool done( void );
-    virtual void next( void );
-    virtual const Collectable *get( void );
-    virtual CountPtr< Children > clone( void ) const;
-
-  private:
-    void find_next( void );
-
-    CountPtr< const Args > m_args;
-    index_t m_i;
-  };
 
   CountPtr< Map > m_parent;
   CountPtr< const Args > m_decl;

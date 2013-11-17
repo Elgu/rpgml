@@ -77,7 +77,7 @@ public:
   };
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
 private:
   struct map_less_than
@@ -86,25 +86,6 @@ private:
   };
   typedef std::vector< Value > values_t;
   typedef std::map< Value, index_t, map_less_than > map_t;
-  friend class _Children;
-
-  class _Children : public Children
-  {
-  public:
-    explicit
-    _Children( const Map *_m, const Map *_parent, index_t _i=0 );
-    virtual ~_Children( void );
-
-    virtual bool done( void );
-    virtual void next( void );
-    virtual const Collectable *get( void );
-    virtual CountPtr< Children > clone( void ) const;
-
-  private:
-    CountPtr< const Map > m;
-    CountPtr< const Map > parent;
-    index_t i;
-  };
 
   values_t m_values;
   map_t m_map;

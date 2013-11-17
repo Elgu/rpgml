@@ -21,9 +21,10 @@ public:
   virtual ~Port( void );
 
   Node *getParent( void ) const;
+  const String *getIdentifier( void ) const;
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
 private:
   CountPtr< Node > m_parent;
@@ -37,7 +38,7 @@ public:
   virtual ~Input( void );
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
   void disconnect( void );
   void connect( Output *output );
@@ -62,7 +63,7 @@ public:
   bool isConnected( void ) const;
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
 private:
   typedef std::vector< CountPtr< Input > > inputs_t;
@@ -72,35 +73,53 @@ private:
 class Param : public Collectable
 {
 public:
-  Param( GarbageCollector *gc, Node *parent, const String *identifier );
+  Param( GarbageCollector *gc, Node *parent, const String *identifier, Type type = Type::Invalid() );
   virtual ~Param( void );
 
-  bool set( const Value &value ) const;
   Node *getParent( void ) const;
-  const String *getIdentifier( void ) const;
+
+  virtual bool set( const Value &value );
+  const Value &get( void ) const;
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
 private:
   CountPtr< Node > m_parent;
   CountPtr< const String > m_identifier;
-  std::vector< Value > m_values;
+  Value m_value;
+  Type m_type;
 };
 
 class Node : public Map
 {
 public:
-  Node( GarbageCollector *gc );
+  explicit
+  Node( GarbageCollector *gc, Map *parent=0 );
+
   virtual ~Node( void );
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
+
+protected:
+  friend class Param;
+  bool setParamRecord( const Param *param );
 
 private:
-  std::vector< CountPtr< Input > > m_inputs;
-  std::vector< CountPtr< Output > > m_outputs;
-  std::vector< CountPtr< Port > > m_ports;
+  struct SetParameter
+  {
+    explicit
+    SetParameter( const Param *_param, const Value &_value )
+    : param( _param )
+    , value( _value )
+    {}
+
+    CountPtr< const Param > param;
+    Value value;
+  };
+
+  std::vector< SetParameter > m_setParameters;
 };
 
 } // namespace RPGML

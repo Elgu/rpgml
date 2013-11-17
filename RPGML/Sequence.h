@@ -30,7 +30,7 @@ public:
   virtual ~SequenceValueArray( void );
 
   virtual void gc_clear( void );
-  virtual CountPtr< Children > getChildren( void ) const;
+  virtual void getChildren( Children &children ) const;
 
   virtual CountPtr< Sequence > clone( void ) const;
   virtual CountPtr< Iter > getIter( void ) const;

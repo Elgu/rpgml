@@ -167,54 +167,27 @@ void Map::gc_clear( void )
   m_parent.reset();
 }
 
-CountPtr< Collectable::Children > Map::getChildren( void ) const
+void Map::getChildren( Children &children ) const
 {
-  return new _Children( this, m_parent );
-}
+  children.push_back( m_parent );
 
-Map::_Children::_Children( const Map *_m, const Map *_parent, index_t _i )
-: m( _m )
-, parent( _parent )
-, i( !_parent && 0 == _i ? 1 : _i )
-{}
-
-Map::_Children::~_Children( void )
-{}
-
-bool Map::_Children::done( void )
-{
-  return i > m->size(); // not >=, 0 is parent
-}
-
-void Map::_Children::next( void )
-{
-  const values_t &values = m->m_values;
-  const index_t n = index_t( values.size() );
-  do
+  for( size_t i( 0 ), end( m_values.size() ); i<end; ++i )
   {
-    ++i;
+    const Value &value = m_values[ i ];
+    if( value.isCollectable() )
+    {
+      children.push_back( value.getCollectable() );
+    }
   }
-  while(
-       i <= n // not "<"
-    && !values[ i-1 ].isCollectable()
-    );
-}
 
-const Collectable *Map::_Children::get( void )
-{
-  if( i > 0 )
+  for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
   {
-    return m->m_values[ i-1 ].getCollectable();
+    const Value &value = i->first;
+    if( value.isCollectable() )
+    {
+      children.push_back( value.getCollectable() );
+    }
   }
-  else
-  {
-    return parent;
-  }
-}
-
-CountPtr< Collectable::Children > Map::_Children::clone( void ) const
-{
-  return new _Children( (*this) );
 }
 
 bool Map::map_less_than::operator()( const Value &x, const Value &y ) const
