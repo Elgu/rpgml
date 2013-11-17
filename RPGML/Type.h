@@ -58,6 +58,23 @@ struct Type
   Enum getEnum( void ) const { return m_e; }
   operator Enum( void ) const { return getEnum(); }
 
+  bool isScalar( void ) { return m_e >= BOOL && m_e <= FLOAT; }
+  bool isInteger( void ) { return m_e >= BOOL && m_e <= INT; }
+
+  static Type Invalid  ( void ) { return Type( Type::INVALID  ); }
+  static Type Bool     ( void ) { return Type( Type::BOOL     ); }
+  static Type Int      ( void ) { return Type( Type::INT      ); }
+  static Type Float    ( void ) { return Type( Type::FLOAT    ); }
+  static Type String   ( void ) { return Type( Type::STRING   ); }
+  static Type Array    ( void ) { return Type( Type::ARRAY    ); }
+  static Type Map      ( void ) { return Type( Type::MAP      ); }
+  static Type Function ( void ) { return Type( Type::FUNCTION ); }
+  static Type Node     ( void ) { return Type( Type::NODE     ); }
+  static Type Output   ( void ) { return Type( Type::OUTPUT   ); }
+  static Type Input    ( void ) { return Type( Type::INPUT    ); }
+  static Type Param    ( void ) { return Type( Type::PARAM    ); }
+  static Type Sequecnce( void ) { return Type( Type::SEQUENCE ); }
+
 private:
   Enum m_e;
 };

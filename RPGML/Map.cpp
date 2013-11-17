@@ -217,5 +217,22 @@ CountPtr< Collectable::Children > Map::_Children::clone( void ) const
   return new _Children( (*this) );
 }
 
+bool Map::map_less_than::operator()( const Value &x, const Value &y ) const
+{
+  const Type::Enum e1 = x.getType().getEnum();
+  const Type::Enum e2 = y.getType().getEnum();
+  if( e1 < e2 ) return true;
+  if( e1 > e2 ) return false;
+
+  if( x.isString() )
+  {
+    return 0 > x.getString()->get().compare( y.getString()->get() );
+  }
+  else
+  {
+    return ( x.getP() < y.getP() );
+  }
+}
+
 } // namespace RPGML
 

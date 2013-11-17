@@ -7,6 +7,8 @@
 #include "Function.h"
 #include "Map.h"
 #include "InterpretingFunction.h"
+#include "UnaryOp.h"
+#include "BinaryOp.h"
 
 namespace RPGML {
 
@@ -14,7 +16,10 @@ InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursio
 : AST::Visitor( _recursion_depth )
 , scope( _scope )
 , return_encountered( false )
-{}
+{
+  unary_Function  = new UnaryOp ( scope->getGC(), scope->getCurr() );
+  binary_Function = new BinaryOp( scope->getGC(), scope->getCurr() );
+}
 
 InterpretingASTVisitor::~InterpretingASTVisitor( void )
 {}

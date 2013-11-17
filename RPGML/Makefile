@@ -17,6 +17,7 @@ SOURCE=\
 	UnaryOp.cpp\
 	Print.cpp\
 	Node.cpp\
+	BinaryOp.cpp\
 	main.cpp\
 
 OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(SOURCE)))

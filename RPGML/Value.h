@@ -27,11 +27,27 @@ public:
   Value( const Value &other );
   Value &operator=( Value other );
 
-  int compare( const Value &other ) const;
-//  int deep_compare( const Value &other ) const;
+  Value to( Type type ) const;
 
-  bool operator<( const Value &other ) const;
-  bool operator==( const Value &other ) const;
+  bool operator< ( const Value &right ) const;
+  bool operator<=( const Value &right ) const;
+  bool operator> ( const Value &right ) const;
+  bool operator>=( const Value &right ) const;
+  bool operator==( const Value &right ) const;
+  bool operator!=( const Value &right ) const;
+  bool operator&&( const Value &right ) const;
+  bool operator||( const Value &right ) const;
+  bool log_xor   ( const Value &right ) const;
+  Value operator<<( const Value &right ) const;
+  Value operator>>( const Value &right ) const;
+  Value operator& ( const Value &right ) const;
+  Value operator| ( const Value &right ) const;
+  Value operator^ ( const Value &right ) const;
+  Value operator* ( const Value &right ) const;
+  Value operator/ ( const Value &right ) const;
+  Value operator+ ( const Value &right ) const;
+  Value operator- ( const Value &right ) const;
+  Value operator% ( const Value &right ) const;
 
   void clear( void );
   void swap( Value &other );
@@ -82,6 +98,9 @@ public:
   bool isParam   ( void ) const { return is( Type::PARAM    ); }
   bool isSequence( void ) const { return is( Type::SEQUENCE ); }
 
+  bool isScalar( void ) const { return getType().isScalar(); }
+  bool isInteger( void ) const { return getType().isInteger(); }
+
   bool      getBool    ( void ) const { assert( isBool    () ); return b   ; }
   int       getInt     ( void ) const { assert( isInt     () ); return i   ; }
   float     getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
@@ -94,6 +113,8 @@ public:
   Input          *getInput   ( void ) const { assert( isInput   () ); return in  ; }
   Param          *getParam   ( void ) const { assert( isParam   () ); return para; }
   Sequence const *getSequence( void ) const { assert( isSequence() ); return seq ; }
+
+  const void *getP( void ) const { return p; }
 
   bool isCollectable( void ) const;
   const Collectable *getCollectable( void ) const;
@@ -119,6 +140,7 @@ private:
   };
   Type m_type;
 };
+
 
 } // namespace RPGML
 

@@ -7,6 +7,9 @@
 #include "Node.h"
 #include "Sequence.h"
 
+#include <sstream>
+#include <cmath>
+
 namespace RPGML {
 
 Value::Value( void )
@@ -70,68 +73,6 @@ Value &Value::operator=( Value other )
 {
   this->swap( other );
   return (*this);
-}
-
-template< class PrimitiveType >
-int Value::primitive_compare( PrimitiveType x, PrimitiveType y )
-{
-  return ( x < y ? -1 : ( x == y ? 0 : 1 ) );
-}
-
-int Value::compare( const Value &other ) const
-{
-  const Type::Enum e1 =       getType().getEnum();
-  const Type::Enum e2 = other.getType().getEnum();
-  if( e1 < e2 ) return -1;
-  if( e1 > e2 ) return  1;
-
-  if( isString() )
-  {
-    return str->get().compare( other.str->get() );
-  }
-  else
-  {
-    return primitive_compare( p, other.p );
-  }
-}
-
-/*
-int Value::deep_compare( const Value &other ) const
-{
-  const Type::Enum e1 =       getType().getEnum();
-  const Type::Enum e2 = other.getType().getEnum();
-  if( e1 < e2 ) return -1;
-  if( e1 > e2 ) return  1;
-
-  switch( e1 )
-  {
-    case Type::INVALID : return 0;
-    case Type::BOOL    : return primitive_compare( b, other.b );
-    case Type::INT     : return primitive_compare( i, other.i );
-    case Type::FLOAT   : return primitive_compare( f, other.f );
-    case Type::STRING  : return str->get().compare( other.str->get() );
-    case Type::ARRAY   : break;
-    case Type::MAP     : break;
-    case Type::FUNCTION: break;
-    case Type::NODE    : break;
-    case Type::OUTPUT  : break;
-    case Type::INPUT   : break;
-    case Type::PARAM   : break;
-    case Type::SEQUENCE: break;
-  }
-
-  return 0;
-}
-*/
-
-bool Value::operator<( const Value &other ) const
-{
-  return ( compare( other ) < 0 );
-}
-
-bool Value::operator==( const Value &other ) const
-{
-  return ( 0 == compare( other ) );
 }
 
 void Value::clear( void )
@@ -201,6 +142,585 @@ const Collectable *Value::getCollectable( void ) const
     case Type::SEQUENCE: return seq ;
   }
   return 0;
+}
+
+Value Value::to( Type type ) const
+{
+  const Value &x = (*this);
+
+  if( type == x.getType() ) return x;
+
+  switch( type.getEnum() )
+  {
+    case Type::BOOL  :
+      switch( x.getEnum() )
+      {
+        case Type::INT   : return Value( bool( getInt  () ) );
+        case Type::FLOAT : return Value( bool( getFloat() ) );
+        case Type::STRING: throw "Cannot cast string directly to bool";
+        default:
+          throw "Invalid type x for to( type, x )";
+      }
+
+    case Type::INT   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL  : return Value( int( getBool()  ) );
+        case Type::FLOAT : return Value( int( getFloat() ) );
+        case Type::STRING: return Value( atoi( getString()->c_str() ) );
+        default:
+          throw "Invalid type x for to( type, x )";
+      }
+
+    case Type::FLOAT :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL  : return Value( float( getBool() ) );
+        case Type::INT   : return Value( float( getInt()  ) );
+        case Type::STRING: return Value( float( atof( getString()->c_str() ) ) );
+        default:
+          throw "Invalid type x for to( type, x )";
+      }
+
+    case Type::STRING:
+      {
+        std::ostringstream s;
+
+        switch( x.getEnum() )
+        {
+          case Type::BOOL  : s << getBool(); break;
+          case Type::INT   : s << getInt(); break;
+          case Type::FLOAT : s << getFloat(); break;
+          default:
+            throw "Invalid type x for to( type, x )";
+        }
+
+        return Value( new String( s.str() ) );
+      }
+
+
+    default:
+      throw "Invalid type for Value::to( type )";
+  }
+}
+
+bool Value::operator< ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  < r.getBool() );
+      case Type::INT  : return ( l.getInt ()  < r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() < r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() < right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() < right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator<=( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  <= r.getBool() );
+      case Type::INT  : return ( l.getInt ()  <= r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() <= r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() <= right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() <= right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator> ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  > r.getBool() );
+      case Type::INT  : return ( l.getInt ()  > r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() > r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() > right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() > right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator>=( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  >= r.getBool() );
+      case Type::INT  : return ( l.getInt ()  >= r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() >= r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() >= right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() >= right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator==( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  == r.getBool() );
+      case Type::INT  : return ( l.getInt ()  == r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() == r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() == right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() == right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator!=( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return ( l.getBool()  != r.getBool() );
+      case Type::INT  : return ( l.getInt ()  != r.getInt() );
+      case Type::FLOAT: return ( l.getFloat() != r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    return ( left.getString()->get() != right.getString()->get() );
+  }
+  else if( left.getType() == right.getType() )
+  {
+    return ( left.getP() != right.getP() );
+  }
+  else
+  {
+    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+  }
+}
+
+bool Value::operator&&( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Value l = left .to( Type::BOOL );
+    const Value r = right.to( Type::BOOL );
+    return ( l && r );
+  }
+  else if( !left.isScalar() )
+  {
+    throw "left must be scalar";
+  }
+  else if( !right.isScalar() )
+  {
+    throw "right must be scalar";
+  }
+  else
+  {
+    throw "left and right must be scalar";
+  }
+}
+
+bool Value::operator||( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Value l = left .to( Type::BOOL );
+    const Value r = right.to( Type::BOOL );
+    return ( l || r );
+  }
+  else if( !left.isScalar() )
+  {
+    throw "left must be scalar";
+  }
+  else if( !right.isScalar() )
+  {
+    throw "right must be scalar";
+  }
+  else
+  {
+    throw "left and right must be scalar";
+  }
+}
+
+bool Value::log_xor   ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Value l = left .to( Type::BOOL );
+    const Value r = right.to( Type::BOOL );
+    return ( l.getBool() ^ r.getBool() );
+  }
+  else if( !left.isScalar() )
+  {
+    throw "left must be scalar";
+  }
+  else if( !right.isScalar() )
+  {
+    throw "right must be scalar";
+  }
+  else
+  {
+    throw "left and right must be scalar";
+  }
+}
+
+Value Value::operator<<( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( !left.isInteger() ) throw "left must be integer";
+  if( !right.isInteger() ) throw "right must be integer";
+
+  const Value l = left .to( Type::INT );
+  const Value r = right.to( Type::INT );
+
+  return Value( l.getInt() << r.getInt() );
+}
+
+Value Value::operator>>( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( !left.isInteger() ) throw "left must be integer";
+  if( !right.isInteger() ) throw "right must be integer";
+
+  const Value l = left .to( Type::INT );
+  const Value r = right.to( Type::INT );
+
+  return Value( l.getInt() >> r.getInt() );
+}
+
+Value Value::operator& ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( !left.isInteger() ) throw "left must be integer";
+  if( !right.isInteger() ) throw "right must be integer";
+
+  const Value l = left .to( Type::INT );
+  const Value r = right.to( Type::INT );
+
+  return Value( l.getInt() & r.getInt() );
+}
+
+Value Value::operator| ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( !left.isInteger() ) throw "left must be integer";
+  if( !right.isInteger() ) throw "right must be integer";
+
+  const Value l = left .to( Type::INT );
+  const Value r = right.to( Type::INT );
+
+  return Value( l.getInt() | r.getInt() );
+}
+
+Value Value::operator^ ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( !left.isInteger() ) throw "left must be integer";
+  if( !right.isInteger() ) throw "right must be integer";
+
+  const Value l = left .to( Type::INT );
+  const Value r = right.to( Type::INT );
+
+  return Value( l.getInt() ^ r.getInt() );
+}
+
+Value Value::operator* ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return Value( l.getBool()  * r.getBool() );
+      case Type::INT  : return Value( l.getInt ()  * r.getInt() );
+      case Type::FLOAT: return Value( l.getFloat() * r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else
+  {
+    throw "left and right must be scalar.";
+  }
+}
+
+Value Value::operator/ ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL :
+        if( r.getBool()  )
+          return Value( l.getBool()  / r.getBool() );
+        else
+          throw "Division by zero";
+
+      case Type::INT  :
+        if( r.getInt()   )
+          return Value( l.getInt ()  / r.getInt() );
+        else
+          throw "Division by zero";
+
+      case Type::FLOAT:
+        if( r.getFloat() )
+          return Value( l.getFloat() / r.getFloat() );
+        else
+          throw "Division by zero";
+
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else
+  {
+    throw "left and right must be scalar.";
+  }
+}
+
+Value Value::operator+ ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( Type::Int(), std::max( left.getType(), right.getType() ) );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return Value( l.getBool()  + r.getBool() );
+      case Type::INT  : return Value( l.getInt ()  + r.getInt() );
+      case Type::FLOAT: return Value( l.getFloat() + r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else if( left.isString() && right.isString() )
+  {
+    const Value &l = left;
+    const Value &r = right;
+    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+  }
+  else if( left.isString() && right.isScalar() )
+  {
+    const Value &l = left;
+    const Value  r = right.to( Type::String() );
+    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+  }
+  else if( left.isScalar() && right.isString() )
+  {
+    const Value  l = left.to( Type::String() );
+    const Value &r = right;
+    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+  }
+  else
+  {
+    throw "left and right must be scalar or string.";
+  }
+}
+
+Value Value::operator- ( const Value &right ) const
+{
+  const Value &left = (*this);
+  if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = std::max( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL : return Value( l.getBool()  - r.getBool() );
+      case Type::INT  : return Value( l.getInt ()  - r.getInt() );
+      case Type::FLOAT: return Value( l.getFloat() - r.getFloat() );
+      default:
+        throw "Internal error: unhandled scalar";
+    }
+  }
+  else
+  {
+    throw "left and right must be scalar.";
+  }
+}
+
+Value Value::operator% ( const Value &right ) const
+{
+  const Value &left = (*this);
+  switch( left.getEnum() )
+  {
+    case Type::BOOL : return Value( false );
+
+    case Type::INT  :
+      switch( right.getEnum() )
+      {
+        case Type::BOOL : return Value( false );
+        case Type::INT  : return Value( left.getInt() % right.getInt() );
+        case Type::FLOAT:
+          {
+            const float l = float( left.getInt() );
+            const float r = float( left.getFloat() );
+            if( r )
+              return Value( l - floorf( l / r ) * r );
+            else
+              throw "Modulo by zero";
+          }
+        default:
+          throw "left and right must be scalar.";
+      }
+
+    case Type::FLOAT:
+      {
+        float l;
+        float r;
+
+        switch( right.getEnum() )
+        {
+          case Type::BOOL : return Value( false );
+
+          case Type::INT  :
+            l = float( left.getFloat() );
+            r = float( left.getInt() );
+            break;
+
+          case Type::FLOAT:
+            l = float( left.getFloat() );
+            r = float( left.getFloat() );
+            break;
+
+          default:
+            throw "left and right must be scalar.";
+        }
+
+        if( r )
+          return Value( l - floorf( l / r ) * r );
+        else
+          throw "Modulo by zero";
+      }
+
+    default:
+      throw "left and right must be scalar.";
+  }
 }
 
 } // namespace std

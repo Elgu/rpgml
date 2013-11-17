@@ -80,8 +80,12 @@ public:
   virtual CountPtr< Children > getChildren( void ) const;
 
 private:
+  struct map_less_than
+  {
+    bool operator()( const Value &x, const Value &y ) const;
+  };
   typedef std::vector< Value > values_t;
-  typedef std::map< Value, index_t > map_t;
+  typedef std::map< Value, index_t, map_less_than > map_t;
   friend class _Children;
 
   class _Children : public Children

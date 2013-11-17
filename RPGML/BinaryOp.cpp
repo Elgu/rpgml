@@ -7,8 +7,8 @@
 
 namespace RPGML {
 
-BinaryOp::BinaryOp( GarbageCollector *gc, Map *parent )
-: Function( gc, parent, genDeclArgs() )
+BinaryOp::BinaryOp( GarbageCollector *_gc, Map *parent )
+: Function( _gc, parent, genDeclArgs() )
 {}
 
 BinaryOp::~BinaryOp( void )
@@ -16,70 +16,149 @@ BinaryOp::~BinaryOp( void )
 
 namespace BinaryOp_impl {
 
+  template< class IntType1, class IntType2 >
   static inline
-  Value to( Type type, const Value &x )
+  IntType1 shift_left( IntType1 x, IntType2 n )
   {
-    if( type == x.getType() ) return x;
-
-    switch( type.getEnum() )
-    {
-      case Type::BOOL  : return Value( -int( arg.getBool () ) );
-        switch( x.getType.getEnum() )
-        {
-          case Type::INT   : return Value( bool( arg.getInt  () );
-          case Type::FLOAT : return Value( bool( arg.getFloat() );
-          case Type::STRING: throw "Cannot cast string directly to bool";
-          default:
-            throw "Invalid type x for to( type, x )";
-        }
-
-      case Type::INT   : return Value( -     arg.getInt  ()   );
-        switch( x.getType.getEnum() )
-        {
-          case Type::BOOL  : return Value( int( arg.getBool() );
-          case Type::FLOAT : return Value( int( arg.getFloat() );
-          case Type::STRING: return Value( atoi( arg.getString()->c_str() );
-          default:
-            throw "Invalid type x for to( type, x )";
-        }
-
-      case Type::FLOAT : return Value( -     arg.getFloat()   );
-        switch( x.getType.getEnum() )
-        {
-          case Type::BOOL  : return Value( float( arg.getBool() );
-          case Type::INT   : return Value( float( arg.getInt() );
-          case Type::STRING: return Value( atof( arg.getString()->c_str() );
-          default:
-            throw "Invalid type x for to( type, x )";
-        }
-
-      case Type::STRING: return Value( -     arg.getFloat()   );
-        {
-          std::ostringstream str;
-
-          switch( x.getType.getEnum() )
-          {
-            case Type::BOOL  : str << arg.getBool(); break;
-            case Type::INT   : str << arg.getInt(); break;
-            case Type::FLOAT : str << arg.getFloat(); break;
-            default:
-              throw "Invalid type x for to( type, x )";
-          }
-
-          return Value( new String( str.str() ) );
-        }
-
-
-      default:
-        throw "Invalid type for to( type, x )";
-    }
+    return ( x << n );
   }
 
+  template< class IntType1, class IntType2 >
+  static inline
+  IntType1 shift_right( IntType1 x, IntType2 n )
+  {
+    return ( x >> n );
+  }
+
+  template< class Type >
+  static inline
+  bool lt( Type left, Type right )
+  {
+    return ( left < right );
+  }
+
+  template< class Type >
+  static inline
+  bool gt( Type left, Type right )
+  {
+    return ( left > right );
+  }
+
+  template< class Type >
+  static inline
+  bool ge( Type left, Type right )
+  {
+    return ( left >= right );
+  }
+
+  template< class Type >
+  static inline
+  bool le( Type left, Type right )
+  {
+    return ( left <= right );
+  }
+
+  template< class Type >
+  static inline
+  bool eq( Type left, Type right )
+  {
+    return ( left == right );
+  }
+
+  template< class Type >
+  static inline
+  bool ne( Type left, Type right )
+  {
+    return ( left != right );
+  }
+
+  static inline
+  bool log_and( bool left, bool right )
+  {
+    return ( left && right );
+  }
+
+  static inline
+  bool log_or ( bool left, bool right )
+  {
+    return ( left || right );
+  }
+
+  static inline
+  bool log_xor ( bool left, bool right )
+  {
+    return ( left ^ right );
+  }
+
+  template< class IntType >
+  static inline
+  IntType bit_and( IntType left, IntType right )
+  {
+    return ( left & right );
+  }
+
+  template< class IntType >
+  static inline
+  IntType bit_or ( IntType left, IntType right )
+  {
+    return ( left | right );
+  }
+
+  template< class IntType >
+  static inline
+  IntType bit_xor( IntType left, IntType right )
+  {
+    return ( left | right );
+  }
+
+  template< class Type >
+  static inline
+  Type mul( Type left, Type right )
+  {
+    return ( left * right );
+  }
+
+  template< class Type >
+  static inline
+  Type div( Type left, Type right )
+  {
+    return ( left * right );
+  }
+
+  template< class Type >
+  static inline
+  Type add( Type left, Type right )
+  {
+    return ( left + right );
+  }
+
+  template< class Type >
+  static inline
+  Type sub( Type left, Type right )
+  {
+    return ( left - right );
+  }
+
+  template< class IntType >
+  static inline
+  IntType mod( IntType left, IntType right )
+  {
+    return ( left % right );
+  }
+
+  template< class FloatType >
+  static inline
+  FloatType modf( FloatType left, FloatType right )
+  {
+    return left - int( left / right ) * right;
+  }
 
 } // namespace BinaryOp_impl
 
 bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args, index_t )
 {
+  using namespace BinaryOp_impl;
+
   if( n_args != 3 ) throw "BinaryOp requires 3 arguments.";
 
   if( !args[ 1 ].isInt() ) throw "'op' argument must be int";
@@ -90,10 +169,25 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
 
   switch( op )
   {
-    case UOP_MINUS  : ret = minus  ( x ); break;
-    case UOP_PLUS   : ret = plus   ( x ); break;
-    case UOP_LOG_NOT: ret = log_not( x ); break;
-    case UOP_BIT_NOT: ret = bit_not( x ); break;
+    case BOP_LEFT   : ret = ( left << right ); break;
+    case BOP_RIGHT  : ret = ( left >> right ); break;
+    case BOP_LT     : ret = ( left <  right ); break;
+    case BOP_LE     : ret = ( left <= right ); break;
+    case BOP_GT     : ret = ( left >  right ); break;
+    case BOP_GE     : ret = ( left >= right ); break;
+    case BOP_EQ     : ret = ( left == right ); break;
+    case BOP_NE     : ret = ( left != right ); break;
+    case BOP_LOG_AND: ret = ( left && right ); break;
+    case BOP_LOG_OR : ret = ( left || right ); break;
+    case BOP_LOG_XOR: ret = ( left.log_xor( right ) ); break;
+    case BOP_BIT_AND: ret = ( left & right ); break;
+    case BOP_BIT_OR : ret = ( left | right ); break;
+    case BOP_BIT_XOR: ret = ( left ^ right ); break;
+    case BOP_MUL    : ret = ( left * right ); break;
+    case BOP_DIV    : ret = ( left / right ); break;
+    case BOP_ADD    : ret = ( left + right ); break;
+    case BOP_SUB    : ret = ( left - right ); break;
+    case BOP_MOD    : ret = ( left % right ); break;
     default:
       throw "Invalid op";
   }
@@ -101,7 +195,7 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
   return true;
 }
 
-CountPtr< Args > BinaryOp::genDeclArgs( void )
+CountPtr< Function::Args > BinaryOp::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( 3 );
   args->at( 0 ) = Arg( new String( "left" ) );

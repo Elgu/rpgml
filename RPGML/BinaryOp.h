@@ -19,4 +19,5 @@ private:
 
 } // namespace RPGML
 
+#endif
 

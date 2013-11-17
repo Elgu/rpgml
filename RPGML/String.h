@@ -41,6 +41,11 @@ public:
     return m_str;
   }
 
+  const char *c_str( void ) const
+  {
+    return m_str.c_str();
+  }
+
   String &moveFrom( std::string &str )
   {
     std::swap( m_str, str );

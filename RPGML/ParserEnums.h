@@ -21,9 +21,9 @@ enum BOP
   , BOP_BIT_XOR
   , BOP_MUL
   , BOP_DIV
-  , BOP_MOD
   , BOP_ADD
   , BOP_SUB
+  , BOP_MOD
 };
 
 static inline
@@ -38,7 +38,8 @@ const char *getBOP( BOP bop )
     , "==" , "!="
     , "&&", "||", "^^"
     , "&", "|", "^"
-    , "*", "/", "%", "+", "-"
+    , "*", "/", "+", "-"
+    , "%"
   };
   return op[ bop ];
 }
