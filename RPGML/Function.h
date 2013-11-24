@@ -4,6 +4,7 @@
 #include "GarbageCollector.h"
 #include "Refcounted.h"
 #include "Value.h"
+#include "String.h"
 
 namespace RPGML {
 
@@ -32,16 +33,19 @@ public:
   class Arg
   {
   public:
-    Arg( const String *_identifier=0 )
+    Arg( void )
+    {}
+
+    Arg( const String &_identifier )
     : identifier( _identifier )
     {}
 
-    Arg( const String *_identifier, const Value &_value )
+    Arg( const String &_identifier, const Value &_value )
     : identifier( _identifier )
     , value( _value )
     {}
 
-    CountPtr< const String > identifier;
+    String identifier;
     Value value;
   };
 

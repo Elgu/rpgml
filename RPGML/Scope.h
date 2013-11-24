@@ -11,6 +11,7 @@ class Context;
 class Map;
 class Value;
 class String;
+class StringData;
 
 class Scope : public Refcounted
 {
@@ -25,25 +26,25 @@ public:
   Context *getContext( void ) const { return m_context; }
   GarbageCollector *getGC( void ) const;
 
-  Value *lookup( const String *identifier ) const;
+  Value *lookup( const String &identifier ) const;
   Value *lookup( const char *identifier ) const;
   Value *lookup( const std::string &identifier ) const;
 
-  Value *create( const String *identifier     , const Value &value ) const;
+  Value *create( const String &identifier     , const Value &value ) const;
   Value *create( const char *identifier       , const Value &value ) const;
   Value *create( const std::string &identifier, const Value &value ) const;
 
   class EnterLeaveGuard;
 
-  CountPtr< EnterLeaveGuard > enter( const String *identifier );
+  CountPtr< EnterLeaveGuard > enter( const String &identifier );
   CountPtr< EnterLeaveGuard > enter( const char *identifier );
   CountPtr< EnterLeaveGuard > enter( const std::string &identifier );
 
-  Value *create_unified( const String *unified_identifier, const Value &value ) const;
+  Value *create_unified( const String &unified_identifier, const Value &value ) const;
 
-  const String *unify( const String *identifier ) const;
-  const String *unify( const char *identifier ) const;
-  const String *unify( const std::string &identifier ) const;
+  const StringData *unify( const String &identifier ) const;
+  const StringData *unify( const char *identifier ) const;
+  const StringData *unify( const std::string &identifier ) const;
 
   class EnterLeaveGuard : public Refcounted
   {

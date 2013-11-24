@@ -55,7 +55,7 @@ public:
   Scanner &setSource( Source *source );
   Scanner &setFilename( const char *filename );
   Scanner &setFilename( const std::string &filename );
-  Scanner &setFilename( const String *filename );
+  Scanner &setFilename( const String &filename );
 
   int yylex( semantic_type *yylval, location_type *yylloc );
 
@@ -65,15 +65,16 @@ private:
   CountPtr< Source > m_source;
   CountPtr< StringUnifier > m_unifier;
 
+  std::string m_filename;
 public:
-  CountPtr< const String > unified_filename;
+  String unified_filename;
   std::string *filename;
 
-  const String *unify_move( String *str )       { return m_unifier->unify_move( str ); }
-  const String *unify_move( std::string &str )  { return m_unifier->unify_move( str ); }
-  const String *unify( const String *str )      { return m_unifier->unify( str ); }
-  const String *unify( const char *str )        { return m_unifier->unify( str ); }
-  const String *unify( const std::string &str ) { return m_unifier->unify( str ); }
+  const StringData *unify_move( String &str )       { return m_unifier->unify_move( str ); }
+  const StringData *unify_move( std::string &str )  { return m_unifier->unify_move( str ); }
+  const StringData *unify( const String &str )      { return m_unifier->unify( str ); }
+  const StringData *unify( const char *str )        { return m_unifier->unify( str ); }
+  const StringData *unify( const std::string &str ) { return m_unifier->unify( str ); }
 };
 
 } // namespace RPGML

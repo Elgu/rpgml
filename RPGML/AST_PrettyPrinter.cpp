@@ -10,7 +10,7 @@ bool PrettyPrinter::visit( const ConstantExpression           *node )
     case Type::BOOL  : (*o) << ( node->value.getBool() ? "true" : "false" ); break;
     case Type::INT   : (*o) << node->value.getInt(); break;
     case Type::FLOAT : (*o) << node->value.getFloat(); break;
-    case Type::STRING: (*o) << "\"" << node->value.getString()->get() << "\""; break;
+    case Type::STRING: (*o) << "\"" << node->value.getString() << "\""; break;
     default          : (*o) << "(unexpected '" << node->value.getTypeName() << "' constant)"; break;
 
   }
@@ -83,7 +83,7 @@ bool PrettyPrinter::visit( const FromToStepSequenceExpression *node )
 
 bool PrettyPrinter::visit( const LookupVariableExpression     *node )
 {
-  (*o) << node->identifier->get();
+  (*o) << node->identifier;
   return true;
 }
 
@@ -101,7 +101,7 @@ bool PrettyPrinter::visit( const FunctionCallExpression       *node )
       const FunctionCallExpression::Arg *const arg = node->args->at( i );
       if( arg->identifier )
       {
-        (*o) << arg->identifier->get();
+        (*o) << arg->identifier;
         (*o) << "=";
       }
       arg->value->invite( this );
@@ -120,7 +120,7 @@ bool PrettyPrinter::visit( const DotExpression             *node )
 {
   node->left->invite( this );
   (*o) << ".";
-  (*o) << node->member->get();
+  (*o) << node->member;
   return true;
 }
 
@@ -193,7 +193,7 @@ bool PrettyPrinter::visit( const CompoundStatement            *node )
 bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << "Function " << node->identifier->get();
+  (*o) << "Function " << node->identifier;
   if( node->args->empty() )
   {
     (*o) << "()" << std::endl;
@@ -206,7 +206,7 @@ bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
     {
       if( i > 0 ) (*o) << ", ";
       const FunctionDefinitionStatement::ArgDecl *arg = node->args->at( i );
-      (*o) << arg->identifier->get();
+      (*o) << arg->identifier;
       if( arg->default_value )
       {
         (*o) << "=";
@@ -225,7 +225,7 @@ bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
 bool PrettyPrinter::visit( const AssignIdentifierStatement    *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << node->identifier->get();
+  (*o) << node->identifier;
   (*o) << " " << getAssign( node->op ) << " ";
   ++depth;
   node->value->invite( this );
@@ -239,7 +239,7 @@ bool PrettyPrinter::visit( const AssignDotStatement           *node )
   // indent() must have been called, if neccessary
   node->left->invite( this );
   (*o) << ".";
-  (*o) << node->identifier->get();
+  (*o) << node->identifier;
   (*o) << " " << getAssign( node->op ) << " ";
   ++depth;
   node->value->invite( this );
@@ -296,7 +296,7 @@ bool PrettyPrinter::visit( const NOPStatement                 * )
 bool PrettyPrinter::visit( const ForSequenceStatement         *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << "for " << node->identifier->get() << " = ";
+  (*o) << "for " << node->identifier << " = ";
   node->sequence->invite( this );
   (*o) << std::endl;
   ++depth;
@@ -309,7 +309,7 @@ bool PrettyPrinter::visit( const ForSequenceStatement         *node )
 bool PrettyPrinter::visit( const ForContainerStatement        *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << "for " << node->identifier->get() << " in ";
+  (*o) << "for " << node->identifier << " in ";
   node->container->invite( this );
   (*o) << std::endl;
   ++depth;
@@ -330,7 +330,7 @@ bool PrettyPrinter::visit( const FunctionCallStatement        *node )
 bool PrettyPrinter::visit( const VariableCreationStatement    *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << node->type.getTypeName() << " " << node->identifier->get() << " = ";
+  (*o) << node->type.getTypeName() << " " << node->identifier << " = ";
   node->value->invite( this );
   (*o) << ";";
   return true;

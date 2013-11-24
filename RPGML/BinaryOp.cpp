@@ -169,25 +169,25 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
 
   switch( op )
   {
-    case BOP_LEFT   : ret = ( left << right ); break;
-    case BOP_RIGHT  : ret = ( left >> right ); break;
-    case BOP_LT     : ret = ( left <  right ); break;
-    case BOP_LE     : ret = ( left <= right ); break;
-    case BOP_GT     : ret = ( left >  right ); break;
-    case BOP_GE     : ret = ( left >= right ); break;
-    case BOP_EQ     : ret = ( left == right ); break;
-    case BOP_NE     : ret = ( left != right ); break;
-    case BOP_LOG_AND: ret = ( left && right ); break;
-    case BOP_LOG_OR : ret = ( left || right ); break;
-    case BOP_LOG_XOR: ret = ( left.log_xor( right ) ); break;
-    case BOP_BIT_AND: ret = ( left & right ); break;
-    case BOP_BIT_OR : ret = ( left | right ); break;
-    case BOP_BIT_XOR: ret = ( left ^ right ); break;
-    case BOP_MUL    : ret = ( left * right ); break;
-    case BOP_DIV    : ret = ( left / right ); break;
-    case BOP_ADD    : ret = ( left + right ); break;
-    case BOP_SUB    : ret = ( left - right ); break;
-    case BOP_MOD    : ret = ( left % right ); break;
+    case BOP_LEFT   : ret = Value( left << right ); break;
+    case BOP_RIGHT  : ret = Value( left >> right ); break;
+    case BOP_LT     : ret = Value( left <  right ); break;
+    case BOP_LE     : ret = Value( left <= right ); break;
+    case BOP_GT     : ret = Value( left >  right ); break;
+    case BOP_GE     : ret = Value( left >= right ); break;
+    case BOP_EQ     : ret = Value( left == right ); break;
+    case BOP_NE     : ret = Value( left != right ); break;
+    case BOP_LOG_AND: ret = Value( left && right ); break;
+    case BOP_LOG_OR : ret = Value( left || right ); break;
+    case BOP_LOG_XOR: ret = Value( left.log_xor( right ) ); break;
+    case BOP_BIT_AND: ret = Value( left & right ); break;
+    case BOP_BIT_OR : ret = Value( left | right ); break;
+    case BOP_BIT_XOR: ret = Value( left ^ right ); break;
+    case BOP_MUL    : ret = Value( left * right ); break;
+    case BOP_DIV    : ret = Value( left / right ); break;
+    case BOP_ADD    : ret = Value( left + right ); break;
+    case BOP_SUB    : ret = Value( left - right ); break;
+    case BOP_MOD    : ret = Value( left % right ); break;
     default:
       throw "Invalid op";
   }
@@ -198,9 +198,9 @@ bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args
 CountPtr< Function::Args > BinaryOp::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( NUM_ARGS );
-  args->at( ARG_LEFT  ) = Arg( new String( "left"  ) );
-  args->at( ARG_OP    ) = Arg( new String( "op"    ) );
-  args->at( ARG_RIGHT ) = Arg( new String( "right" ) );
+  args->at( ARG_LEFT  ) = Arg( String::Static( "left"  ) );
+  args->at( ARG_OP    ) = Arg( String::Static( "op"    ) );
+  args->at( ARG_RIGHT ) = Arg( String::Static( "right" ) );
   return args;
 }
 

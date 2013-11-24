@@ -46,7 +46,10 @@ Value::Value( const Value &other )
 Value::Value( bool      _b    ) : m_type( Type::BOOL     ) { b    = _b   ; }
 Value::Value( int       _i    ) : m_type( Type::INT      ) { i    = _i   ; }
 Value::Value( float     _f    ) : m_type( Type::FLOAT    ) { f    = _f   ; }
-Value::Value( String   const *_str  ) : m_type( Type::STRING   ) { str  = _str ; str ->ref(); }
+Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { str  = String(_str).getData(); str->ref(); }
+Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { str  = String(_str).getData(); str->ref(); }
+Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { str  = _str.getData(); str->ref(); }
+Value::Value( StringData  const *_str  ) : m_type( Type::STRING   ) { str  = _str; str->ref(); }
 Value::Value( Array          *_arr  ) : m_type( Type::ARRAY    ) { arr  = _arr ; arr ->ref(); }
 Value::Value( Map            *_map  ) : m_type( Type::MAP      ) { map  = _map ; map ->ref(); }
 Value::Value( Function       *_func ) : m_type( Type::FUNCTION ) { func = _func; func->ref(); }
@@ -56,18 +59,21 @@ Value::Value( Input          *_in   ) : m_type( Type::INPUT    ) { in   = _in  ;
 Value::Value( Param          *_para ) : m_type( Type::PARAM    ) { para = _para; para->ref(); }
 Value::Value( Sequence const *_seq  ) : m_type( Type::SEQUENCE ) { seq  = _seq ; seq ->ref(); }
 
-Value &Value::set( bool            _b    ) { return (*this) = _b   ; }
-Value &Value::set( int             _i    ) { return (*this) = _i   ; }
-Value &Value::set( float           _f    ) { return (*this) = _f   ; }
-Value &Value::set( String   const *_str  ) { return (*this) = _str ; }
-Value &Value::set( Array          *_arr  ) { return (*this) = _arr ; }
-Value &Value::set( Map            *_map  ) { return (*this) = _map ; }
-Value &Value::set( Function       *_func ) { return (*this) = _func; }
-Value &Value::set( Node           *_node ) { return (*this) = _node; }
-Value &Value::set( Output         *_out  ) { return (*this) = _out ; }
-Value &Value::set( Input          *_in   ) { return (*this) = _in  ; }
-Value &Value::set( Param          *_para ) { return (*this) = _para; }
-Value &Value::set( Sequence const *_seq  ) { return (*this) = _seq ; }
+Value &Value::set( bool               _b    ) { return (*this) = Value( _b    ); }
+Value &Value::set( int                _i    ) { return (*this) = Value( _i    ); }
+Value &Value::set( float              _f    ) { return (*this) = Value( _f    ); }
+Value &Value::set( std::string const &_str  ) { return (*this) = Value( _str  ); }
+Value &Value::set( char        const *_str  ) { return (*this) = Value( _str  ); }
+Value &Value::set( String      const &_str  ) { return (*this) = Value( _str  ); }
+Value &Value::set( StringData  const *_str  ) { return (*this) = Value( _str  ); }
+Value &Value::set( Array             *_arr  ) { return (*this) = Value( _arr  ); }
+Value &Value::set( Map               *_map  ) { return (*this) = Value( _map  ); }
+Value &Value::set( Function          *_func ) { return (*this) = Value( _func ); }
+Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
+Value &Value::set( Output            *_out  ) { return (*this) = Value( _out  ); }
+Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   ); }
+Value &Value::set( Param             *_para ) { return (*this) = Value( _para ); }
+Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 
 Value &Value::operator=( Value other )
 {
@@ -167,7 +173,7 @@ Value Value::to( Type type ) const
       {
         case Type::BOOL  : return Value( int( getBool()  ) );
         case Type::FLOAT : return Value( int( getFloat() ) );
-        case Type::STRING: return Value( atoi( getString()->c_str() ) );
+        case Type::STRING: return Value( atoi( getString().c_str() ) );
         default:
           throw "Invalid type x for to( type, x )";
       }
@@ -177,7 +183,7 @@ Value Value::to( Type type ) const
       {
         case Type::BOOL  : return Value( float( getBool() ) );
         case Type::INT   : return Value( float( getInt()  ) );
-        case Type::STRING: return Value( float( atof( getString()->c_str() ) ) );
+        case Type::STRING: return Value( float( atof( getString().c_str() ) ) );
         default:
           throw "Invalid type x for to( type, x )";
       }
@@ -195,7 +201,7 @@ Value Value::to( Type type ) const
             throw "Invalid type x for to( type, x )";
         }
 
-        return Value( new String( s.str() ) );
+        return Value( String( s.str() ) );
       }
 
 
@@ -225,7 +231,7 @@ bool Value::operator< ( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() < right.getString()->get() );
+    return ( left.getString() < right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -258,7 +264,7 @@ bool Value::operator<=( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() <= right.getString()->get() );
+    return ( left.getString() <= right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -291,7 +297,7 @@ bool Value::operator> ( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() > right.getString()->get() );
+    return ( left.getString() > right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -324,7 +330,7 @@ bool Value::operator>=( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() >= right.getString()->get() );
+    return ( left.getString() >= right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -357,7 +363,7 @@ bool Value::operator==( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() == right.getString()->get() );
+    return ( left.getString() == right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -390,7 +396,7 @@ bool Value::operator!=( const Value &right ) const
   }
   else if( left.isString() && right.isString() )
   {
-    return ( left.getString()->get() != right.getString()->get() );
+    return ( left.getString() != right.getString() );
   }
   else if( left.getType() == right.getType() )
   {
@@ -619,19 +625,19 @@ Value Value::operator+ ( const Value &right ) const
   {
     const Value &l = left;
     const Value &r = right;
-    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+    return Value( l.getString() + r.getString() );
   }
   else if( left.isString() && right.isScalar() )
   {
     const Value &l = left;
     const Value  r = right.to( Type::String() );
-    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+    return Value( l.getString() + r.getString() );
   }
   else if( left.isScalar() && right.isString() )
   {
     const Value  l = left.to( Type::String() );
     const Value &r = right;
-    return Value( new String( l.getString()->get() + r.getString()->get() ) );
+    return Value( l.getString() + r.getString() );
   }
   else
   {

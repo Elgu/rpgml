@@ -19,13 +19,13 @@ Map *Map::getParent( void ) const
   return m_parent;
 }
 
-Map &Map::setIdentifier( const String *identifier )
+Map &Map::setIdentifier( const String &identifier )
 {
   m_identifier = identifier;
   return (*this);
 }
 
-const String *Map::getIdentifier( void ) const
+const String &Map::getIdentifier( void ) const
 {
   return m_identifier;
 }
@@ -163,7 +163,7 @@ void Map::gc_clear( void )
 {
   m_values.clear();
   m_map.clear();
-  m_identifier.reset();
+  m_identifier.clear();
   m_parent.reset();
 }
 
@@ -199,7 +199,7 @@ bool Map::map_less_than::operator()( const Value &x, const Value &y ) const
 
   if( x.isString() )
   {
-    return 0 > x.getString()->get().compare( y.getString()->get() );
+    return x.getString() < y.getString();
   }
   else
   {

@@ -4,7 +4,7 @@
 
 namespace RPGML {
 
-Port::Port( GarbageCollector *_gc, Node *parent, const String *identifier )
+Port::Port( GarbageCollector *_gc, Node *parent, const String &identifier )
 : Collectable( _gc )
 , m_parent( parent )
 , m_identifier( identifier )
@@ -21,7 +21,7 @@ Node *Port::getParent( void ) const
 void Port::gc_clear( void )
 {
   m_parent.reset();
-  m_identifier.reset();
+  m_identifier.clear();
 }
 
 void Port::getChildren( Children &children ) const
@@ -29,7 +29,7 @@ void Port::getChildren( Children &children ) const
   children.push_back( m_parent );
 }
 
-Input::Input( GarbageCollector *_gc, Node *parent, const String *identifier )
+Input::Input( GarbageCollector *_gc, Node *parent, const String &identifier )
 : Port( _gc, parent, identifier )
 {}
 
@@ -79,7 +79,7 @@ bool Input::isConnected( void ) const
   return m_output.get() != 0;
 }
 
-Output::Output( GarbageCollector *_gc, Node *parent, const String *identifier )
+Output::Output( GarbageCollector *_gc, Node *parent, const String &identifier )
 : Port( _gc, parent, identifier )
 {}
 
@@ -172,7 +172,7 @@ bool Output::isConnected( void ) const
   return false;
 }
 
-Param::Param( GarbageCollector *_gc, Node *parent, const String *identifier, Type type )
+Param::Param( GarbageCollector *_gc, Node *parent, const String &identifier, Type type )
 : Collectable( _gc )
 , m_parent( parent )
 , m_identifier( identifier )

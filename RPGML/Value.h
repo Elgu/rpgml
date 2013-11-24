@@ -2,12 +2,14 @@
 #define RPGML_Value_h
 
 #include "Type.h"
+#include "String.h"
 
 #include <cassert>
 
 namespace RPGML {
 
 class String  ;
+class StringData;
 class Array   ;
 class Map     ;
 class Function;
@@ -52,23 +54,29 @@ public:
   void clear( void );
   void swap( Value &other );
 
-  Value ( bool  _b );
-  Value ( int   _i );
-  Value ( float _f );
-  Value ( String   const *_str  );
-  Value ( Array          *_arr  );
-  Value ( Map            *_map  );
-  Value ( Function       *_func );
-  Value ( Node           *_node );
-  Value ( Output         *_out  );
-  Value ( Input          *_in   );
-  Value ( Param          *_para );
-  Value ( Sequence const *_seq  );
+  explicit Value ( bool  _b );
+  explicit Value ( int   _i );
+  explicit Value ( float _f );
+  explicit Value ( char const *_str  );
+  explicit Value ( std::string const &_str  );
+  explicit Value ( String   const &_str  );
+  explicit Value ( StringData const *_str );
+  explicit Value ( Array          *_arr  );
+  explicit Value ( Map            *_map  );
+  explicit Value ( Function       *_func );
+  explicit Value ( Node           *_node );
+  explicit Value ( Output         *_out  );
+  explicit Value ( Input          *_in   );
+  explicit Value ( Param          *_para );
+  explicit Value ( Sequence const *_seq  );
 
   Value &set( bool  _b );
   Value &set( int   _i );
   Value &set( float _f );
-  Value &set( String   const *_str  );
+  Value &set( std::string const &_str  );
+  Value &set( char        const *_str  );
+  Value &set( String      const &_str  );
+  Value &set( StringData  const *_str );
   Value &set( Array          *_arr  );
   Value &set( Map            *_map  );
   Value &set( Function       *_func );
@@ -104,7 +112,7 @@ public:
   bool      getBool    ( void ) const { assert( isBool    () ); return b   ; }
   int       getInt     ( void ) const { assert( isInt     () ); return i   ; }
   float     getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
-  String   const *getString  ( void ) const { assert( isString  () ); return str ; }
+  String          getString  ( void ) const { assert( isString  () ); return String( str ); }
   Array          *getArray   ( void ) const { assert( isArray   () ); return arr ; }
   Map            *getMap     ( void ) const { assert( isMap     () ); return map ; }
   Function       *getFunction( void ) const { assert( isFunction() ); return func; }
@@ -128,7 +136,7 @@ private:
     bool      b   ;
     int       i   ;
     float     f   ;
-    String   const *str ;
+    StringData const *str ;
     Array          *arr ;
     Map            *map ;
     Function       *func;

@@ -2,6 +2,7 @@
 #define RPGML_Map_h
 
 #include "Value.h"
+#include "String.h"
 #include "GarbageCollector.h"
 #include "types.h"
 
@@ -21,8 +22,8 @@ public:
 
   Map *getParent( void ) const;
 
-  Map &setIdentifier( const String *identifier );
-  const String *getIdentifier( void ) const;
+  Map &setIdentifier( const String &identifier );
+  const String &getIdentifier( void ) const;
 
   Map &setThisMap( bool is_this_map=true );
   bool isThisMap( void ) const;
@@ -90,7 +91,7 @@ private:
   values_t m_values;
   map_t m_map;
   CountPtr< Map > m_parent; // might create a closure, points to where the lookup continues
-  CountPtr< const String > m_identifier; // might be null for anonymous Maps
+  String m_identifier; // might be null for anonymous Maps
   index_t m_depth; // determined at setParent(), checked there
   bool m_is_this_map; // whether lookup for "this" returns this Map
 };

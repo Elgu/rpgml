@@ -7,6 +7,8 @@
 #include "StringUnifier.h"
 #include "Refcounted.h"
 
+#include <iostream>
+
 namespace RPGML {
 
 Scope::Scope( Context *context )
@@ -22,7 +24,7 @@ GarbageCollector *Scope::getGC( void ) const
   return m_context->getGC();
 }
 
-Value *Scope::lookup( const String *identifier ) const
+Value *Scope::lookup( const String &identifier ) const
 {
   const Value id( identifier );
   for( Map *curr = getCurr(); curr; curr = curr->getParent() )
@@ -36,22 +38,20 @@ Value *Scope::lookup( const String *identifier ) const
 
 Value *Scope::lookup( const char *identifier ) const
 {
-  String id( identifier );
-  return lookup( &id );
+  return lookup( String::Static( identifier ) );
 }
 
 Value *Scope::lookup( const std::string &identifier ) const
 {
-  String id( identifier );
-  return lookup( &id );
+  return lookup( identifier.c_str() );
 }
 
-Value *Scope::create_unified( const String *identifier     , const Value &value ) const
+Value *Scope::create_unified( const String &unified_identifier, const Value &value ) const
 {
   Map *const curr = getCurr();
 
   bool exists = false;
-  const index_t index = curr->getCreateIndex( unify( identifier ), &exists );
+  const index_t index = curr->getCreateIndex( Value( unified_identifier ), &exists );
 
   if( !exists )
   {
@@ -67,7 +67,7 @@ Value *Scope::create_unified( const String *identifier     , const Value &value 
   return 0;
 }
 
-Value *Scope::create( const String *identifier     , const Value &value ) const
+Value *Scope::create( const String &identifier, const Value &value ) const
 {
   return create_unified( unify( identifier ), value );
 }
@@ -82,9 +82,9 @@ Value *Scope::create( const std::string &identifier, const Value &value ) const
   return create_unified( unify( identifier ), value );
 }
 
-CountPtr< Scope::EnterLeaveGuard > Scope::enter( const String *identifier )
+CountPtr< Scope::EnterLeaveGuard > Scope::enter( const String &identifier )
 {
-  Value *const n = getCurr()->get( identifier );
+  Value *const n = getCurr()->get( Value( identifier ) );
   if( n && n->isMap() )
   {
     return new EnterLeaveGuard( this, n->getMap() );
@@ -97,27 +97,25 @@ CountPtr< Scope::EnterLeaveGuard > Scope::enter( const String *identifier )
 
 CountPtr< Scope::EnterLeaveGuard > Scope::enter( const char *identifier )
 {
-  String id( identifier );
-  return enter( &id );
+  return enter( String::Static( identifier ) );
 }
 
 CountPtr< Scope::EnterLeaveGuard > Scope::enter( const std::string &identifier )
 {
-  String id( identifier );
-  return enter( &id );
+  return enter( identifier.c_str() );
 }
 
-const String *Scope::unify( const String *identifier ) const
+const StringData *Scope::unify( const String &identifier ) const
 {
   return m_context->getUnifier()->unify( identifier );
 }
 
-const String *Scope::unify( const char *identifier ) const
+const StringData *Scope::unify( const char *identifier ) const
 {
   return m_context->getUnifier()->unify( identifier );
 }
 
-const String *Scope::unify( const std::string &identifier ) const
+const StringData *Scope::unify( const std::string &identifier ) const
 {
   return m_context->getUnifier()->unify( identifier );
 }

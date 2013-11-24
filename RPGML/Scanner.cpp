@@ -70,21 +70,24 @@ Scanner &Scanner::setSource( Source *source )
 Scanner &Scanner::setFilename( const char *_filename )
 {
   unified_filename = unify( _filename );
-  filename = const_cast< std::string* >( &unified_filename->get() );
+  m_filename = _filename;
+  filename = &m_filename;
   return (*this);
 }
 
 Scanner &Scanner::setFilename( const std::string &_filename )
 {
   unified_filename = unify( _filename );
-  filename = const_cast< std::string* >( &unified_filename->get() );
+  m_filename = _filename;
+  filename = &m_filename;
   return (*this);
 }
 
-Scanner &Scanner::setFilename( const String *_filename )
+Scanner &Scanner::setFilename( const String &_filename )
 {
   unified_filename = unify( _filename );
-  filename = const_cast< std::string* >( &unified_filename->get() );
+  m_filename = _filename;
+  filename = &m_filename;
   return (*this);
 }
 

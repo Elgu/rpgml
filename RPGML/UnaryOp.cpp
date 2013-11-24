@@ -95,8 +95,8 @@ bool UnaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args,
 CountPtr< Function::Args > UnaryOp::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( 2 );
-  args->at( 0 ) = Arg( new String( "op" ) );
-  args->at( 1 ) = Arg( new String( "x" ) );
+  args->at( 0 ) = Arg( String::Static( "op" ) );
+  args->at( 1 ) = Arg( String::Static( "x" ) );
   return args;
 }
 

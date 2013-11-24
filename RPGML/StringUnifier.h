@@ -6,6 +6,7 @@
 
 #include <map>
 #include <cstring>
+#include <memory>
 
 namespace RPGML {
 
@@ -16,40 +17,40 @@ public:
   virtual ~StringUnifier( void ) {}
 
   template< class S >
-  const String *unify( const S &s )
+  const StringData *unify( const S &s )
   {
     const char *const c_in = getCharPtr( s );
     const String *const ret1 = get( c_in );
-    if( ret1 ) return ret1;
+    if( ret1 ) return ret1->getData();
 
-    CountPtr< String > ret2 = new String( c_in );
-    const char *const c_out = getCharPtr( ret2.get() );
+    String ret2( s );
+    const char *const c_out = ret2.c_str();
     m_map.insert( std::make_pair( c_out, ret2 ) );
-    return ret2.get();
+    return ret2.getData();
   }
 
-  const String *unify_move( String *s )
+  const StringData *unify_move( String &s )
   {
     const char *const c_in = getCharPtr( s );
-    const String *const ret1 = get( c_in );
-    if( ret1 ) return ret1;
+    const String *ret1 = get( c_in );
+    if( ret1 ) return ret1->getData();
 
-    const char *const c_out = getCharPtr( s );
+    const char *const c_out = s.c_str();
     m_map.insert( std::make_pair( c_out, s ) );
-    return s;
+    return s.getData();
   }
 
-  const String *unify_move( std::string &s )
+  const StringData *unify_move( std::string &s )
   {
     const char *const c_in = getCharPtr( s );
     const String *const ret1 = get( c_in );
-    if( ret1 ) return ret1;
+    if( ret1 ) return ret1->getData();
 
-    CountPtr< String > ret2 = new String();
-    ret2->moveFrom( s );
-    const char *const c_out = getCharPtr( ret2.get() );
+    String ret2;
+    ret2.moveFrom( s );
+    const char *const c_out = ret2.c_str();
     m_map.insert( std::make_pair( c_out, ret2 ) );
-    return ret2.get();
+    return ret2.getData();
   }
 
   void clear( void )
@@ -59,34 +60,35 @@ public:
 
   void cleanup( void )
   {
-    typedef std::vector< CountPtr< String > > to_be_removed_t;
+    typedef std::vector< const char* > to_be_removed_t;
     to_be_removed_t to_be_removed;
     to_be_removed.reserve( 16 );
 
     for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
     {
-      if( 1 == i->second->count() )
+      if( 1 == i->second.count() )
       {
-        to_be_removed.push_back( i->second );
+        to_be_removed.push_back( i->second.c_str() );
       }
     }
 
     for( to_be_removed_t::const_iterator i( to_be_removed.begin() ), end( to_be_removed.end() ); i != end; ++i )
     {
-      remove( i->get() );
+      remove( (*i) );
     }
   }
 
-  void remove( const String *s )
+  template< class S >
+  void remove( const S &s )
   {
     m_map.erase( getCharPtr( s ) );
   }
 
 private:
   static
-  const char *getCharPtr( const String *s )
+  const char *getCharPtr( const String &s )
   {
-    return s->get().c_str();
+    return s.c_str();
   }
 
   static
@@ -108,7 +110,7 @@ private:
     map_t::const_iterator found = m_map.find( c_in );
     if( found != m_map.end() )
     {
-      return found->second.get();
+      return &found->second;
     }
     else
     {
@@ -124,7 +126,7 @@ private:
     }
   };
 
-  typedef std::map< const char*, CountPtr< String >, compare > map_t;
+  typedef std::map< const char*, String, compare > map_t;
   map_t m_map;
 };
 

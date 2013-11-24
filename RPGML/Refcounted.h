@@ -135,5 +135,15 @@ private:
 
 } // namespace RPGML
 
+namespace std {
+
+  template< class RefcountedType >
+  void swap( RPGML::CountPtr< RefcountedType > &x1, RPGML::CountPtr< RefcountedType > &x2 )
+  {
+    x1.swap( x2 );
+  }
+
+} // namespace std
+
 #endif
 

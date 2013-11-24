@@ -17,24 +17,24 @@ class Node;
 class Port : public Collectable
 {
 public:
-  Port( GarbageCollector *gc, Node *parent, const String *identifier );
+  Port( GarbageCollector *gc, Node *parent, const String &identifier );
   virtual ~Port( void );
 
   Node *getParent( void ) const;
-  const String *getIdentifier( void ) const;
+  const String &getIdentifier( void ) const;
 
   virtual void gc_clear( void );
   virtual void getChildren( Children &children ) const;
 
 private:
   CountPtr< Node > m_parent;
-  CountPtr< const String > m_identifier;
+  String m_identifier;
 };
 
 class Input : public Port
 {
 public:
-  Input( GarbageCollector *gc, Node *parent, const String *identifier );
+  Input( GarbageCollector *gc, Node *parent, const String &identifier );
   virtual ~Input( void );
 
   virtual void gc_clear( void );
@@ -52,7 +52,7 @@ private:
 class Output : public Port
 {
 public:
-  Output( GarbageCollector *gc, Node *parent, const String *identifier );
+  Output( GarbageCollector *gc, Node *parent, const String &identifier );
   virtual ~Output( void );
 
   void disconnect( void );
@@ -73,7 +73,7 @@ private:
 class Param : public Collectable
 {
 public:
-  Param( GarbageCollector *gc, Node *parent, const String *identifier, Type type = Type::Invalid() );
+  Param( GarbageCollector *gc, Node *parent, const String &identifier, Type type = Type::Invalid() );
   virtual ~Param( void );
 
   Node *getParent( void ) const;
@@ -86,7 +86,7 @@ public:
 
 private:
   CountPtr< Node > m_parent;
-  CountPtr< const String > m_identifier;
+  String m_identifier;
   Value m_value;
   Type m_type;
 };

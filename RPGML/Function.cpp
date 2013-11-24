@@ -51,10 +51,10 @@ void Function::fill_args( Map &args, const Args &call_args )
   // positional arguments, no identifier
   for( ; pos < call_args.size(); ++pos )
   {
-    const String *const call_identifier = call_args[ pos ].identifier;
-    if( !call_identifier )
+    const String &call_identifier = call_args[ pos ].identifier;
+    if( call_identifier.empty() )
     {
-      args.set( decl_args[ pos ].identifier.get(), call_args[ pos ].value );
+      args.set( Value( decl_args[ pos ].identifier ), call_args[ pos ].value );
       used[ pos ] = true;
     }
     else
@@ -68,18 +68,18 @@ void Function::fill_args( Map &args, const Args &call_args )
   // identifier arguments
   for( ; pos < decl_args.size(); ++pos )
   {
-    const String *const decl_identifier = decl_args[ pos ].identifier;
+    const String &decl_identifier = decl_args[ pos ].identifier;
     bool found = false;
     for( index_t i=first_init; i < n_call_args; ++i )
     {
-      const String *const call_identifier = call_args[ i ].identifier;
-      if( call_identifier )
+      const String &call_identifier = call_args[ i ].identifier;
+      if( !call_identifier.empty() )
       {
-        if( !used[ i ] && decl_identifier->equals( call_identifier ) )
+        if( !used[ i ] && decl_identifier == call_identifier )
         {
           found = true;
           // Was not yet initialized (even with invalid Value)
-          args.set( call_identifier, call_args[ i ].value );
+          args.set( Value( call_identifier ), call_args[ i ].value );
           used[ i ] = true;
         }
       }
@@ -95,7 +95,7 @@ void Function::fill_args( Map &args, const Args &call_args )
       const Value &default_value = decl_args[ pos ].value;
       if( !default_value.isInvalid() )
       {
-        args.set( decl_identifier, default_value );
+        args.set( Value( decl_identifier ), default_value );
       }
       else
       {

@@ -50,7 +50,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
     array->append( *value_i );
   }
 
-  return_value = array.get();
+  return_value = Value( array.get() );
   return true;
 }
 
@@ -61,7 +61,7 @@ bool InterpretingASTVisitor::visit( const AST::MapConstantExpression        *nod
 
   if( !node->body->invite( this ) ) return false;
 
-  return_value = ret.get();
+  return_value = Value( ret.get() );
   return true;
 }
 
@@ -84,7 +84,7 @@ bool InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *nod
     array->set( i, return_value );
   }
 
-  return_value = new SequenceValueArray( scope->getGC(), array );
+  return_value = Value( new SequenceValueArray( scope->getGC(), array ) );
   return true;
 }
 
@@ -119,7 +119,7 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
   }
   else
   {
-    step = 1;
+    step = Value( 1 );
   }
 
   if( from.isFloat() || to.isFloat() || step.isFloat() )
@@ -191,7 +191,7 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
     throw "left is not a Map";
   }
 
-  Value *const value = left.getMap()->get( node->member.get() );
+  Value *const value = left.getMap()->get( Value( node->member ) );
   if( value )
   {
     return_value = (*value);
@@ -269,7 +269,7 @@ bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *nod
 {
   Value args[ 2 ];
 
-  args[ 0 ] = int( node->op );
+  args[ 0 ] = Value( int( node->op ) );
 
   if( !node->arg->invite( this ) ) return false;
   args[ 1 ].swap( return_value );
@@ -284,7 +284,7 @@ bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *nod
   if( !node->left->invite( this ) ) return false;
   args[ 0 ].swap( return_value );
 
-  args[ 1 ] = int( node->op );
+  args[ 1 ] = Value( int( node->op ) );
 
   if( !node->right->invite( this ) ) return false;
   args[ 2 ].swap( return_value );
@@ -352,7 +352,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
   {
     Value default_value;
     const AST::FunctionDefinitionStatement::ArgDecl *const decl = node->args->at( i );
-    const String *const identifier = decl->identifier;
+    const String &identifier = decl->identifier;
     const AST::Expression *const default_value_expr = decl->default_value;
     if( default_value_expr )
     {
@@ -367,12 +367,11 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     decl_args->at( i ) = Function::Arg( identifier, default_value );
   }
 
-  CountPtr< InterpretingFunction > function =
-    new InterpretingFunction( scope->getGC(), scope->getCurr(), decl_args, node->body );
+  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), decl_args, node->body ) );
 
-  if( !scope->create( node->identifier, function.get() ) ) return false;
+  if( !scope->create_unified( node->identifier, function ) ) return false;
 
-  return_value = function.get();
+  return_value = function;
   return true;
 }
 
@@ -397,7 +396,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
 
     Value args[ 3 ];
     args[ 0 ].swap( (*lvalue) ); // move lvalue into arg, will be overwritten anyway
-    args[ 1 ] = int( bop );
+    args[ 1 ] = Value( int( bop ) );
     args[ 2 ].swap( value );
 
     binary_Function->call_impl( scope, (*lvalue), 3, args, getRecursionDepth() );
@@ -413,7 +412,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
 
 bool InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *node )
 {
-  const String *const identifier = node->identifier;
+  const String &identifier = node->identifier;
 
   Value *const lvalue = scope->lookup( identifier );
   if( !lvalue )
@@ -543,9 +542,9 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
 
   CountPtr< Map > for_locals = new Map( scope->getGC(), scope->getCurr() );
 
-  const String *const identifier = node->identifier;
+  const String &identifier = node->identifier;
 
-  Value *const for_variable = for_locals->set( identifier, Value() );
+  Value *const for_variable = for_locals->set( Value( identifier ), Value() );
   if( 0 == for_variable )
   {
     throw "Could not create for-variable";
@@ -575,9 +574,9 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
 
   CountPtr< Map > for_locals = new Map( scope->getGC(), scope->getCurr() );
 
-  const String *const identifier = node->identifier;
+  const String &identifier = node->identifier;
 
-  Value *const for_variable = for_locals->set( identifier, Value() );
+  Value *const for_variable = for_locals->set( Value( identifier ), Value() );
   if( 0 == for_variable )
   {
     throw "Could not create for-variable";
@@ -614,7 +613,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallStatement        *nod
 
 bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement    *node )
 {
-  const String *const identifier = node->identifier;
+  const String &identifier = node->identifier;
   const Type type = node->type;
 
   if( !node->value->invite( this ) ) return false;
@@ -625,7 +624,7 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement    *nod
     throw "Type right of '=' does not match declared type";
   }
 
-  if( !scope->create( identifier, value ) )
+  if( !scope->create_unified( identifier, value ) )
   {
     throw "could not create variable";
   }

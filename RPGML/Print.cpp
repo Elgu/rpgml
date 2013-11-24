@@ -24,19 +24,19 @@ bool Print::call_impl( Scope *, Value &ret, index_t n_args, const Value *args, i
     case Type::BOOL  : std::cout << str.getBool  (); break;
     case Type::INT   : std::cout << str.getInt   (); break;
     case Type::FLOAT : std::cout << str.getFloat (); break;
-    case Type::STRING: std::cout << str.getString()->get(); break;
+    case Type::STRING: std::cout << str.getString(); break;
     default:
       throw "Invalid type for Print argument 'str'";
   }
 
-  ret = true;
+  ret = Value( true );
   return true;
 }
 
 CountPtr< Function::Args > Print::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( 1 );
-  args->at( 0 ) = Arg( new String( "str" ) );
+  args->at( 0 ) = Arg( String::Static( "str" ) );
   return args;
 }
 

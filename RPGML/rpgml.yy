@@ -49,7 +49,7 @@ namespace RPGML
   BOP          binop;
   UOP          uop;
   ASSIGN       assign;
-  const String *str;
+  const StringData *str;
   Statement   *stmt;
   CompoundStatement *comp;
   Expression  *expr;
@@ -174,9 +174,9 @@ namespace RPGML
 
 identifier
   : IDENTIFIER { ($$) = ($1); }
-  | IN         { ($$) = scanner.unify( "in" ); }
-  | TO         { ($$) = scanner.unify( "to" ); }
-  | STEP       { ($$) = scanner.unify( "step" ); }
+  | IN         { ($$) = scanner.unify( String::Static( "in" ) ); }
+  | TO         { ($$) = scanner.unify( String::Static( "to"  ) ); }
+  | STEP       { ($$) = scanner.unify( String::Static( "step" ) ); }
   ;
 
 array_constant

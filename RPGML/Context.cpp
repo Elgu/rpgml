@@ -14,7 +14,9 @@ Context::Context( StringUnifier *unifier )
   m_gc.reset( new GarbageCollector() );
   m_root = new Map( getGC() );
 
-  m_root->set( m_unifier->unify( "print" ), new Print( getGC(), m_root ) );
+  const String unified_print = m_unifier->unify( String::Static( "print" ) );
+
+  m_root->set( Value( unified_print ), Value( new Print( getGC(), m_root ) ) );
 }
 
 Context::~Context( void )

@@ -7,7 +7,7 @@
 namespace RPGML {
 
 inline
-Location *toLocation( const String *filename, const location &loc )
+CountPtr< Location > toLocation( const String &filename, const location &loc )
 {
   return
     new Location(

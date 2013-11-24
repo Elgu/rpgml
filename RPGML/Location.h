@@ -34,7 +34,7 @@ public:
 
   explicit
   Location(
-      const String *_filename
+      const String &_filename
     , int begin_line=0, int begin_column=0
     , int end_line=0, int end_column=0
     )
@@ -47,7 +47,7 @@ public:
   {}
 
   Location &set(
-      const String *_filename
+      const String &_filename
     , int begin_line=0, int begin_column=0
     , int end_line=0, int end_column=0
     )
@@ -69,7 +69,7 @@ public:
   {
     if( filename )
     {
-      o << filename->get() << ":";
+      o << filename << ":";
     }
     if( begin.line > 0 )
     {
@@ -102,7 +102,7 @@ public:
   }
 
 private:
-  CountPtr< const String > filename;
+  String filename;
   Position begin;
   Position end;
 };

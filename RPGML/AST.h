@@ -138,7 +138,8 @@ public:
   explicit ConstantExpression( const Location *_loc, bool b    ) : Expression( _loc ), value( b ) {}
   explicit ConstantExpression( const Location *_loc, int i     ) : Expression( _loc ), value( i ) {}
   explicit ConstantExpression( const Location *_loc, float f   ) : Expression( _loc ), value( f ) {}
-  explicit ConstantExpression( const Location *_loc, const String *s ) : Expression( _loc ), value( s ) {}
+  explicit ConstantExpression( const Location *_loc, const StringData *s ) : Expression( _loc ), value( s ) {}
+  explicit ConstantExpression( const Location *_loc, const String &s ) : Expression( _loc ), value( s ) {}
 
   virtual ~ConstantExpression( void ) {}
 
@@ -242,7 +243,7 @@ public:
 class LookupVariableExpression : public Expression
 {
 public:
-  LookupVariableExpression( const Location *_loc, const String *_identifier )
+  LookupVariableExpression( const Location *_loc, const String &_identifier )
   : Expression( _loc )
   , identifier( _identifier )
   {}
@@ -250,7 +251,7 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const String > identifier;
+  const String identifier;
 };
 
 class FunctionCallExpression : public Expression
@@ -271,7 +272,7 @@ public:
   {
   public:
     explicit
-    Arg( const Location *_loc, Expression *_value, const String *_identifier=0 )
+    Arg( const Location *_loc, Expression *_value, const String &_identifier = String() )
     : loc( _loc )
     , value( _value )
     , identifier( _identifier )
@@ -280,7 +281,7 @@ public:
 
     CountPtr< const Location > loc;
     CountPtr< Expression > value;
-    CountPtr< const String > identifier;
+    const String identifier;
   };
 
   class Args : public Refcounted, public std::vector< CountPtr< Arg > >
@@ -302,7 +303,7 @@ public:
 class DotExpression : public Expression
 {
 public:
-  DotExpression( const Location *_loc, Expression *_left, const String *_member )
+  DotExpression( const Location *_loc, Expression *_left, const String &_member )
   : Expression( _loc )
   , left( _left )
   , member( _member )
@@ -312,7 +313,7 @@ public:
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
-  const CountPtr< const String > member;
+  const String member;
 };
 
 class AccessExpression : public Expression
@@ -424,7 +425,7 @@ public:
   class ArgDecl;
   class ArgDeclList;
 
-  FunctionDefinitionStatement( const Location *_loc, const String *_identifier, const ArgDeclList *_args, const CompoundStatement *_body )
+  FunctionDefinitionStatement( const Location *_loc, const String &_identifier, const ArgDeclList *_args, const CompoundStatement *_body )
   : Statement( _loc )
   , identifier( _identifier )
   , args( _args )
@@ -439,7 +440,7 @@ public:
   {
   public:
     explicit
-    ArgDecl( const Location *_loc, const String *_identifier, const Expression *_default_value=0 )
+    ArgDecl( const Location *_loc, const String &_identifier, const Expression *_default_value=0 )
     : loc( _loc )
     , identifier( _identifier )
     , default_value( _default_value )
@@ -447,7 +448,7 @@ public:
     virtual ~ArgDecl( void ) {}
 
     const CountPtr< const Location > loc;
-    const CountPtr< const String > identifier;
+    const String identifier;
     const CountPtr< const Expression > default_value;
   };
 
@@ -465,7 +466,7 @@ public:
     }
   };
 
-  const CountPtr< const String > identifier;
+  const String identifier;
   const CountPtr< const ArgDeclList > args;
   const CountPtr< const CompoundStatement > body;
 };
@@ -489,7 +490,7 @@ public:
 class AssignIdentifierStatement : public AssignmentStatement
 {
 public:
-  AssignIdentifierStatement( const Location *_loc, const String *_identifier, ASSIGN _op, const Expression *_value )
+  AssignIdentifierStatement( const Location *_loc, const String &_identifier, ASSIGN _op, const Expression *_value )
   : AssignmentStatement( _loc, _op, _value )
   , identifier( _identifier )
   {}
@@ -497,13 +498,13 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const String > identifier;
+  const String identifier;
 };
 
 class AssignDotStatement : public AssignmentStatement
 {
 public:
-  AssignDotStatement( const Location *_loc, Expression *_left, const String *_identifier, ASSIGN _op, const Expression *_value )
+  AssignDotStatement( const Location *_loc, Expression *_left, const String &_identifier, ASSIGN _op, const Expression *_value )
   : AssignmentStatement( _loc, _op, _value )
   , left( _left )
   , identifier( _identifier )
@@ -513,7 +514,7 @@ public:
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
-  const CountPtr< const String > identifier;
+  const String identifier;
 };
 
 class AssignBracketStatement : public AssignmentStatement
@@ -564,7 +565,7 @@ public:
 class ForStatement : public Statement
 {
 public:
-  ForStatement( const Location *_loc, const String *_identifier, const Statement *_body )
+  ForStatement( const Location *_loc, const String &_identifier, const Statement *_body )
   : Statement( _loc )
   , identifier( _identifier )
   , body( _body )
@@ -573,14 +574,14 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const String > identifier;
+  const String identifier;
   const CountPtr< const Statement > body;
 };
 
 class ForSequenceStatement : public ForStatement
 {
 public:
-  ForSequenceStatement( const Location *_loc, const String *_identifier, const SequenceExpression *_sequence, const Statement *_statement )
+  ForSequenceStatement( const Location *_loc, const String &_identifier, const SequenceExpression *_sequence, const Statement *_statement )
   : ForStatement( _loc, _identifier, _statement )
   , sequence( _sequence )
   {}
@@ -594,7 +595,7 @@ public:
 class ForContainerStatement : public ForStatement
 {
 public:
-  ForContainerStatement( const Location *_loc, const String *_identifier, const Expression *_container, const Statement *_statement )
+  ForContainerStatement( const Location *_loc, const String &_identifier, const Expression *_container, const Statement *_statement )
   : ForStatement( _loc,_identifier, _statement )
   , container( _container )
   {}
@@ -623,7 +624,7 @@ public:
 class VariableCreationStatement : public Statement
 {
 public:
-  VariableCreationStatement( const Location *_loc, Type _type, const String *_identifier, const Expression *_value )
+  VariableCreationStatement( const Location *_loc, Type _type, const String &_identifier, const Expression *_value )
   : Statement( _loc )
   , identifier( _identifier )
   , value( _value )
@@ -633,7 +634,7 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const String > identifier;
+  const String identifier;
   const CountPtr< const Expression > value;
   const Type type;
 };
