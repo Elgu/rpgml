@@ -8,17 +8,16 @@
 
 namespace RPGML {
   class String;
+  String operator+( const String &s1, const String &s2 );
+  String operator+( const String &s1, const std::string &s2 );
+  String operator+( const String &s1, const char *s2 );
+  String operator+( const std::string &s1, const String &s2 );
+  String operator+( const char *s1, const String &s2 );
 } // namespace RPGML
 
 namespace std {
   std::ostream &operator<<( std::ostream &o, const RPGML::String &s );
 } // namespace std
-
-RPGML::String operator+( const RPGML::String &s1, const RPGML::String &s2 );
-RPGML::String operator+( const RPGML::String &s1, const std::string &s2 );
-RPGML::String operator+( const RPGML::String &s1, const char *s2 );
-RPGML::String operator+( const std::string &s1, const RPGML::String &s2 );
-RPGML::String operator+( const char *s1, const RPGML::String &s2 );
 
 namespace RPGML {
 
@@ -270,6 +269,43 @@ private:
   CountPtr< const StringData > m_str;
 };
 
+inline
+String operator+( const String &s1, const String &s2 )
+{
+  return String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
+}
+
+inline
+String operator+( const String &s1, const std::string &s2 )
+{
+  return String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
+}
+
+inline
+String operator+( const String &s1, const char *s2 )
+{
+  return String( s1.c_str(), s1.length(), s2, ( s2 ? strlen( s2 ) : 0 ) );
+}
+
+inline
+String operator+( const std::string &s1, const String &s2 )
+{
+  return String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
+}
+
+inline
+String operator+( const char *s1, const String &s2 )
+{
+  return String( s1, ( s1 ? strlen( s1 ) : 0 ), s2.c_str(), s2.length() );
+}
+
+inline
+String f( const String &x, const char *y )
+{
+  RPGML::String ret = x + y;
+  return ret;
+}
+
 } // namespace RPGML
 
 namespace std {
@@ -281,35 +317,5 @@ namespace std {
   }
 
 } // namespace std
-
-inline
-RPGML::String operator+( const RPGML::String &s1, const RPGML::String &s2 )
-{
-  return RPGML::String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
-}
-
-inline
-RPGML::String operator+( const RPGML::String &s1, const std::string &s2 )
-{
-  return RPGML::String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
-}
-
-inline
-RPGML::String operator+( const RPGML::String &s1, const char *s2 )
-{
-  return RPGML::String( s1.c_str(), s1.length(), s2, ( s2 ? strlen( s2 ) : 0 ) );
-}
-
-inline
-RPGML::String operator+( const std::string &s1, const RPGML::String &s2 )
-{
-  return RPGML::String( s1.c_str(), s1.length(), s2.c_str(), s2.length() );
-}
-
-inline
-RPGML::String operator+( const char *s1, const RPGML::String &s2 )
-{
-  return RPGML::String( s1, ( s1 ? strlen( s1 ) : 0 ), s2.c_str(), s2.length() );
-}
 
 #endif

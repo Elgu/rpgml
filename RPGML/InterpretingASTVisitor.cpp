@@ -10,6 +10,8 @@
 #include "UnaryOp.h"
 #include "BinaryOp.h"
 
+#include <iostream>
+
 namespace RPGML {
 
 InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursion_depth )
@@ -215,6 +217,13 @@ bool InterpretingASTVisitor::visit( const AST::AccessExpression             *nod
   if( left.isMap() )
   {
     Value *const value = left.getMap()->get( key );
+
+//    std::cerr
+//      << "InterpretingASTVisitor::visit( AST::AccessExpression )"
+//      << ": Accessing " << key
+//      << std::endl
+//      ;
+
     if( value )
     {
       return_value = (*value);
@@ -330,7 +339,7 @@ bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
 
 bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
-  CountPtr< Map > body = new Map( scope->getGC(), scope->getCurr() );
+  CountPtr< Map > body = ( node->own_map ? new Map( scope->getGC(), scope->getCurr() ) : 0 );
   Scope::EnterLeaveGuard guard( scope, body );
 
   const index_t n = index_t( node->statements.size() );

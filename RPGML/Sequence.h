@@ -5,6 +5,8 @@
 #include "Iterator.h"
 #include "Value.h"
 
+#include <ostream>
+
 namespace RPGML {
 
 class Sequence : public Collectable
@@ -12,6 +14,8 @@ class Sequence : public Collectable
 public:
   Sequence( GarbageCollector *gc );
   virtual ~Sequence( void );
+
+  virtual std::ostream &print( std::ostream &o ) const = 0;
 
   typedef Iterator< const Value* > Iter;
 
@@ -28,6 +32,8 @@ class SequenceValueArray : public Sequence
 public:
   SequenceValueArray( GarbageCollector *gc, const Array *array );
   virtual ~SequenceValueArray( void );
+
+  virtual std::ostream &print( std::ostream &o ) const;
 
   virtual void gc_clear( void );
   virtual void getChildren( Children &children ) const;

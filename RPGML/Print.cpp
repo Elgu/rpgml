@@ -26,7 +26,9 @@ bool Print::call_impl( Scope *, Value &ret, index_t n_args, const Value *args, i
     case Type::FLOAT : std::cout << str.getFloat (); break;
     case Type::STRING: std::cout << str.getString(); break;
     default:
-      throw "Invalid type for Print argument 'str'";
+      std::cout << str;
+      break;
+    //  throw "Invalid type for Print argument 'str'";
   }
 
   ret = Value( true );

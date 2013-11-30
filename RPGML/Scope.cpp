@@ -24,12 +24,22 @@ GarbageCollector *Scope::getGC( void ) const
   return m_context->getGC();
 }
 
+StringUnifier *Scope::getUnifier( void ) const
+{
+  return m_context->getUnifier();
+}
+
+Map *Scope::getRoot( void ) const
+{
+  return m_context->getRoot();
+}
+
 Value *Scope::lookup( const String &identifier ) const
 {
   const Value id( identifier );
   for( Map *curr = getCurr(); curr; curr = curr->getParent() )
   {
-    Value *const ret = curr->get( id );
+    Value *const ret = curr->load( id, this );
     if( ret ) return ret;
   }
 
@@ -57,6 +67,10 @@ Value *Scope::create_unified( const String &unified_identifier, const Value &val
   {
     Value &ret = (*curr)[ index ];
     ret = value;
+
+//  std::cerr << "Scope::create_unified( \"" << unified_identifier << "\", " << value << " )" << std::endl;
+//  std::cerr << "  " << Value( curr ) << std::endl;
+
     return &ret;
   }
   else

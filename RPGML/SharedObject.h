@@ -6,7 +6,7 @@
 
 namespace RPGML {
 
-  class SharedObject : public Recounted
+  class SharedObject : public Refcounted
   {
   public:
     explicit SharedObject( const String      &so, String &err );
@@ -18,7 +18,7 @@ namespace RPGML {
     bool isValid( void ) const;
 
     template< class SymbolType >
-    class Symbol : public RefCounted
+    class Symbol : public Refcounted
     {
       friend class SharedObject;
     private:
@@ -27,7 +27,9 @@ namespace RPGML {
       {}
     public:
       virtual ~Symbol( void ) {}
-      SymbolType *get( void ) const { return m_sym; }
+      SymbolType &get( void ) const { return (*m_sym); }
+      SymbolType &operator*( void ) const { return get(); }
+
     private:
       CountPtr< const SharedObject > m_so;
       SymbolType *m_sym;
@@ -36,11 +38,11 @@ namespace RPGML {
     template< class SymbolType >
     CountPtr< Symbol< SymbolType > > getSymbol( const char *sym, String &err ) const
     {
-      return new Symbol< SymbolType >( this, (SymbolType*)getVoidPtrSymbol( sym, err );
+      return new Symbol< SymbolType >( this, (SymbolType*)getVoidPtrSymbol( sym, err ) );
     }
 
   private:
-    void *getVoidPtrSymbol( const char *sym, String &err ) const
+    void *getVoidPtrSymbol( const char *sym, String &err ) const;
     void *m_handle;
   };
 

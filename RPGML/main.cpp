@@ -5,39 +5,13 @@
 #include <RPGML/Context.h>
 #include <RPGML/GarbageCollector.h>
 #include <RPGML/Map.h>
+#include <RPGML/FileSource.h>
+#include <RPGML/InterpretingParser.h>
 
-#include <cstdio>
 #include <cerrno>
 #include <cstring>
 
 using namespace RPGML;
-
-class FileSource : public Source
-{
-public:
-  FileSource( FILE *file )
-  : m_file( file )
-  {}
-
-  virtual ~FileSource( void )
-  {
-    fclose( m_file );
-  }
-
-protected:
-  virtual char nextChar( void )
-  {
-    const int ret = fgetc( m_file );
-    if( EOF == ret )
-    {
-      return '\0';
-    }
-    return char( ret );
-  }
-
-private:
-  FILE *m_file;
-};
 
 class PrettyPrintingParser : public Parser
 {
@@ -61,39 +35,6 @@ private:
   AST::PrettyPrinter m_printer;
 };
 
-class InterpretingParser : public Parser
-{
-public:
-  explicit
-  InterpretingParser( StringUnifier *unifier, Source *source )
-  : Parser( unifier, source )
-  {
-    context = new Context( unifier );
-    scope = context->createScope();
-    interpreter = new InterpretingASTVisitor( scope );
-  }
-
-  virtual ~InterpretingParser( void )
-  {}
-
-  virtual void append( CountPtr< Statement > statement )
-  {
-    try
-    {
-      statement->invite( interpreter );
-    }
-    catch( const char *e )
-    {
-      std::cerr << e << std::endl;
-    }
-  }
-
-private:
-  CountPtr< Context > context;
-  CountPtr< Scope > scope;
-  CountPtr< InterpretingASTVisitor > interpreter;
-};
-
 int main( int argc, char **argv )
 {
   CountPtr< Source > source;
@@ -114,8 +55,11 @@ int main( int argc, char **argv )
   }
 
   CountPtr< StringUnifier > unifier = new StringUnifier();
+  CountPtr< Context > context = new Context( unifier );
+  CountPtr< Scope > scope = context->createScope();
+
 //  PrettyPrintingParser parser( unifier, source, &std::cerr );
-  InterpretingParser parser( unifier, source );
+  InterpretingParser parser( scope, source );
 
   parser.parse();
 

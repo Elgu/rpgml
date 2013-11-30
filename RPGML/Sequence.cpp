@@ -32,6 +32,23 @@ public:
   virtual ~SequenceFromToStep( void )
   {}
 
+  virtual std::ostream &print( std::ostream &o ) const
+  {
+    o
+      << "( " << m_from
+      << " to " << m_to
+      ;
+
+    if( m_step != scalar_t( 1 ) )
+    {
+      o << " step " << m_step;
+    }
+
+    o << " )";
+
+    return o;
+  }
+
   virtual void gc_clear( void )
   {}
 
@@ -123,6 +140,23 @@ SequenceValueArray::SequenceValueArray( GarbageCollector *_gc, const Array *arra
 
 SequenceValueArray::~SequenceValueArray( void )
 {}
+
+std::ostream &SequenceValueArray::print( std::ostream &o ) const
+{
+  o << "[ ";
+
+  bool first = true;
+  for( CountPtr< Iter > i( getIter() ); !i->done(); i->next() )
+  {
+    if( !first ) o << ", "; else first = false;
+    const Value *const v = i->get();
+    o << (*v);
+  }
+
+  o << " ]";
+
+  return o;
+}
 
 void SequenceValueArray::gc_clear( void )
 {}

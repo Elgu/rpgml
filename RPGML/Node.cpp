@@ -18,6 +18,11 @@ Node *Port::getParent( void ) const
   return m_parent;
 }
 
+const String &Port::getIdentifier( void ) const
+{
+  return m_identifier;
+}
+
 void Port::gc_clear( void )
 {
   m_parent.reset();
@@ -187,6 +192,12 @@ Node *Param::getParent( void ) const
   return m_parent;
 }
 
+const String &Param::getIdentifier( void ) const
+{
+  return m_identifier;
+}
+
+
 bool Param::set( const Value &value )
 {
   if( m_type == Type::Invalid() )
@@ -228,12 +239,18 @@ void Param::getChildren( Children &children ) const
   }
 }
 
-Node::Node( GarbageCollector *_gc, Map *_parent )
+Node::Node( GarbageCollector *_gc, const String &global_name, Map *_parent )
 : Map( _gc, _parent )
+, m_global_name( global_name )
 {}
 
 Node::~Node( void )
 {}
+
+const String &Node::getGlobalName( void ) const
+{
+  return m_global_name;
+}
 
 void Node::gc_clear( void )
 {

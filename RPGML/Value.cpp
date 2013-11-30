@@ -729,5 +729,90 @@ Value Value::operator% ( const Value &right ) const
   }
 }
 
+std::ostream &Value::print( std::ostream &o ) const
+{
+  switch( getType().getEnum() )
+  {
+    case Type::INVALID : o << "nil"; break;
+    case Type::BOOL    : o << ( getBool() ? "true" : "false" ); break;
+    case Type::INT     : o << getInt(); break;
+    case Type::FLOAT   : o << getFloat(); break;
+    case Type::STRING  : o << "\"" << getString() << "\""; break;
+
+    case Type::ARRAY   :
+      {
+        const Array &a = *getArray();
+        o << "[ ";
+        for( index_t j( 0 ), end( a.size() ); j < end; ++j )
+        {
+          if( j > 0 ) o << ", ";
+          o << a[ j ];
+        }
+        o << " ]";
+      }
+      break;
+
+    case Type::MAP     :
+      {
+        const Map *m = getMap();
+        o << "{ ";
+        for( CountPtr< RPGML::Map::Iterator > j( m->getIterator() ); !j->done(); j->next() )
+        {
+          const Map::Iterator::Type v( j->get() );
+          o << " " << v.second.getTypeName() << " [ " << v.first << " ] = " << v.second << ";";
+        }
+        o << " }";
+      }
+      break;
+
+    case Type::FUNCTION: o << "Function( " << (void*)getFunction() << " )"; break;
+    case Type::NODE    : o << "Node( " << getNode()->getGlobalName() << " )"; break;
+
+    case Type::OUTPUT  :
+      {
+        const Output *const output = getOutput();
+        o
+          << "Output( " << output->getParent()->getGlobalName()
+          << ", " << output->getIdentifier() << " )"
+          ;
+      }
+      break;
+
+    case Type::INPUT   :
+      {
+        const Input *const input = getInput();
+        o
+          << "Input( " << input->getParent()->getGlobalName()
+          << ", " << input->getIdentifier() << " )"
+          ;
+      }
+      break;
+
+    case Type::PARAM   :
+      {
+        const Param *const param = getParam();
+        o
+          << "Param( " << param->getParent()->getGlobalName()
+          << ", " << param->getIdentifier() << " )"
+          ;
+      }
+      break;
+
+    case Type::SEQUENCE: getSequence()->print( o ); break;
+  }
+
+  return o;
+}
+
+
+} // namespace RPGML
+
+namespace std {
+
+std::ostream &operator<<( std::ostream &o, const RPGML::Value &v )
+{
+  return v.print( o );
+}
+
 } // namespace std
 

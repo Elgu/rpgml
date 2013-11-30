@@ -1,37 +1,41 @@
 #include "SharedObject.h"
 
+#include <cerrno>
+#include <cstring>
+#include <dlfcn.h>
+
 namespace RPGML {
 
 SharedObject::SharedObject( const String      &so, String &err )
-: m_handle( SDL_LoadObject( so.c_str() ) )
+: m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND ) )
 {
   if( !isValid() )
-    err = String( SDL_GetError() );
+    err = String( dlerror() );
   else
     err.clear();
 }
 
 SharedObject::SharedObject( const std::string &so, String &err )
-: m_handle( SDL_LoadObject( so.c_str() ) )
+: m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND ) )
 {
   if( !isValid() )
-    err = String( SDL_GetError() );
+    err = String( dlerror() );
   else
     err.clear();
 }
 
 SharedObject::SharedObject( const char *so, String &err )
-: m_handle( SDL_LoadObject( so ) )
+: m_handle( dlopen( so, RTLD_NOW | RTLD_DEEPBIND ) )
 {
   if( !isValid() )
-    err = String( SDL_GetError() );
+    err = String( dlerror() );
   else
     err.clear();
 }
 
 SharedObject::~SharedObject( void )
 {
-  if( m_handle ) SDL_UnloadObject( m_handle );
+  if( m_handle ) dlclose( m_handle );
 }
 
 bool SharedObject::isValid( void ) const
@@ -48,10 +52,10 @@ void *SharedObject::getVoidPtrSymbol( const char *sym, String &err ) const
   }
   else
   {
-    void *const ret = SDL_LoadFunction( m_handle, sym );
+    void *const ret = dlsym( m_handle, sym );
     if( !ret )
     {
-      err = SDL_Error();
+      err = dlerror();
     }
     else
     {

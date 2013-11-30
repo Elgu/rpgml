@@ -1,12 +1,21 @@
 #include "Map.h"
 
 #include "String.h"
+#include "Scope.h"
+#include "SharedObject.h"
+#include "Function.h"
+#include "InterpretingParser.h"
+#include "FileSource.h"
+
+#include <sys/types.h>
+#include <dirent.h>
 
 namespace RPGML {
 
-Map::Map( GarbageCollector *_gc, Map *parent )
+Map::Map( GarbageCollector *_gc, Map *parent, const String &path )
 : Collectable( _gc )
 , m_parent( parent )
+, m_path( path )
 , m_depth( parent ? parent->getDepth()+1 : 0 )
 , m_is_this_map( false )
 {}
@@ -17,6 +26,11 @@ Map::~Map( void )
 Map *Map::getParent( void ) const
 {
   return m_parent;
+}
+
+const String &Map::getPath( void ) const
+{
+  return m_path;
 }
 
 Map &Map::setIdentifier( const String &identifier )
@@ -106,11 +120,111 @@ Value *Map::get( const Value &key )
   }
 }
 
+Value *Map::load( const Value &key, const Scope *scope )
+{
+  const index_t index = getIndex( key );
+
+  if( index != unknown )
+  {
+    return &m_values[ index ];
+  }
+
+  const bool is_root = ( this == scope->getRoot() );
+
+  if( !getPath().empty() || is_root )
+  {
+    String identifier;
+    try
+    {
+      identifier = key.to( Type::String() ).getString();
+    }
+    catch( const char * )
+    {}
+
+    if( !identifier.empty() )
+    {
+      if( is_root )
+      {
+        return load_global( identifier, scope );
+      }
+      else
+      {
+        return load_local( identifier, scope );
+      }
+    }
+  }
+
+  return 0;
+}
+
+Value *Map::load_local ( const String &identifier, const Scope *scope )
+{
+  return load( getPath(), identifier, scope );
+}
+
+Value *Map::load_global( const String &identifier, const Scope *scope )
+{
+  return load( ".", identifier, scope );
+}
+
+Value *Map::load( const String &path, const String &identifier, const Scope *scope )
+{
+  String dir = path + "/" + identifier;
+  DIR *const dir_p = opendir( dir.c_str() );
+  if( dir_p )
+  {
+    closedir( dir_p );
+    return set( Value( identifier ), Value( new Map( getGC(), this, dir ) ) );
+  }
+
+  const String so = path + "/libRPGML_" + identifier + ".so";
+  String err;
+  CountPtr< SharedObject > so_p = new SharedObject( so, err );
+  if( so_p->isValid() )
+  {
+    CountPtr< SharedObject::Symbol< function_creator_f > > create_function =
+      so_p->getSymbol< function_creator_f >( identifier + "_create", err );
+    CountPtr< Function > function = (**create_function)( getGC(), create_function.get() );
+
+    return set( Value( identifier ), Value( function ) );
+  }
+
+  const String rpgml = path + "/" + identifier + ".rpgml";
+  FILE *const rpgml_p = fopen( rpgml.c_str(), "r" );
+  if( rpgml_p )
+  {
+    CountPtr< Source > source = new FileSource( rpgml_p );
+    CountPtr< Scope > new_scope = new Scope( *scope );
+    CountPtr< InterpretingParser > parser = new InterpretingParser( new_scope, source );
+    try
+    {
+      parser->parse();
+    }
+    catch( const char *e )
+    {
+      throw e;
+    }
+
+    Value *const ret = get( Value( identifier ) );
+    if( !ret )
+    {
+      throw "variable was not defined in rpgml file";
+    }
+    return ret;
+  }
+
+  return 0;
+}
+
 Value *Map::set( const Value &key, const Value &value )
 {
   if( key.isInvalid() ) throw "key is invalid";
   Value &ret = (*this)[ key ];
   ret = value;
+
+//  std::cerr << "Map::set( " << key << ", " << value << " )" << std::endl;
+//  std::cerr << "  " << Value( this ) << std::endl;
+
   return &ret;
 }
 

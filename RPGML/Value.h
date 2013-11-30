@@ -54,6 +54,8 @@ public:
   void clear( void );
   void swap( Value &other );
 
+  std::ostream &print( std::ostream &o ) const;
+
   explicit Value ( bool  _b );
   explicit Value ( int   _i );
   explicit Value ( float _f );
@@ -159,6 +161,8 @@ void swap( RPGML::Value &x1, RPGML::Value &x2 )
 {
   x1.swap( x2 );
 }
+
+  std::ostream &operator<<( std::ostream &o, const RPGML::Value &s );
 
 } // namespace std
 

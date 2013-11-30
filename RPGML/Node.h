@@ -77,6 +77,7 @@ public:
   virtual ~Param( void );
 
   Node *getParent( void ) const;
+  const String &getIdentifier( void ) const;
 
   virtual bool set( const Value &value );
   const Value &get( void ) const;
@@ -95,9 +96,11 @@ class Node : public Map
 {
 public:
   explicit
-  Node( GarbageCollector *gc, Map *parent=0 );
+  Node( GarbageCollector *gc, const String &global_name, Map *parent=0 );
 
   virtual ~Node( void );
+
+  const String &getGlobalName( void ) const;
 
   virtual void gc_clear( void );
   virtual void getChildren( Children &children ) const;
@@ -120,6 +123,7 @@ private:
   };
 
   std::vector< SetParameter > m_setParameters;
+  const String m_global_name;
 };
 
 } // namespace RPGML

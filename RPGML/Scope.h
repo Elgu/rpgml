@@ -12,6 +12,7 @@ class Map;
 class Value;
 class String;
 class StringData;
+class StringUnifier;
 
 class Scope : public Refcounted
 {
@@ -22,9 +23,11 @@ public:
   virtual ~Scope( void );
 
   Map *getCurr( void ) const { return m_curr; }
+  Map *getRoot( void ) const;
 
   Context *getContext( void ) const { return m_context; }
   GarbageCollector *getGC( void ) const;
+  StringUnifier *getUnifier( void ) const;
 
   Value *lookup( const String &identifier ) const;
   Value *lookup( const char *identifier ) const;
