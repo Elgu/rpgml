@@ -20,7 +20,7 @@ public:
 
   virtual ~Context( void );
 
-  Map *getRoot( void ) { return m_root; }
+  Map *getRoot( void ) const { return m_root; }
 
   CountPtr< Scope > createScope( void );
 
