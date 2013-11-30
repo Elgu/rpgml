@@ -185,7 +185,7 @@ array_constant
   ;
 
 map_constant
-  : compound_statement { ($$) = new MapConstantExpression( RPGML_LOC(@$), ($1) ); }
+  : compound_statement { ($1)->own_map = false; ($$) = new MapConstantExpression( RPGML_LOC(@$), ($1) ); }
   ;
 
 primary_expression

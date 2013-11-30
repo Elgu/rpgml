@@ -401,8 +401,10 @@ public:
 class CompoundStatement : public Statement
 {
 public:
+  explicit
   CompoundStatement( const Location *_loc )
   : Statement( _loc )
+  , own_map( true )
   {}
 
   virtual ~CompoundStatement( void ) {}
@@ -417,6 +419,7 @@ public:
   }
 
   std::vector< CountPtr< const Statement > > statements;
+  bool own_map;
 };
 
 class FunctionDefinitionStatement : public Statement
