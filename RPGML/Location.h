@@ -29,23 +29,26 @@ public:
     int column;
   };
 
-  Location( void )
-  {}
+//  Location( void )
+//  {}
 
   explicit
   Location(
       const String &_filename
     , int begin_line=0, int begin_column=0
     , int end_line=0, int end_column=0
+    , const Location *_parent=0
     )
   : filename( _filename )
   , begin( begin_line, begin_column )
   , end( end_line, end_column )
+  , parent( _parent )
   {}
 
   virtual ~Location( void )
   {}
 
+  /*
   Location &set(
       const String &_filename
     , int begin_line=0, int begin_column=0
@@ -64,9 +67,18 @@ public:
     begin.swap( other.begin );
     end.swap( other.end );
   }
+  */
 
-  std::ostream &print( std::ostream &o )
+  std::ostream &print( std::ostream &o, bool is_parent=false ) const
   {
+    if( parent )
+    {
+      parent->print( o, true );
+      o << std::endl;
+    }
+
+    if( is_parent ) o << "at ";
+
     if( filename )
     {
       o << filename << ":";
@@ -102,34 +114,19 @@ public:
   }
 
 private:
-  String filename;
-  Position begin;
-  Position end;
+  const String filename;
+  const Position begin;
+  const Position end;
+  const CountPtr< const Location > parent;
 };
 
 } // namespace RPGML
 
-namespace std {
-
 inline
-void swap( RPGML::Location::Position &x1, RPGML::Location::Position &x2 )
-{
-  x1.swap( x2 );
-}
-
-inline
-void swap( RPGML::Location &x1, RPGML::Location &x2 )
-{
-  x1.swap( x2 );
-}
-
-inline
-std::ostream &operator<<( std::ostream &o, RPGML::Location &p )
+std::ostream &operator<<( std::ostream &o, const RPGML::Location &p )
 {
   return p.print( o );
 }
-
-} // namespace std
 
 #endif
 
