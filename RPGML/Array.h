@@ -21,6 +21,9 @@ public:
   const Value *get( index_t i ) const;
   Value       *append( const Value &value );
 
+  Value const &operator[]( index_t i ) const;
+  Value       &operator[]( index_t i );
+
   void swap( Array &other );
 
   virtual void gc_clear( void );

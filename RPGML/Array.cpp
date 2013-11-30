@@ -60,6 +60,24 @@ Value *Array::append( const Value &value )
   return &m_values.back();
 }
 
+Value const &Array::operator[]( index_t i ) const
+{
+  if( i < size() )
+  {
+    return m_values[ i ];
+  }
+  throw "Index out of range";
+}
+
+Value       &Array::operator[]( index_t i )
+{
+  if( i < size() )
+  {
+    return m_values[ i ];
+  }
+  throw "Index out of range";
+}
+
 void Array::swap( Array &other )
 {
   std::swap( m_values, other.m_values );
