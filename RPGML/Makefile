@@ -1,4 +1,6 @@
 
+#.SUFFIXES: .o .cpp .cc .hh .yy .dep
+
 SOURCE=\
 	rpgml.tab.cc\
 	Scanner.cpp\
@@ -18,6 +20,7 @@ SOURCE=\
 	Print.cpp\
 	Node.cpp\
 	BinaryOp.cpp\
+	SharedObject.cpp\
 	main.cpp\
 
 OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(SOURCE)))
@@ -42,7 +45,8 @@ CFLAGS=\
 
 CXXFLAGS=$(CFLAGS)
 
-LDFLAGS=
+LDFLAGS=\
+	-ldl\
 
 PARSER_FILES=\
 	location.hh\
@@ -58,7 +62,7 @@ PARSER_FILES=\
 all: rpgml
 
 rpgml: $(OBJECTS)
-	g++ -o $@ $(LDFLAGS) $(OBJECTS)
+	g++ -o $@ $(OBJECTS) $(LDFLAGS)
 
 .parser_files: rpgml.yy
 	bison -v rpgml.yy
@@ -66,13 +70,27 @@ rpgml: $(OBJECTS)
 
 $(PARSER_FILES): .parser_files
 
-dep: $(SOURCE)
-	g++ -M -MP -MF $@ $(CXXFLAGS) $(SOURCE)
+.%.cpp.dep: %.cpp
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+.%.cc.dep: %.cc
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
+
+test:
+	@echo DEP_FILES=$(DEP_FILES)
+
+.depend: $(DEP_FILES)
+	cat $(DEP_FILES) > .depend
 
 clean:
+	rm -f $(DEP_FILES)
 	rm -f $(PARSER_FILES)
 	rm -f .parser_files
-	rm -f dep
+	rm -f .depend
 	rm -f *.o
 	rm -f rpgml
 
@@ -81,5 +99,5 @@ clean:
 check: rpgml.output
 	~/bin/gramdiag rpgml.output
 
--include dep
+include .depend
 
