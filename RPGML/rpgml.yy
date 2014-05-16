@@ -26,7 +26,7 @@ using namespace RPGML::AST;
 @$.begin.filename = @$.end.filename = scanner.filename;
 };
 
-// The code between ‘%code {’ and ‘}’ is output in the *.cc file; it needs detailed knowledge about the scanner
+// The code between %code { and } is output in the *.cc file; it needs detailed knowledge about the scanner
 %code
 {
 #include "Scanner.h"
