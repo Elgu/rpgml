@@ -36,7 +36,7 @@ public:
   virtual std::ostream &print( std::ostream &o ) const;
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
   virtual CountPtr< Sequence > clone( void ) const;
   virtual CountPtr< Iter > getIter( void ) const;

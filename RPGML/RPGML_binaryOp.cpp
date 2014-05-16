@@ -1,20 +1,21 @@
-#include "BinaryOp.h"
+#include "RPGML_binaryOp.h"
 
-#include "ParserEnums.h"
 #include "String.h"
+#include "ParserEnums.h"
+#include "Scope.h"
 
 #include <sstream>
 
 namespace RPGML {
 
-BinaryOp::BinaryOp( GarbageCollector *_gc, Map *parent )
-: Function( _gc, parent, genDeclArgs() )
+binaryOp::binaryOp( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
+: Function( _gc, parent, genDeclArgs(), so )
 {}
 
-BinaryOp::~BinaryOp( void )
+binaryOp::~binaryOp( void )
 {}
 
-namespace BinaryOp_impl {
+namespace binaryOp_impl {
 
   template< class IntType1, class IntType2 >
   static inline
@@ -153,49 +154,67 @@ namespace BinaryOp_impl {
     return left - int( left / right ) * right;
   }
 
-} // namespace BinaryOp_impl
+  static inline
+  void bop( Value &ret, const Value &left, const BOP op, const Value &right )
+  {
+    switch( op )
+    {
+      case BOP_LEFT   : ret = Value( left << right ); break;
+      case BOP_RIGHT  : ret = Value( left >> right ); break;
+      case BOP_LT     : ret = Value( left <  right ); break;
+      case BOP_LE     : ret = Value( left <= right ); break;
+      case BOP_GT     : ret = Value( left >  right ); break;
+      case BOP_GE     : ret = Value( left >= right ); break;
+      case BOP_EQ     : ret = Value( left == right ); break;
+      case BOP_NE     : ret = Value( left != right ); break;
+      case BOP_LOG_AND: ret = Value( left && right ); break;
+      case BOP_LOG_OR : ret = Value( left || right ); break;
+      case BOP_LOG_XOR: ret = Value( left.log_xor( right ) ); break;
+      case BOP_BIT_AND: ret = Value( left & right ); break;
+      case BOP_BIT_OR : ret = Value( left | right ); break;
+      case BOP_BIT_XOR: ret = Value( left ^ right ); break;
+      case BOP_MUL    : ret = Value( left * right ); break;
+      case BOP_DIV    : ret = Value( left / right ); break;
+      case BOP_ADD    : ret = Value( left + right ); break;
+      case BOP_SUB    : ret = Value( left - right ); break;
+      case BOP_MOD    : ret = Value( left % right ); break;
+      default:
+        throw "Invalid op";
+    }
+  }
+} // namespace binaryOp_impl
 
-bool BinaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args, index_t )
+bool binaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t )
 {
-  using namespace BinaryOp_impl;
+  using namespace binaryOp_impl;
 
   if( n_args != NUM_ARGS ) throw "wrong number of arguments.";
 
-  if( !args[ ARG_OP ].isInt() ) throw "'op' argument must be int";
-
-  const BOP op = BOP( args[ ARG_OP ].getInt() );
+  const Value &op_v  = args[ ARG_OP   ];
   const Value &left  = args[ ARG_LEFT ];
   const Value &right = args[ ARG_RIGHT ];
 
-  switch( op )
+  if( !op_v.isString() ) throw "'op' argument must be string";
+
+  if( left.isOutput() || right.isOutput() )
   {
-    case BOP_LEFT   : ret = Value( left << right ); break;
-    case BOP_RIGHT  : ret = Value( left >> right ); break;
-    case BOP_LT     : ret = Value( left <  right ); break;
-    case BOP_LE     : ret = Value( left <= right ); break;
-    case BOP_GT     : ret = Value( left >  right ); break;
-    case BOP_GE     : ret = Value( left >= right ); break;
-    case BOP_EQ     : ret = Value( left == right ); break;
-    case BOP_NE     : ret = Value( left != right ); break;
-    case BOP_LOG_AND: ret = Value( left && right ); break;
-    case BOP_LOG_OR : ret = Value( left || right ); break;
-    case BOP_LOG_XOR: ret = Value( left.log_xor( right ) ); break;
-    case BOP_BIT_AND: ret = Value( left & right ); break;
-    case BOP_BIT_OR : ret = Value( left | right ); break;
-    case BOP_BIT_XOR: ret = Value( left ^ right ); break;
-    case BOP_MUL    : ret = Value( left * right ); break;
-    case BOP_DIV    : ret = Value( left / right ); break;
-    case BOP_ADD    : ret = Value( left + right ); break;
-    case BOP_SUB    : ret = Value( left - right ); break;
-    case BOP_MOD    : ret = Value( left % right ); break;
-    default:
-      throw "Invalid op";
+    const String global_name =
+      scope->genGlobalName(
+           op_v.getString()
+         + "@" + toString( loc->withoutFilename() )
+         + "#" + toString( scope->getNr() )
+         );
+    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    return true;
   }
 
+  const BOP op = getBOP( op_v.getString() );
+
+  bop( ret, left, op, right );
   return true;
 }
 
-CountPtr< Function::Args > BinaryOp::genDeclArgs( void )
+CountPtr< Function::Args > binaryOp::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( NUM_ARGS );
   args->at( ARG_LEFT  ) = Arg( String::Static( "left"  ) );
@@ -204,6 +223,25 @@ CountPtr< Function::Args > BinaryOp::genDeclArgs( void )
   return args;
 }
 
+binaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, global_name, n_args, args, so )
+{}
+
+binaryOp::Node::~Node( void )
+{}
+
+void binaryOp::Node::gc_clear( void )
+{
+  RPGML::Node::gc_clear();
+}
+
+void binaryOp::Node::gc_getChildren( Children &children ) const
+{
+  RPGML::Node::gc_getChildren( children );
+}
+
 } // namespace RPGML
 
+RPGML_CREATE_FUNCTION( binaryOp )
+RPGML_CREATE_NODE( binaryOp )
 

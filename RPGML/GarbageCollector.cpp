@@ -78,7 +78,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new, const
     stack.pop_back();
 
     children.clear();
-    c->getChildren( children );
+    c->gc_getChildren( children );
 
     for( size_t i( 0 ), end( children.size() ); i<end; ++i )
     {

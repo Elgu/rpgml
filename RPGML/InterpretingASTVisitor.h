@@ -17,7 +17,7 @@ public:
 
   virtual bool visit( const AST::ConstantExpression           *node );
   virtual bool visit( const AST::ArrayConstantExpression      *node );
-  virtual bool visit( const AST::MapConstantExpression        *node );
+  virtual bool visit( const AST::FrameConstantExpression      *node );
   virtual bool visit( const AST::ParenthisSequenceExpression  *node );
   virtual bool visit( const AST::ExpressionSequenceExpression *node );
   virtual bool visit( const AST::FromToStepSequenceExpression *node );
@@ -49,8 +49,8 @@ public:
 private:
   bool assign_impl( const AST::AssignmentStatement *node, Value *lvalue );
 
-  CountPtr< Function > unary_Function;
-  CountPtr< Function > binary_Function;
+  CountPtr< Function > unaryOp;
+  CountPtr< Function > binaryOp;
 };
 
 } // namespace RPGML

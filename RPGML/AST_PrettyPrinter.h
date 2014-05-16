@@ -21,7 +21,7 @@ public:
 
   virtual bool visit( const ConstantExpression           *node );
   virtual bool visit( const ArrayConstantExpression      *node );
-  virtual bool visit( const MapConstantExpression        *node );
+  virtual bool visit( const FrameConstantExpression      *node );
   virtual bool visit( const ParenthisSequenceExpression  *node );
   virtual bool visit( const ExpressionSequenceExpression *node );
   virtual bool visit( const FromToStepSequenceExpression *node );

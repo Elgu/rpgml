@@ -8,7 +8,7 @@
 namespace RPGML {
 
 class Context;
-class Map;
+class Frame;
 class Value;
 class String;
 class StringData;
@@ -22,8 +22,8 @@ public:
 
   virtual ~Scope( void );
 
-  Map *getCurr( void ) const { return m_curr; }
-  Map *getRoot( void ) const;
+  Frame *getCurr( void ) const { return m_curr; }
+  Frame *getRoot( void ) const;
 
   Context *getContext( void ) const { return m_context; }
   GarbageCollector *getGC( void ) const;
@@ -49,10 +49,16 @@ public:
   const StringData *unify( const char *identifier ) const;
   const StringData *unify( const std::string &identifier ) const;
 
+  CountPtr< Frame > new_Frame( void ) const;
+
+  String genGlobalName( const String &identifier ) const;
+
+  size_t getNr( void ) const;
+
   class EnterLeaveGuard : public Refcounted
   {
   public:
-    EnterLeaveGuard( Scope *scope, Map *new_curr )
+    EnterLeaveGuard( Scope *scope, Frame *new_curr )
     : m_scope( scope )
     {
       if( new_curr )
@@ -67,16 +73,16 @@ public:
     }
   private:
     CountPtr< Scope > m_scope;
-    CountPtr< Map > m_old_curr;
+    CountPtr< Frame > m_old_curr;
   };
 
 private:
   friend class EnterLeaveGuard;
 
-  Scope &setCurr( Map *curr );
+  Scope &setCurr( Frame *curr );
 
   CountPtr< Context > m_context;
-  CountPtr< Map > m_curr;
+  CountPtr< Frame > m_curr;
 };
 
 } // namespace RPGML

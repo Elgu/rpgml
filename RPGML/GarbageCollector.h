@@ -43,6 +43,7 @@ class Collectable : public Refcounted
 {
   friend class GarbageCollector;
 public:
+	explicit
   Collectable( GarbageCollector *_gc )
   : gc( 0 )
   , gc_index( 0 )
@@ -94,10 +95,10 @@ public:
     void add( const Value &v ) { add( v.getCollectable() ); }
   };
 
-  //! Do not implement recursively, only clear, what is not reachable over getChildren(), clear references to those
+  //! Do not implement recursively, only clear, what is not reachable over gc_getChildren(), clear references to those
   virtual void gc_clear( void ) = 0;
   //! Do not implement recursively
-  virtual void getChildren( Children &children ) const = 0;
+  virtual void gc_getChildren( Children &children ) const = 0;
 
 private:
   mutable GarbageCollector *gc;

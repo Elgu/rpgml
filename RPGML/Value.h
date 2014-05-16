@@ -11,12 +11,11 @@ namespace RPGML {
 class String  ;
 class StringData;
 class Array   ;
-class Map     ;
+class Frame     ;
 class Function;
 class Node    ;
 class Output  ;
 class Input   ;
-class Param   ;
 class Sequence;
 class Collectable;
 
@@ -64,12 +63,11 @@ public:
   explicit Value ( String   const &_str  );
   explicit Value ( StringData const *_str );
   explicit Value ( Array          *_arr  );
-  explicit Value ( Map            *_map  );
+  explicit Value ( Frame          *_frame );
   explicit Value ( Function       *_func );
   explicit Value ( Node           *_node );
   explicit Value ( Output         *_out  );
   explicit Value ( Input          *_in   );
-  explicit Value ( Param          *_para );
   explicit Value ( Sequence const *_seq  );
 
   Value &set( bool  _b );
@@ -80,12 +78,11 @@ public:
   Value &set( String      const &_str  );
   Value &set( StringData  const *_str );
   Value &set( Array          *_arr  );
-  Value &set( Map            *_map  );
+  Value &set( Frame          *_frame );
   Value &set( Function       *_func );
   Value &set( Node           *_node );
   Value &set( Output         *_out  );
   Value &set( Input          *_in   );
-  Value &set( Param          *_para );
   Value &set( Sequence const *_seq  );
 
   Type        getType    ( void ) const { return m_type; }
@@ -100,28 +97,27 @@ public:
   bool isFloat   ( void ) const { return is( Type::FLOAT    ); }
   bool isString  ( void ) const { return is( Type::STRING   ); }
   bool isArray   ( void ) const { return is( Type::ARRAY    ); }
-  bool isMap     ( void ) const { return is( Type::MAP      ); }
+  bool isFrame     ( void ) const { return is( Type::FRAME    ); }
   bool isFunction( void ) const { return is( Type::FUNCTION ); }
   bool isNode    ( void ) const { return is( Type::NODE     ); }
   bool isOutput  ( void ) const { return is( Type::OUTPUT   ); }
   bool isInput   ( void ) const { return is( Type::INPUT    ); }
-  bool isParam   ( void ) const { return is( Type::PARAM    ); }
   bool isSequence( void ) const { return is( Type::SEQUENCE ); }
 
   bool isScalar( void ) const { return getType().isScalar(); }
   bool isInteger( void ) const { return getType().isInteger(); }
+  bool isPrimitive( void ) const { return getType().isPrimitive(); }
 
   bool      getBool    ( void ) const { assert( isBool    () ); return b   ; }
   int       getInt     ( void ) const { assert( isInt     () ); return i   ; }
   float     getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
   String          getString  ( void ) const { assert( isString  () ); return String( str ); }
   Array          *getArray   ( void ) const { assert( isArray   () ); return arr ; }
-  Map            *getMap     ( void ) const { assert( isMap     () ); return map ; }
+  Frame          *getFrame   ( void ) const { assert( isFrame   () ); return frame; }
   Function       *getFunction( void ) const { assert( isFunction() ); return func; }
   Node           *getNode    ( void ) const { assert( isNode    () ); return node; }
   Output         *getOutput  ( void ) const { assert( isOutput  () ); return out ; }
   Input          *getInput   ( void ) const { assert( isInput   () ); return in  ; }
-  Param          *getParam   ( void ) const { assert( isParam   () ); return para; }
   Sequence const *getSequence( void ) const { assert( isSequence() ); return seq ; }
 
   const void *getP( void ) const { return p; }
@@ -140,12 +136,11 @@ private:
     float     f   ;
     StringData const *str ;
     Array          *arr ;
-    Map            *map ;
+    Frame          *frame;
     Function       *func;
     Node           *node;
     Output         *out ;
     Input          *in  ;
-    Param          *para;
     Sequence const *seq ;
   };
   Type m_type;

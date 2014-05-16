@@ -4,7 +4,7 @@
 #include <RPGML/Scope.h>
 #include <RPGML/Context.h>
 #include <RPGML/GarbageCollector.h>
-#include <RPGML/Map.h>
+#include <RPGML/Frame.h>
 #include <RPGML/FileSource.h>
 #include <RPGML/InterpretingParser.h>
 
@@ -37,32 +37,40 @@ private:
 
 int main( int argc, char **argv )
 {
-  CountPtr< Source > source;
-
-  if( argc > 1 )
+  try
   {
-    FILE *file = fopen( argv[ 1 ], "r" );
-    if( !file )
+    CountPtr< Source > source;
+
+    if( argc > 1 )
     {
-      std::cerr << "Could not open file '" << argv[ 1 ] << "': " << strerror( errno ) << std::endl;
-      return -1;
+      FILE *file = fopen( argv[ 1 ], "r" );
+      if( !file )
+      {
+        std::cerr << "Could not open file '" << argv[ 1 ] << "': " << strerror( errno ) << std::endl;
+        return -1;
+      }
+      source = new FileSource( file );
     }
-    source = new FileSource( file );
+    else
+    {
+      source = new FileSource( stdin );
+    }
+
+    CountPtr< StringUnifier > unifier = new StringUnifier();
+    CountPtr< Context > context = new Context( unifier );
+    CountPtr< Scope > scope = context->createScope();
+
+  //  PrettyPrintingParser parser( unifier, source, &std::cerr );
+    InterpretingParser parser( scope, source );
+
+    parser.parse();
+
+    return 0;
   }
-  else
+  catch( const char *e )
   {
-    source = new FileSource( stdin );
+    std::cerr << e << std::endl;
+    return -1;
   }
-
-  CountPtr< StringUnifier > unifier = new StringUnifier();
-  CountPtr< Context > context = new Context( unifier );
-  CountPtr< Scope > scope = context->createScope();
-
-//  PrettyPrintingParser parser( unifier, source, &std::cerr );
-  InterpretingParser parser( scope, source );
-
-  parser.parse();
-
-  return 0;
 }
 

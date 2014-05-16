@@ -2,7 +2,7 @@
 #define RPGML_Node_h
 
 #include "GarbageCollector.h"
-#include "Map.h"
+#include "Frame.h"
 
 #include <vector>
 
@@ -11,7 +11,6 @@ namespace RPGML {
 class Port;
 class Input;
 class Output;
-class Param;
 class Node;
 
 class Port : public Collectable
@@ -24,7 +23,7 @@ public:
   const String &getIdentifier( void ) const;
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
 private:
   CountPtr< Node > m_parent;
@@ -38,7 +37,7 @@ public:
   virtual ~Input( void );
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
   void disconnect( void );
   void connect( Output *output );
@@ -63,70 +62,47 @@ public:
   bool isConnected( void ) const;
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
 private:
   typedef std::vector< CountPtr< Input > > inputs_t;
   inputs_t m_inputs;
 };
 
-class Param : public Collectable
+class Node : public Frame
 {
 public:
-  Param( GarbageCollector *gc, Node *parent, const String &identifier, Type type = Type::Invalid() );
-  virtual ~Param( void );
-
-  Node *getParent( void ) const;
-  const String &getIdentifier( void ) const;
-
-  virtual bool set( const Value &value );
-  const Value &get( void ) const;
-
-  virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
-
-private:
-  CountPtr< Node > m_parent;
-  String m_identifier;
-  Value m_value;
-  Type m_type;
-};
-
-class Node : public Map
-{
-public:
-  explicit
-  Node( GarbageCollector *gc, const String &global_name, Map *parent=0 );
+  Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const SharedObject *so );
 
   virtual ~Node( void );
 
   const String &getGlobalName( void ) const;
+  const SharedObject *getSO( void ) const;
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
-
-protected:
-  friend class Param;
-  bool setParamRecord( const Param *param );
+  virtual void gc_getChildren( Children &children ) const;
 
 private:
-  struct SetParameter
-  {
-    explicit
-    SetParameter( const Param *_param, const Value &_value )
-    : param( _param )
-    , value( _value )
-    {}
-
-    CountPtr< const Param > param;
-    Value value;
-  };
-
-  std::vector< SetParameter > m_setParameters;
+  std::vector< Value > m_args;
   const String m_global_name;
+  CountPtr< const SharedObject > m_so;
 };
 
 } // namespace RPGML
+
+#define RPGML_CREATE_FUNCTION( NAME ) \
+  extern "C"\
+  RPGML::CountPtr< RPGML::Function > NAME ## _create_Function( RPGML::GarbageCollector *gc, RPGML::Frame *parent, const RPGML::SharedObject *so )\
+  {\
+    return new RPGML::NAME( gc, parent, so );\
+  }\
+
+#define RPGML_CREATE_NODE( NAME ) \
+  extern "C"\
+  RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &global_name, RPGML::index_t n_args, const RPGML::Value *args, const RPGML::SharedObject *so )\
+  {\
+    return new RPGML::NAME::Node( gc, global_name, n_args, args, so );\
+  }\
 
 #endif
 

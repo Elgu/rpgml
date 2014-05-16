@@ -48,32 +48,12 @@ public:
   virtual ~Location( void )
   {}
 
-  /*
-  Location &set(
-      const String &_filename
-    , int begin_line=0, int begin_column=0
-    , int end_line=0, int end_column=0
-    )
-  {
-    filename = _filename;
-    begin.set( begin_line, begin_column );
-    end.set( end_line, end_column );
-    return (*this);
-  }
 
-  void swap( Location &other )
-  {
-    std::swap( filename, other.filename );
-    begin.swap( other.begin );
-    end.swap( other.end );
-  }
-  */
-
-  std::ostream &print( std::ostream &o, bool is_parent=false ) const
+  std::ostream &print( std::ostream &o, bool with_filename=true, bool is_parent=false ) const
   {
     if( parent )
     {
-      parent->print( o, true );
+      parent->print( o, with_filename, true );
       o << std::endl;
     }
 
@@ -113,6 +93,23 @@ public:
     return o;
   }
 
+  class WithoutFilename
+  {
+    friend class Location;
+  private:
+    explicit
+    WithoutFilename( const Location *_loc )
+    : loc( _loc )
+    {}
+  public:
+    CountPtr< const Location > loc;
+  };
+
+  WithoutFilename withoutFilename( void ) const
+  {
+    return WithoutFilename( this );
+  }
+
 private:
   const String filename;
   const Position begin;
@@ -126,6 +123,12 @@ inline
 std::ostream &operator<<( std::ostream &o, const RPGML::Location &p )
 {
   return p.print( o );
+}
+
+inline
+std::ostream &operator<<( std::ostream &o, const RPGML::Location::WithoutFilename &p )
+{
+  return p.loc->print( o, false );
 }
 
 #endif

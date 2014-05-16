@@ -5,6 +5,7 @@
 #include <string>
 #include <cstring>
 #include <ostream>
+#include <sstream>
 
 namespace RPGML {
   class String;
@@ -119,9 +120,7 @@ public:
   static
   String Static( const char *str )
   {
-    String ret;
-    ret.m_str = new StaticString( str );
-    return ret;
+    return String( new StaticString( str ) );
   }
 
   virtual ~String( void )
@@ -299,11 +298,34 @@ String operator+( const char *s1, const String &s2 )
   return String( s1, ( s1 ? strlen( s1 ) : 0 ), s2.c_str(), s2.length() );
 }
 
+template< class Type >
 inline
-String f( const String &x, const char *y )
+String toString( const Type &x )
 {
-  RPGML::String ret = x + y;
-  return ret;
+  std::ostringstream str;
+  str << x;
+  return String( str.str() );
+}
+
+template<>
+inline
+String toString< String >( const String &x )
+{
+  return x;
+}
+
+template<>
+inline
+String toString< const char* >( const char *const &x )
+{
+  return String( x );
+}
+
+template<>
+inline
+String toString< std::string >( const std::string &x )
+{
+  return String( x );
 }
 
 } // namespace RPGML

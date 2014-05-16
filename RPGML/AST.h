@@ -18,7 +18,7 @@ class Visitor;
 class Expression;
 class ConstantExpression;
 class ArrayConstantExpression;
-class MapConstantExpression;
+class FrameConstantExpression;
 class SequenceExpression;
 class ParenthisSequenceExpression;
 class ExpressionSequenceExpression;
@@ -80,7 +80,7 @@ public:
 
   virtual bool visit( const ConstantExpression           *node ) = 0;
   virtual bool visit( const ArrayConstantExpression      *node ) = 0;
-  virtual bool visit( const MapConstantExpression        *node ) = 0;
+  virtual bool visit( const FrameConstantExpression        *node ) = 0;
   virtual bool visit( const ParenthisSequenceExpression  *node ) = 0;
   virtual bool visit( const ExpressionSequenceExpression *node ) = 0;
   virtual bool visit( const FromToStepSequenceExpression *node ) = 0;
@@ -164,15 +164,15 @@ public:
   const CountPtr< const SequenceExpression > sequence;
 };
 
-class MapConstantExpression : public Expression
+class FrameConstantExpression : public Expression
 {
 public:
-  MapConstantExpression( const Location *_loc, const CompoundStatement *_body )
+  FrameConstantExpression( const Location *_loc, const CompoundStatement *_body )
   : Expression( _loc )
   , body( _body )
   {}
 
-  virtual ~MapConstantExpression( void ) {}
+  virtual ~FrameConstantExpression( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 

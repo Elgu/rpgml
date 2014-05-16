@@ -1,4 +1,4 @@
-#include "Map.h"
+#include "Frame.h"
 
 #include "String.h"
 #include "Scope.h"
@@ -12,89 +12,100 @@
 
 namespace RPGML {
 
-Map::Map( GarbageCollector *_gc, Map *parent, const String &path )
+Frame::Frame( GarbageCollector *_gc, Frame *parent, const String &path )
 : Collectable( _gc )
 , m_parent( parent )
 , m_path( path )
 , m_depth( parent ? parent->getDepth()+1 : 0 )
-, m_is_this_map( false )
+, m_is_this( false )
 {}
 
-Map::~Map( void )
+Frame::~Frame( void )
 {}
 
-Map *Map::getParent( void ) const
+Frame *Frame::getParent( void ) const
 {
   return m_parent;
 }
 
-const String &Map::getPath( void ) const
+const String &Frame::getPath( void ) const
 {
   return m_path;
 }
 
-Map &Map::setIdentifier( const String &identifier )
+Frame &Frame::setIdentifier( const String &identifier )
 {
   m_identifier = identifier;
   return (*this);
 }
 
-const String &Map::getIdentifier( void ) const
+const String &Frame::getIdentifier( void ) const
 {
   return m_identifier;
 }
 
-Map &Map::setThisMap( bool is_this_map )
+Frame &Frame::setThis( bool is_this )
 {
-  m_is_this_map = is_this_map;
+  m_is_this = is_this;
   return (*this);
 }
 
-bool Map::isThisMap( void ) const
+bool Frame::isThis( void ) const
 {
-  return m_is_this_map;
+  return m_is_this;
 }
 
-index_t Map::getDepth( void ) const
+index_t Frame::getDepth( void ) const
 {
   return m_depth;
 }
 
-index_t Map::getIndex( const Value &key ) const
+void Frame::reserve( index_t n )
 {
-  map_t::const_iterator iter = m_map.find( key );
-  if( iter != m_map.end() )
-  {
-    return iter->second;
-  }
-  else
-  {
-    return unknown;
-  }
+  m_values.reserve( n );
 }
 
-index_t Map::getCreateIndex( const Value &key, bool *existed_p )
+index_t Frame::getIndex( const String &identifier ) const
 {
-  if( key.isInvalid() ) throw "key is invalid";
-  map_t::const_iterator iter = m_map.find( key );
-  if( iter != m_map.end() )
+  const int n = int( m_identifiers.size() );
+  for( int i = n-1; i>=0; --i )
+  {
+    if( m_identifiers[ i ] == identifier )
+    {
+      return index_t( i );
+    }
+  }
+  return unknown;
+}
+
+index_t Frame::getCreateIndex( const String &identifier, bool *existed_p )
+{
+  index_t index = getIndex( identifier );
+  if( unknown != index )
   {
     if( existed_p ) (*existed_p) = true;
-    return iter->second;
-  }
-  else
-  {
-    if( existed_p ) (*existed_p) = false;
-    const index_t index = index_t( m_values.size() );
-    m_map.insert( std::make_pair( key, index ) );
-    m_values.resize( index+1 );
     return index;
   }
+
+  assert( m_values.size() == m_identifiers.size() );
+  index = index_t( m_values.size() );
+  m_values     .push_back( Value() );
+  m_identifiers.push_back( identifier );
+
+  if( existed_p ) (*existed_p) = false;
+  return index;
 }
 
-const Value *Map::get( const Value &key ) const
+index_t Frame::set( const String &identifier, const Value &value )
 {
-  const index_t index = getIndex( key );
+  const index_t index = getCreateIndex( identifier );
+  m_values[ index ] = value;
+  return index;
+}
+
+const Value *Frame::get( const String &identifier ) const
+{
+  const index_t index = getIndex( identifier );
 
   if( index != unknown )
   {
@@ -106,11 +117,14 @@ const Value *Map::get( const Value &key ) const
   }
 }
 
-Value *Map::get( const Value &key )
+Value *Frame::get( const String &identifier )
 {
-  const index_t index = getIndex( key );
+  return const_cast< Value* >( ((const Frame*)this)->get( identifier ) );
+}
 
-  if( index != unknown )
+const Value *Frame::get( index_t index ) const
+{
+  if( size_t( index ) < m_values.size() )
   {
     return &m_values[ index ];
   }
@@ -120,9 +134,50 @@ Value *Map::get( const Value &key )
   }
 }
 
-Value *Map::load( const Value &key, const Scope *scope )
+Value       *Frame::get( index_t index )
 {
-  const index_t index = getIndex( key );
+  return const_cast< Value* >( ((const Frame*)this)->get( index ) );
+}
+
+Value *Frame::push_back( const String &identifier, const Value &value )
+{
+  assert( m_values.size() == m_identifiers.size() );
+  const index_t index = index_t( m_values.size() );
+
+  m_identifiers.push_back( identifier );
+  m_values.push_back( value );
+
+  return &m_values[ index ];
+}
+
+void Frame::pop_back( void )
+{
+  assert( m_values.size() == m_identifiers.size() );
+  if( m_values.empty() ) throw "Frame already empty";
+
+  const size_t new_size = m_values.size()-1;
+  m_values.resize( new_size );
+  m_identifiers.resize( new_size );
+}
+
+Frame::PushPopGuard::PushPopGuard( Frame *frame, const String &identifier, const Value &value )
+: m_frame( frame )
+, m_value( m_frame ? m_frame->push_back( identifier, value ) : 0 )
+{}
+
+Frame::PushPopGuard::~PushPopGuard( void )
+{
+  if( m_frame ) m_frame->pop_back();
+}
+
+Value *Frame::PushPopGuard::get( void ) const
+{
+  return m_value;
+}
+
+Value *Frame::load( const String &identifier, const Scope *scope )
+{
+  const index_t index = getIndex( identifier );
 
   if( index != unknown )
   {
@@ -133,14 +188,6 @@ Value *Map::load( const Value &key, const Scope *scope )
 
   if( !getPath().empty() || is_root )
   {
-    String identifier;
-    try
-    {
-      identifier = key.to( Type::String() ).getString();
-    }
-    catch( const char * )
-    {}
-
     if( !identifier.empty() )
     {
       if( is_root )
@@ -157,38 +204,53 @@ Value *Map::load( const Value &key, const Scope *scope )
   return 0;
 }
 
-Value *Map::load_local ( const String &identifier, const Scope *scope )
+Value *Frame::load_local ( const String &identifier, const Scope *scope )
 {
   return load( getPath(), identifier, scope );
 }
 
-Value *Map::load_global( const String &identifier, const Scope *scope )
+Value *Frame::load_global( const String &identifier, const Scope *scope )
 {
   return load( ".", identifier, scope );
 }
 
-Value *Map::load( const String &path, const String &identifier, const Scope *scope )
+Value *Frame::load( const String &path, const String &identifier, const Scope *scope )
 {
+	// Check whether identifier refers to a directory, use it as namespace
   String dir = path + "/" + identifier;
   DIR *const dir_p = opendir( dir.c_str() );
   if( dir_p )
   {
     closedir( dir_p );
-    return set( Value( identifier ), Value( new Map( getGC(), this, dir ) ) );
+    return get( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
   }
 
+	// Check whether identifier refers to a plugin
   const String so = path + "/libRPGML_" + identifier + ".so";
-  String err;
-  CountPtr< SharedObject > so_p = new SharedObject( so, err );
-  if( so_p->isValid() )
+  FILE *so_file = fopen( so.c_str(), "rb" );
+  if( so_file )
   {
-    CountPtr< SharedObject::Symbol< function_creator_f > > create_function =
-      so_p->getSymbol< function_creator_f >( identifier + "_create", err );
-    CountPtr< Function > function = (**create_function)( getGC(), create_function.get() );
+    fclose( so_file );
 
-    return set( Value( identifier ), Value( function ) );
+    String err;
+    CountPtr< SharedObject > so_p = new SharedObject( so, err );
+    if( so_p->isValid() )
+    {
+      create_Function_t create_function;
+      if( so_p->getSymbol( identifier + "_create_Function", create_function, err ) )
+      {
+        CountPtr< Function > function = create_function( getGC(), this, so_p.get() );
+        return get( set( identifier, Value( function ) ) );
+      }
+    }
+    else
+    {
+      std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
+      throw "Opening so failed";
+    }
   }
 
+	// Check whether identifier refers to a script
   const String rpgml = path + "/" + identifier + ".rpgml";
   FILE *const rpgml_p = fopen( rpgml.c_str(), "r" );
   if( rpgml_p )
@@ -205,7 +267,7 @@ Value *Map::load( const String &path, const String &identifier, const Scope *sco
       throw e;
     }
 
-    Value *const ret = get( Value( identifier ) );
+    Value *const ret = get( identifier );
     if( !ret )
     {
       throw "variable was not defined in rpgml file";
@@ -216,72 +278,15 @@ Value *Map::load( const String &path, const String &identifier, const Scope *sco
   return 0;
 }
 
-Value *Map::set( const Value &key, const Value &value )
-{
-  if( key.isInvalid() ) throw "key is invalid";
-  Value &ret = (*this)[ key ];
-  ret = value;
-
-//  std::cerr << "Map::set( " << key << ", " << value << " )" << std::endl;
-//  std::cerr << "  " << Value( this ) << std::endl;
-
-  return &ret;
-}
-
-Value &Map::operator[]( const Value &key )
-{
-  if( key.isInvalid() ) throw "key is invalid";
-  return m_values[ getCreateIndex( key ) ];
-}
-
-const Value &Map::operator[]( const Value &key ) const
-{
-  const Value *const ret = get( key );
-  if( !ret ) throw "Unknown key";
-  return (*ret);
-}
-
-Value &Map::operator[]( index_t index )
-{
-  if( index < m_values.size() )
-  {
-    return m_values[ index ];
-  }
-  throw "Index out of range";
-}
-
-const Value &Map::operator[]( index_t index ) const
-{
-  if( index < m_values.size() )
-  {
-    return m_values[ index ];
-  }
-  throw "Index out of range";
-}
-
-index_t Map::push( const Value &key )
-{
-  if( key.isInvalid() ) throw "key is invalid";
-  return getCreateIndex( key );
-}
-
-index_t Map::pop( index_t n )
-{
-  const index_t old_size = index_t( m_values.size() );
-  const index_t new_size = ( n >= old_size ? old_size - n : 0 );
-  m_values.resize( new_size );
-  return new_size;
-}
-
-void Map::gc_clear( void )
+void Frame::gc_clear( void )
 {
   m_values.clear();
-  m_map.clear();
+  m_identifiers.clear();
   m_identifier.clear();
   m_parent.reset();
 }
 
-void Map::getChildren( Children &children ) const
+void Frame::gc_getChildren( Children &children ) const
 {
   children.push_back( m_parent );
 
@@ -292,32 +297,6 @@ void Map::getChildren( Children &children ) const
     {
       children.push_back( value.getCollectable() );
     }
-  }
-
-  for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
-  {
-    const Value &value = i->first;
-    if( value.isCollectable() )
-    {
-      children.push_back( value.getCollectable() );
-    }
-  }
-}
-
-bool Map::map_less_than::operator()( const Value &x, const Value &y ) const
-{
-  const Type::Enum e1 = x.getType().getEnum();
-  const Type::Enum e2 = y.getType().getEnum();
-  if( e1 < e2 ) return true;
-  if( e1 > e2 ) return false;
-
-  if( x.isString() )
-  {
-    return x.getString() < y.getString();
-  }
-  else
-  {
-    return ( x.getP() < y.getP() );
   }
 }
 

@@ -1,7 +1,7 @@
 #include "Scope.h"
 
 #include "Context.h"
-#include "Map.h"
+#include "Frame.h"
 #include "Value.h"
 #include "String.h"
 #include "StringUnifier.h"
@@ -29,17 +29,16 @@ StringUnifier *Scope::getUnifier( void ) const
   return m_context->getUnifier();
 }
 
-Map *Scope::getRoot( void ) const
+Frame *Scope::getRoot( void ) const
 {
   return m_context->getRoot();
 }
 
 Value *Scope::lookup( const String &identifier ) const
 {
-  const Value id( identifier );
-  for( Map *curr = getCurr(); curr; curr = curr->getParent() )
+  for( Frame *curr = getCurr(); curr; curr = curr->getParent() )
   {
-    Value *const ret = curr->load( id, this );
+    Value *const ret = curr->load( identifier, this );
     if( ret ) return ret;
   }
 
@@ -53,25 +52,18 @@ Value *Scope::lookup( const char *identifier ) const
 
 Value *Scope::lookup( const std::string &identifier ) const
 {
-  return lookup( identifier.c_str() );
+  return lookup( String( new StdString( identifier ) ) );
 }
 
 Value *Scope::create_unified( const String &unified_identifier, const Value &value ) const
 {
-  Map *const curr = getCurr();
+  Frame *const curr = getCurr();
 
-  bool exists = false;
-  const index_t index = curr->getCreateIndex( Value( unified_identifier ), &exists );
+  const index_t index = curr->getIndex( unified_identifier );
 
-  if( !exists )
+  if( index == Frame::unknown )
   {
-    Value &ret = (*curr)[ index ];
-    ret = value;
-
-//  std::cerr << "Scope::create_unified( \"" << unified_identifier << "\", " << value << " )" << std::endl;
-//  std::cerr << "  " << Value( curr ) << std::endl;
-
-    return &ret;
+    return curr->push_back( unified_identifier, value );
   }
   else
   {
@@ -98,10 +90,10 @@ Value *Scope::create( const std::string &identifier, const Value &value ) const
 
 CountPtr< Scope::EnterLeaveGuard > Scope::enter( const String &identifier )
 {
-  Value *const n = getCurr()->get( Value( identifier ) );
-  if( n && n->isMap() )
+  Value *const n = getCurr()->get( identifier );
+  if( n && n->isFrame() )
   {
-    return new EnterLeaveGuard( this, n->getMap() );
+    return new EnterLeaveGuard( this, n->getFrame() );
   }
   else
   {
@@ -134,7 +126,40 @@ const StringData *Scope::unify( const std::string &identifier ) const
   return m_context->getUnifier()->unify( identifier );
 }
 
-Scope &Scope::setCurr( Map *curr )
+CountPtr< Frame > Scope::new_Frame( void ) const
+{
+  return new Frame( getGC(), getCurr() );
+}
+
+String Scope::genGlobalName( const String &identifier ) const
+{
+  String ret = identifier;
+
+  for( const Frame *m = getCurr(); m; m = m->getParent() )
+  {
+    const String &id = m->getIdentifier();
+    if( !id.empty() )
+    {
+      if( ret.empty() )
+      {
+        ret = id;
+      }
+      else
+      {
+        ret = id + "." + ret;
+      }
+    }
+  }
+
+  return ret;
+}
+
+size_t Scope::getNr( void ) const
+{
+  return m_context->getNr();
+}
+
+Scope &Scope::setCurr( Frame *curr )
 {
   m_curr = curr;
   return (*this);

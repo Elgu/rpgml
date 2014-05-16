@@ -2,7 +2,7 @@
 
 #include "String.h"
 #include "Array.h"
-#include "Map.h"
+#include "Frame.h"
 #include "Function.h"
 #include "Node.h"
 #include "Sequence.h"
@@ -33,12 +33,11 @@ Value::Value( const Value &other )
     case Type::FLOAT   : break;
     case Type::STRING  : str ->ref(); break;
     case Type::ARRAY   : arr ->ref(); break;
-    case Type::MAP     : map ->ref(); break;
+    case Type::FRAME   : frame->ref(); break;
     case Type::FUNCTION: func->ref(); break;
     case Type::NODE    : node->ref(); break;
     case Type::OUTPUT  : out ->ref(); break;
     case Type::INPUT   : in  ->ref(); break;
-    case Type::PARAM   : para->ref(); break;
     case Type::SEQUENCE: seq ->ref(); break;
   }
 }
@@ -46,18 +45,17 @@ Value::Value( const Value &other )
 Value::Value( bool      _b    ) : m_type( Type::BOOL     ) { b    = _b   ; }
 Value::Value( int       _i    ) : m_type( Type::INT      ) { i    = _i   ; }
 Value::Value( float     _f    ) : m_type( Type::FLOAT    ) { f    = _f   ; }
-Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { str  = String(_str).getData(); str->ref(); }
-Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { str  = String(_str).getData(); str->ref(); }
+Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
+Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { str  = _str.getData(); str->ref(); }
 Value::Value( StringData  const *_str  ) : m_type( Type::STRING   ) { str  = _str; str->ref(); }
-Value::Value( Array          *_arr  ) : m_type( Type::ARRAY    ) { arr  = _arr ; arr ->ref(); }
-Value::Value( Map            *_map  ) : m_type( Type::MAP      ) { map  = _map ; map ->ref(); }
-Value::Value( Function       *_func ) : m_type( Type::FUNCTION ) { func = _func; func->ref(); }
-Value::Value( Node           *_node ) : m_type( Type::NODE     ) { node = _node; node->ref(); }
-Value::Value( Output         *_out  ) : m_type( Type::OUTPUT   ) { out  = _out ; out ->ref(); }
-Value::Value( Input          *_in   ) : m_type( Type::INPUT    ) { in   = _in  ; in  ->ref(); }
-Value::Value( Param          *_para ) : m_type( Type::PARAM    ) { para = _para; para->ref(); }
-Value::Value( Sequence const *_seq  ) : m_type( Type::SEQUENCE ) { seq  = _seq ; seq ->ref(); }
+Value::Value( Array          *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; arr  ->ref(); }
+Value::Value( Frame          *_frame ) : m_type( Type::FRAME    ) { frame = _frame; frame->ref(); }
+Value::Value( Function       *_func  ) : m_type( Type::FUNCTION ) { func  = _func ; func ->ref(); }
+Value::Value( Node           *_node  ) : m_type( Type::NODE     ) { node  = _node ; node ->ref(); }
+Value::Value( Output         *_out   ) : m_type( Type::OUTPUT   ) { out   = _out  ; out  ->ref(); }
+Value::Value( Input          *_in    ) : m_type( Type::INPUT    ) { in    = _in   ; in   ->ref(); }
+Value::Value( Sequence const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; seq  ->ref(); }
 
 Value &Value::set( bool               _b    ) { return (*this) = Value( _b    ); }
 Value &Value::set( int                _i    ) { return (*this) = Value( _i    ); }
@@ -67,12 +65,11 @@ Value &Value::set( char        const *_str  ) { return (*this) = Value( _str  );
 Value &Value::set( String      const &_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( StringData  const *_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( Array             *_arr  ) { return (*this) = Value( _arr  ); }
-Value &Value::set( Map               *_map  ) { return (*this) = Value( _map  ); }
+Value &Value::set( Frame               *_frame  ) { return (*this) = Value( _frame  ); }
 Value &Value::set( Function          *_func ) { return (*this) = Value( _func ); }
 Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
 Value &Value::set( Output            *_out  ) { return (*this) = Value( _out  ); }
 Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   ); }
-Value &Value::set( Param             *_para ) { return (*this) = Value( _para ); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 
 Value &Value::operator=( Value other )
@@ -91,12 +88,11 @@ void Value::clear( void )
     case Type::FLOAT   : break;
     case Type::STRING  : if( !str ->unref() ) delete str ; break;
     case Type::ARRAY   : if( !arr ->unref() ) delete arr ; break;
-    case Type::MAP     : if( !map ->unref() ) delete map ; break;
+    case Type::FRAME   : if( !frame->unref() ) delete frame ; break;
     case Type::FUNCTION: if( !func->unref() ) delete func; break;
     case Type::NODE    : if( !node->unref() ) delete node; break;
     case Type::OUTPUT  : if( !out ->unref() ) delete out ; break;
     case Type::INPUT   : if( !in  ->unref() ) delete in  ; break;
-    case Type::PARAM   : if( !para->unref() ) delete para; break;
     case Type::SEQUENCE: if( !seq ->unref() ) delete seq ; break;
   }
   p = 0;
@@ -118,12 +114,11 @@ bool Value::isCollectable( void ) const
     | ( 0 << Type::FLOAT    )
     | ( 0 << Type::STRING   )
     | ( 1 << Type::ARRAY    )
-    | ( 1 << Type::MAP      )
+    | ( 1 << Type::FRAME    )
     | ( 1 << Type::FUNCTION )
     | ( 1 << Type::NODE     )
     | ( 1 << Type::OUTPUT   )
     | ( 1 << Type::INPUT    )
-    | ( 1 << Type::PARAM    )
     | ( 1 << Type::SEQUENCE )
     ;
   return flags & ( 1 << m_type.getEnum() );
@@ -139,12 +134,11 @@ const Collectable *Value::getCollectable( void ) const
     case Type::FLOAT   : return 0;
     case Type::STRING  : return 0;
     case Type::ARRAY   : return arr ;
-    case Type::MAP     : return map ;
+    case Type::FRAME   : return frame ;
     case Type::FUNCTION: return func;
     case Type::NODE    : return node;
     case Type::OUTPUT  : return out ;
     case Type::INPUT   : return in  ;
-    case Type::PARAM   : return para;
     case Type::SEQUENCE: return seq ;
   }
   return 0;
@@ -752,13 +746,13 @@ std::ostream &Value::print( std::ostream &o ) const
       }
       break;
 
-    case Type::MAP     :
+    case Type::FRAME:
       {
-        const Map *m = getMap();
+        const Frame *m = getFrame();
         o << "{ ";
-        for( CountPtr< RPGML::Map::Iterator > j( m->getIterator() ); !j->done(); j->next() )
+        for( CountPtr< RPGML::Frame::Iterator > j( m->getIterator() ); !j->done(); j->next() )
         {
-          const Map::Iterator::Type v( j->get() );
+          const Frame::Iterator::Type v( j->get() );
           o << " " << v.second.getTypeName() << " [ " << v.first << " ] = " << v.second << ";";
         }
         o << " }";
@@ -784,16 +778,6 @@ std::ostream &Value::print( std::ostream &o ) const
         o
           << "Input( " << input->getParent()->getGlobalName()
           << ", " << input->getIdentifier() << " )"
-          ;
-      }
-      break;
-
-    case Type::PARAM   :
-      {
-        const Param *const param = getParam();
-        o
-          << "Param( " << param->getParent()->getGlobalName()
-          << ", " << param->getIdentifier() << " )"
           ;
       }
       break;

@@ -7,7 +7,8 @@
 namespace RPGML {
 
 SharedObject::SharedObject( const String      &so, String &err )
-: m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND ) )
+: m_so( so )
+, m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND | RTLD_LOCAL ) )
 {
   if( !isValid() )
     err = String( dlerror() );
@@ -16,7 +17,8 @@ SharedObject::SharedObject( const String      &so, String &err )
 }
 
 SharedObject::SharedObject( const std::string &so, String &err )
-: m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND ) )
+: m_so( so )
+, m_handle( dlopen( so.c_str(), RTLD_NOW | RTLD_DEEPBIND | RTLD_LOCAL ) )
 {
   if( !isValid() )
     err = String( dlerror() );
@@ -25,7 +27,8 @@ SharedObject::SharedObject( const std::string &so, String &err )
 }
 
 SharedObject::SharedObject( const char *so, String &err )
-: m_handle( dlopen( so, RTLD_NOW | RTLD_DEEPBIND ) )
+: m_so( so )
+, m_handle( dlopen( so, RTLD_NOW | RTLD_DEEPBIND | RTLD_LOCAL ) )
 {
   if( !isValid() )
     err = String( dlerror() );
@@ -35,7 +38,7 @@ SharedObject::SharedObject( const char *so, String &err )
 
 SharedObject::~SharedObject( void )
 {
-  if( m_handle ) dlclose( m_handle );
+//  if( m_handle ) dlclose( m_handle );
 }
 
 bool SharedObject::isValid( void ) const
