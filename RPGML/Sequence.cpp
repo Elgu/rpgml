@@ -52,7 +52,7 @@ public:
   virtual void gc_clear( void )
   {}
 
-  virtual void getChildren( Children & ) const
+  virtual void gc_getChildren( Children & ) const
   {
     return;
   }
@@ -161,7 +161,7 @@ std::ostream &SequenceValueArray::print( std::ostream &o ) const
 void SequenceValueArray::gc_clear( void )
 {}
 
-void SequenceValueArray::getChildren( Children &children ) const
+void SequenceValueArray::gc_getChildren( Children &children ) const
 {
   children.push_back( m_array );
 }

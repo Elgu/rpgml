@@ -27,7 +27,7 @@ enum BOP
 };
 
 static inline
-const char *getBOP( BOP bop )
+const char *getBOPStr( BOP bop )
 {
   static
   const char *const op[] =
@@ -44,6 +44,110 @@ const char *getBOP( BOP bop )
   return op[ bop ];
 }
 
+static inline
+BOP getBOP( const char *const bop )
+{
+  switch( bop[ 0 ] )
+  {
+    case '<':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_LT;
+        case  '<': return BOP_LEFT;
+        case  '=': return BOP_LE;
+        default: goto fail;
+      }
+      break;
+    case '>':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_GT;
+        case  '>': return BOP_RIGHT;
+        case  '=': return BOP_GE;
+        default: goto fail;
+      }
+      break;
+    case '=':
+      switch( bop[ 1 ] )
+      {
+        case  '=': return BOP_EQ;
+        default: goto fail;
+      }
+      break;
+    case '!':
+      switch( bop[ 1 ] )
+      {
+        case  '=': return BOP_NE;
+        default: goto fail;
+      }
+      break;
+    case '&':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_BIT_AND;
+        case  '&': return BOP_LOG_AND;
+        default: goto fail;
+      }
+      break;
+    case '|':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_BIT_OR;
+        case  '|': return BOP_LOG_OR;
+        default: goto fail;
+      }
+      break;
+    case '^':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_BIT_XOR;
+        case  '^': return BOP_LOG_XOR;
+        default: goto fail;
+      }
+      break;
+    case '*':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_MUL;
+        default: goto fail;
+      }
+      break;
+    case '/':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_DIV;
+        default: goto fail;
+      }
+      break;
+    case '+':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_ADD;
+        default: goto fail;
+      }
+      break;
+    case '-':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_SUB;
+        default: goto fail;
+      }
+      break;
+    case '%':
+      switch( bop[ 1 ] )
+      {
+        case '\0': return BOP_MOD;
+        default: goto fail;
+      }
+      break;
+    default:
+      goto fail;
+  }
+
+fail:
+  throw "Invalid bop";
+}
+
 enum UOP
 {
     UOP_MINUS
@@ -53,12 +157,30 @@ enum UOP
 };
 
 static inline
-const char *getUOP( UOP uop )
+const char *getUOPStr( UOP uop )
 {
   static
   const char *const op[] =
   { "-", "+", "!", "~" };
   return op[ uop ];
+}
+
+static inline
+UOP getUOP( const char *uop )
+{
+  if( !uop[ 0 ] || uop[ 1 ] ) goto fail;
+
+  switch( uop[ 0 ] )
+  {
+    case '-': return UOP_MINUS;
+    case '+': return UOP_PLUS;
+    case '!': return UOP_LOG_NOT;
+    case '~': return UOP_BIT_NOT;
+    default: goto fail;
+  }
+
+fail:
+  throw "Invalid uop";
 }
 
 enum ASSIGN

@@ -5,10 +5,8 @@
 #include "Sequence.h"
 #include "Scope.h"
 #include "Function.h"
-#include "Map.h"
+#include "Frame.h"
 #include "InterpretingFunction.h"
-#include "UnaryOp.h"
-#include "BinaryOp.h"
 
 #include <iostream>
 
@@ -19,8 +17,27 @@ InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursio
 , scope( _scope )
 , return_encountered( false )
 {
-  unary_Function  = new UnaryOp ( scope->getGC(), scope->getCurr() );
-  binary_Function = new BinaryOp( scope->getGC(), scope->getCurr() );
+  const Value *const unaryOp_v  = scope->lookup( "unaryOp" );
+  if( !unaryOp_v )
+  {
+    throw "'unaryOp' not found";
+  }
+  if( !unaryOp_v->isFunction() )
+  {
+    throw "'unaryOp' is not a Function";
+  }
+  unaryOp = unaryOp_v->getFunction();
+
+  const Value *const binaryOp_v = scope->lookup( "binaryOp" );
+  if( !binaryOp_v )
+  {
+    throw "'binaryOp' not found";
+  }
+  if( !binaryOp_v->isFunction() )
+  {
+    throw "'binaryOp' is not a Function";
+  }
+  binaryOp = binaryOp_v->getFunction();
 }
 
 InterpretingASTVisitor::~InterpretingASTVisitor( void )
@@ -56,9 +73,9 @@ bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
   return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::MapConstantExpression        *node )
+bool InterpretingASTVisitor::visit( const AST::FrameConstantExpression        *node )
 {
-  CountPtr< Map > ret = new Map( scope->getGC(), scope->getCurr() );
+  CountPtr< Frame > ret = new Frame( scope->getGC(), scope->getCurr() );
   Scope::EnterLeaveGuard guard( scope, ret );
 
   if( !node->body->invite( this ) ) return false;
@@ -180,7 +197,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
     args.push_back( Function::Arg( node->args->at( i )->identifier, value ) );
   }
 
-  return function.getFunction()->call( scope, return_value, &args, getRecursionDepth() );
+  return function.getFunction()->call( node->loc, scope, return_value, &args, getRecursionDepth() );
 }
 
 bool InterpretingASTVisitor::visit( const AST::DotExpression                *node )
@@ -188,12 +205,12 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
   if( !node->left->invite( this ) ) return false;
   Value left; left.swap( return_value );
 
-  if( !left.isMap() )
+  if( !left.isFrame() )
   {
-    throw "left is not a Map";
+    throw "left is not a Frame";
   }
 
-  Value *const value = left.getMap()->get( Value( node->member ) );
+  Value *const value = left.getFrame()->get( node->member );
   if( value )
   {
     return_value = (*value);
@@ -214,24 +231,32 @@ bool InterpretingASTVisitor::visit( const AST::AccessExpression             *nod
   if( !node->key->invite( this ) ) return false;
   Value key; key.swap( return_value );
 
-  if( left.isMap() )
+  if( left.isFrame() )
   {
-    Value *const value = left.getMap()->get( key );
-
-//    std::cerr
-//      << "InterpretingASTVisitor::visit( AST::AccessExpression )"
-//      << ": Accessing " << key
-//      << std::endl
-//      ;
-
-    if( value )
+    if( key.isString() )
     {
-      return_value = (*value);
-      return true;
+      Value *const value = left.getFrame()->get( key.getString() );
+
+  //    std::cerr
+  //      << "InterpretingASTVisitor::visit( AST::AccessExpression )"
+  //      << ": Accessing " << key
+  //      << std::endl
+  //      ;
+
+      if( value )
+      {
+        return_value = (*value);
+        return true;
+      }
+      else
+      {
+        throw "key not found in Frame.";
+        return false;
+      }
     }
     else
     {
-      throw "key not found in Map.";
+      throw "key is not a string";
       return false;
     }
   }
@@ -269,7 +294,7 @@ bool InterpretingASTVisitor::visit( const AST::AccessExpression             *nod
   }
   else
   {
-    throw "left is neither Map nor Array.";
+    throw "left is neither Frame nor Array.";
     return false;
   }
 }
@@ -278,12 +303,12 @@ bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *nod
 {
   Value args[ 2 ];
 
-  args[ 0 ] = Value( int( node->op ) );
+  args[ 0 ].set( getUOPStr( node->op ) );
 
   if( !node->arg->invite( this ) ) return false;
   args[ 1 ].swap( return_value );
 
-  return unary_Function->call_impl( scope, return_value, 2, args, getRecursionDepth() );
+  return unaryOp->call_impl( node->loc, scope, return_value, 2, args, getRecursionDepth() );
 }
 
 bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
@@ -293,12 +318,12 @@ bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *nod
   if( !node->left->invite( this ) ) return false;
   args[ 0 ].swap( return_value );
 
-  args[ 1 ] = Value( int( node->op ) );
+  args[ 1 ].set( getBOPStr( node->op ) );
 
   if( !node->right->invite( this ) ) return false;
   args[ 2 ].swap( return_value );
 
-  return binary_Function->call_impl( scope, return_value, 3, args, getRecursionDepth() );
+  return binaryOp->call_impl( node->loc, scope, return_value, 3, args, getRecursionDepth() );
 }
 
 bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *node )
@@ -339,7 +364,7 @@ bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
 
 bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
-  CountPtr< Map > body = ( node->own_map ? new Map( scope->getGC(), scope->getCurr() ) : 0 );
+  CountPtr< Frame > body = ( node->own_map ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
   Scope::EnterLeaveGuard guard( scope, body );
 
   const index_t n = index_t( node->statements.size() );
@@ -405,10 +430,10 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
 
     Value args[ 3 ];
     args[ 0 ].swap( (*lvalue) ); // move lvalue into arg, will be overwritten anyway
-    args[ 1 ] = Value( int( bop ) );
+    args[ 1 ] = Value( getBOPStr( bop ) );
     args[ 2 ].swap( value );
 
-    binary_Function->call_impl( scope, (*lvalue), 3, args, getRecursionDepth() );
+    binaryOp->call_impl( node->loc, scope, (*lvalue), 3, args, getRecursionDepth() );
 
     if( lvalue->getType() != lvalue_type )
     {
@@ -437,15 +462,15 @@ bool InterpretingASTVisitor::visit( const AST::AssignDotStatement           *nod
   if( !node->left->invite( this ) ) return false;
   Value left; left.swap( return_value );
 
-  if( !left.isMap() )
+  if( !left.isFrame() )
   {
-    throw "left of '.' is not a Map";
+    throw "left of '.' is not a Frame";
   }
 
-  Value *const lvalue = left.getMap()->get( Value( node->identifier ) );
+  Value *const lvalue = left.getFrame()->get( node->identifier );
   if( !lvalue )
   {
-    throw "member not found in Map";
+    throw "member not found in Frame";
   }
 
   return assign_impl( node, lvalue );
@@ -466,12 +491,19 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
 
   Value *lvalue = 0;
 
-  if( left.isMap() )
+  if( left.isFrame() )
   {
-    lvalue = left.getMap()->get( key );
-    if( !lvalue )
+    if( key.isString() )
     {
-      throw "key not found";
+      lvalue = left.getFrame()->get( key.getString() );
+      if( !lvalue )
+      {
+        throw "key not found";
+      }
+    }
+    else
+    {
+      throw "key must be string";
     }
   }
   else if( left.isArray() )
@@ -491,7 +523,7 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
   }
   else
   {
-    throw "left of '.' is neither Map not Array";
+    throw "left of '.' is neither Frame not Array";
   }
 
   return assign_impl( node, lvalue );
@@ -549,17 +581,14 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
     throw "right of '=' is not a sequence";
   }
 
-  CountPtr< Map > for_locals = new Map( scope->getGC(), scope->getCurr() );
-
   const String &identifier = node->identifier;
 
-  Value *const for_variable = for_locals->set( Value( identifier ), Value() );
+  Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
+  Value *const for_variable = push_for_variable.get();
   if( 0 == for_variable )
   {
     throw "Could not create for-variable";
   }
-
-  Scope::EnterLeaveGuard guard( scope, for_locals );
 
   for( CountPtr< Sequence::Iter > i = sequence.getSequence()->getIter(); !i->done(); i->next() )
   {
@@ -581,17 +610,14 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
   if( !node->container->invite( this ) ) return false;
   Value container; container.swap( return_value );
 
-  CountPtr< Map > for_locals = new Map( scope->getGC(), scope->getCurr() );
-
   const String &identifier = node->identifier;
 
-  Value *const for_variable = for_locals->set( Value( identifier ), Value() );
+  Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
+  Value *const for_variable = push_for_variable.get();
   if( 0 == for_variable )
   {
     throw "Could not create for-variable";
   }
-
-  Scope::EnterLeaveGuard guard( scope, for_locals );
 
   if( container.isArray() )
   {

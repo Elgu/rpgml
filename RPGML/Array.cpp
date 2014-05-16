@@ -83,7 +83,7 @@ void Array::swap( Array &other )
   std::swap( m_values, other.m_values );
 }
 
-void Array::getChildren( Children &children ) const
+void Array::gc_getChildren( Children &children ) const
 {
   const Array::values_t &values = m_values;
   for( index_t i( 0 ), end( index_t( values.size() ) ); i<end; ++i )

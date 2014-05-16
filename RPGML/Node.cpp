@@ -1,6 +1,7 @@
 #include "Node.h"
 
 #include "String.h"
+#include "SharedObject.h"
 
 namespace RPGML {
 
@@ -29,7 +30,7 @@ void Port::gc_clear( void )
   m_identifier.clear();
 }
 
-void Port::getChildren( Children &children ) const
+void Port::gc_getChildren( Children &children ) const
 {
   children.push_back( m_parent );
 }
@@ -49,9 +50,9 @@ void Input::gc_clear( void )
   disconnect();
 }
 
-void Input::getChildren( Children &children ) const
+void Input::gc_getChildren( Children &children ) const
 {
-  Port::getChildren( children );
+  Port::gc_getChildren( children );
 
   if( isConnected() )
   {
@@ -99,9 +100,9 @@ void Output::gc_clear( void )
   disconnect();
 }
 
-void Output::getChildren( Children &children ) const
+void Output::gc_getChildren( Children &children ) const
 {
-  Port::getChildren( children );
+  Port::gc_getChildren( children );
 
   for( inputs_t::const_iterator i( m_inputs.begin() ), end( m_inputs.end() ); i != end; ++i )
   {
@@ -177,72 +178,20 @@ bool Output::isConnected( void ) const
   return false;
 }
 
-Param::Param( GarbageCollector *_gc, Node *parent, const String &identifier, Type type )
-: Collectable( _gc )
-, m_parent( parent )
-, m_identifier( identifier )
-, m_type( type )
-{}
-
-Param::~Param( void )
-{}
-
-Node *Param::getParent( void ) const
-{
-  return m_parent;
-}
-
-const String &Param::getIdentifier( void ) const
-{
-  return m_identifier;
-}
-
-
-bool Param::set( const Value &value )
-{
-  if( m_type == Type::Invalid() )
-  {
-    m_value == value;
-  }
-  else
-  {
-    try
-    {
-      m_value = value.to( m_type );
-    }
-    catch( const char *e )
-    {
-      throw "Type of value does not match type for parameter.";
-    }
-  }
-
-  return m_parent->setParamRecord( this );
-}
-
-const Value &Param::get( void ) const
-{
-  return m_value;
-}
-
-void Param::gc_clear( void )
-{
-  m_parent.reset();
-  m_value.clear();
-}
-
-void Param::getChildren( Children &children ) const
-{
-  children.push_back( m_parent );
-  if( m_value.isCollectable() )
-  {
-    children.push_back( m_value.getCollectable() );
-  }
-}
-
-Node::Node( GarbageCollector *_gc, const String &global_name, Map *_parent )
-: Map( _gc, _parent )
+Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const SharedObject *so )
+: Frame( _gc, 0 )
 , m_global_name( global_name )
-{}
+, m_so( so )
+{
+  for( index_t i=0; i<n_args; ++i )
+  {
+    if( !args[ i ].isPrimitive() && !args[ i ].isOutput() )
+    {
+      throw "Only primitive arg values allowed for Node";
+    }
+  }
+  m_args.insert( m_args.begin(), args, args+n_args );
+}
 
 Node::~Node( void )
 {}
@@ -252,31 +201,19 @@ const String &Node::getGlobalName( void ) const
   return m_global_name;
 }
 
+const SharedObject *Node::getSO( void ) const
+{
+  return m_so.get();
+}
+
 void Node::gc_clear( void )
 {
-  Map::gc_clear();
-  m_setParameters.clear();
+  Frame::gc_clear();
 }
 
-void Node::getChildren( Children &children ) const
+void Node::gc_getChildren( Children &children ) const
 {
-  Map::getChildren( children );
-
-  for( size_t i( 0 ), end( m_setParameters.size() ); i < end; ++i )
-  {
-    const SetParameter &s = m_setParameters[ i ];
-    children.push_back( s.param.get() );
-    if( s.value.isCollectable() )
-    {
-      children.push_back( s.value.getCollectable() );
-    }
-  }
-}
-
-bool Node::setParamRecord( const Param *param )
-{
-  m_setParameters.push_back( SetParameter( param, param->get() ) );
-  return true;
+  Frame::gc_getChildren( children );
 }
 
 } // namespace RPGML

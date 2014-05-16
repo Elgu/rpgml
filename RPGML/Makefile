@@ -1,30 +1,6 @@
 
 #.SUFFIXES: .o .cpp .cc .hh .yy .dep
 
-SOURCE=\
-	rpgml.tab.cc\
-	Scanner.cpp\
-	GarbageCollector.cpp\
-	Array.cpp\
-	Value.cpp\
-	Map.cpp\
-	Parser.cpp\
-	AST_PrettyPrinter.cpp\
-	Function.cpp\
-	Scope.cpp\
-	Context.cpp\
-	InterpretingASTVisitor.cpp\
-	Sequence.cpp\
-	InterpretingFunction.cpp\
-	UnaryOp.cpp\
-	Print.cpp\
-	Node.cpp\
-	BinaryOp.cpp\
-	SharedObject.cpp\
-	main.cpp\
-
-OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(SOURCE)))
-
 CFLAGS=\
 	-Wall\
 	-Wextra\
@@ -46,7 +22,63 @@ CFLAGS=\
 CXXFLAGS=$(CFLAGS)
 
 LDFLAGS=\
-	-ldl\
+
+.%.cpp.dep: %.cpp
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+.%.cc.dep: %.cc
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+libRPGML_%.so: RPGML_%.o libRPGML.so
+	g++ -shared -o $@ $(LDFLAGS) -L. -lRPGML $<
+
+SOs=\
+		binaryOp\
+		print\
+		unaryOp\
+
+.PHONY: all
+
+all: rpgml $(foreach so, $(SOs), libRPGML_$(so).so )
+
+rpgml_SOURCE=\
+	main.cpp\
+
+rpgml_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(rpgml_SOURCE)))
+
+rpgml: $(rpgml_OBJECTS) libRPGML.so
+	g++ -o $@ $(rpgml_OBJECTS) $(LDFLAGS) -L. -lRPGML
+
+libRPGML_SOURCE=\
+	rpgml.tab.cc\
+	Scanner.cpp\
+	GarbageCollector.cpp\
+	Array.cpp\
+	Value.cpp\
+	Frame.cpp\
+	Parser.cpp\
+	AST_PrettyPrinter.cpp\
+	Function.cpp\
+	Scope.cpp\
+	Context.cpp\
+	InterpretingASTVisitor.cpp\
+	Sequence.cpp\
+	InterpretingFunction.cpp\
+	Node.cpp\
+	SharedObject.cpp\
+	Thread.cpp\
+
+libRPGML_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(libRPGML_SOURCE)))
+
+libRPGML.so: $(libRPGML_OBJECTS)
+	g++ -shared -o $@  $(libRPGML_OBJECTS) $(LDFLAGS) -ldl
+
+SOURCE=\
+	$(rpgml_SOURCE)\
+	$(foreach so, $(SOs), RPGML_$(so).cpp )\
+	$(libRPGML_SOURCE)\
 
 PARSER_FILES=\
 	location.hh\
@@ -57,26 +89,11 @@ PARSER_FILES=\
  	rpgml.tab.hh\
  	stack.hh\
 
-.PHONY: all
-
-all: rpgml
-
-rpgml: $(OBJECTS)
-	g++ -o $@ $(OBJECTS) $(LDFLAGS)
-
 .parser_files: rpgml.yy
 	bison -v rpgml.yy
 	touch $@
 
 $(PARSER_FILES): .parser_files
-
-.%.cpp.dep: %.cpp
-	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
-
-.%.cc.dep: %.cc
-	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
 
 DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 
@@ -92,7 +109,9 @@ clean:
 	rm -f .parser_files
 	rm -f .depend
 	rm -f *.o
-	rm -f rpgml
+	rm -f rpgml $(rpgml_OBJECTS)
+	rm -f libRPGML.so $(libRPGML_OBJECTS)
+	rm -f $(foreach so, $(SOs), RPGML_$(so).o libRPGML_$(so).so )
 
 .PHONY: check
 

@@ -33,7 +33,7 @@ bool PrettyPrinter::visit( const ArrayConstantExpression      *node )
   return true;
 }
 
-bool PrettyPrinter::visit( const MapConstantExpression        *node )
+bool PrettyPrinter::visit( const FrameConstantExpression        *node )
 {
   node->body->invite( this );
   return true;
@@ -135,7 +135,7 @@ bool PrettyPrinter::visit( const AccessExpression             *node )
 
 bool PrettyPrinter::visit( const UnaryExpression              *node )
 {
-  (*o) << getUOP( node->op );
+  (*o) << getUOPStr( node->op );
   (*o) << "( ";
   node->arg->invite( this );
   (*o) << " )";
@@ -146,7 +146,7 @@ bool PrettyPrinter::visit( const BinaryExpression             *node )
 {
   (*o) << "( ";
   node->left->invite( this );
-  (*o) << " " << getBOP( node->op ) << " ";
+  (*o) << " " << getBOPStr( node->op ) << " ";
   node->right->invite( this );
   (*o) << " )";
   return true;

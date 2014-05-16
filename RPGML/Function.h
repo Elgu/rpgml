@@ -5,12 +5,14 @@
 #include "Refcounted.h"
 #include "Value.h"
 #include "String.h"
+#include "Location.h"
 
 namespace RPGML {
 
 class Scope;
-class Map;
+class Frame;
 class String;
+class SharedObject;
 
 class Function : public Collectable
 {
@@ -18,17 +20,23 @@ public:
   class Arg;
   class Args;
 
-  Function( GarbageCollector *gc, Map *parent, const Args *decl_args );
+  Function( GarbageCollector *gc, Frame *parent, const Args *decl_args, const SharedObject *so=0 );
   virtual ~Function( void );
 
-  Map *getParent( void ) const;
+  Frame *getParent( void ) const;
   const Args *getDecl( void ) const;
+  const SharedObject *getSO( void ) const;
+
+  size_t getNumArgs( void ) const;
+
+  //! Must at least be getNumArgs() (default impl)
+  virtual size_t getFrameSize( void ) const;
 
   //! Sets up call and calls call_impl()
-  bool call( Scope *scope, Value &ret, const Args *call_args, index_t recursion_depth );
+  bool call( const Location *loc, Scope *scope, Value &ret, const Args *call_args, index_t recursion_depth );
 
   //! "Bare" Function call, use on own risk directly
-  virtual bool call_impl( Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth ) = 0;
+  virtual bool call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth ) = 0;
 
   class Arg
   {
@@ -59,13 +67,14 @@ public:
   };
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
 private:
-  void fill_args( Map &args, const Args &call_args );
+  void fill_args( Frame &args, const Args &call_args );
 
-  CountPtr< Map > m_parent;
+  CountPtr< Frame > m_parent;
   CountPtr< const Args > m_decl;
+  CountPtr< const SharedObject > m_so;
 };
 
 } // namespace RPGML

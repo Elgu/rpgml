@@ -1,18 +1,28 @@
-#ifndef RPGML_BinaryOp_h
-#define RPGML_BinaryOp_h
+#ifndef RPGML_binaryOp_h
+#define RPGML_binaryOp_h
 
 #include "Function.h"
 #include "Node.h"
 
 namespace RPGML {
 
-class BinaryOp : public Function
+class binaryOp : public Function
 {
 public:
-  BinaryOp( GarbageCollector *gc, Map *parent );
-  virtual ~BinaryOp( void );
+  binaryOp( GarbageCollector *gc, Frame *parent, const SharedObject *so );
+  virtual ~binaryOp( void );
 
-  virtual bool call_impl( Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth );
+  virtual bool call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth );
+
+  class Node : public RPGML::Node
+  {
+  public:
+    Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so );
+    virtual ~Node( void );
+
+    virtual void gc_clear( void );
+    virtual void gc_getChildren( Children &children ) const;
+  };
 
 private:
   enum ArgNr

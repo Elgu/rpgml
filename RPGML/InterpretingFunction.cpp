@@ -4,7 +4,7 @@
 
 namespace RPGML {
 
-InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Map *parent, const Args *decl_args, const AST::CompoundStatement *body )
+InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const Args *decl_args, const AST::CompoundStatement *body )
 : Function( _gc, parent, decl_args )
 , m_body( body )
 {}
@@ -12,7 +12,7 @@ InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Map *parent, 
 InterpretingFunction::~InterpretingFunction( void )
 {}
 
-bool InterpretingFunction::call_impl( Scope *scope, Value &ret, index_t, const Value *, index_t recursion_depth )
+bool InterpretingFunction::call_impl( const Location *, Scope *scope, Value &ret, index_t, const Value *, index_t recursion_depth )
 {
   InterpretingASTVisitor interpreter( scope, recursion_depth+1 );
   if( !m_body->invite( &interpreter ) ) return false;

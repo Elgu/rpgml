@@ -18,32 +18,18 @@ namespace RPGML {
     bool isValid( void ) const;
 
     template< class SymbolType >
-    class Symbol : public Refcounted
+    bool getSymbol( const char *sym_id, SymbolType *&sym, String &err ) const
     {
-      friend class SharedObject;
-    private:
-      Symbol( const SharedObject *so, SymbolType *sym )
-      : m_so( so ), m_sym( sym )
-      {}
-    public:
-      virtual ~Symbol( void ) {}
-      SymbolType &get( void ) const { return (*m_sym); }
-      SymbolType &operator*( void ) const { return get(); }
-
-    private:
-      CountPtr< const SharedObject > m_so;
-      SymbolType *m_sym;
-    };
-
-    template< class SymbolType >
-    CountPtr< Symbol< SymbolType > > getSymbol( const char *sym, String &err ) const
-    {
-      return new Symbol< SymbolType >( this, (SymbolType*)getVoidPtrSymbol( sym, err ) );
+      sym = (SymbolType*)getVoidPtrSymbol( sym_id, err );
+      return ( sym != NULL );
     }
 
+    const String &getSO( void ) const { return m_so; }
+
   private:
+    const String m_so;
     void *getVoidPtrSymbol( const char *sym, String &err ) const;
-    void *m_handle;
+    void *const m_handle;
   };
 
 } // namespace RPGML

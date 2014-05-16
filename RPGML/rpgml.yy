@@ -108,11 +108,10 @@ namespace RPGML
 %token  <type>    FLOAT        "float";
 %token  <type>    STRING       "string";
 %token  <type>    ARRAY        "Array";
-%token  <type>    MAP          "Map";
+%token  <type>    FRAME          "Frame";
 %token  <type>    FUNCTION     "Function";
 %token  <type>    OUTPUT       "Output";
 %token  <type>    INPUT        "Input";
-%token  <type>    PARAM        "Param";
 %token            IF           "if";
 %token            ELSE         "else";
 %token            FOR          "for";
@@ -185,7 +184,7 @@ array_constant
   ;
 
 map_constant
-  : compound_statement { ($1)->own_map = false; ($$) = new MapConstantExpression( RPGML_LOC(@$), ($1) ); }
+  : compound_statement { ($1)->own_map = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($1) ); }
   ;
 
 primary_expression
@@ -437,11 +436,10 @@ type_specifier
   | FLOAT
   | STRING
   | ARRAY
-  | MAP
+  | FRAME
 //  | FUNCTION
   | OUTPUT
   | INPUT
-  | PARAM
   ;
 
 statement

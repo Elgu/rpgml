@@ -27,7 +27,7 @@ public:
   void swap( Array &other );
 
   virtual void gc_clear( void );
-  virtual void getChildren( Children &children ) const;
+  virtual void gc_getChildren( Children &children ) const;
 
   typedef Iterator< Value* > Elements;
   typedef Iterator< const Value* > ConstElements;

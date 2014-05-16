@@ -1,37 +1,59 @@
 #include "Function.h"
 
 #include "Scope.h"
-#include "Map.h"
+#include "Frame.h"
 #include "String.h"
+#include "SharedObject.h"
 
 namespace RPGML {
 
-Function::Function( GarbageCollector *_gc, Map *parent, const Args *decl )
+Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, const SharedObject *so )
 : Collectable( _gc )
 , m_parent( parent )
 , m_decl( decl )
+, m_so( so )
 {}
 
 Function::~Function( void )
 {}
 
-Map *Function::getParent( void ) const
+Frame *Function::getParent( void ) const
 {
   return m_parent;
 }
 
-bool Function::call( Scope *scope, Value &ret, const Args *call_args, index_t recursion_depth )
+const Function::Args *Function::getDecl( void ) const
+{
+  return m_decl.get();
+}
+
+const SharedObject *Function::getSO( void ) const
+{
+  return m_so.get();
+}
+
+size_t Function::getNumArgs( void ) const
+{
+  return m_decl->size();
+}
+
+size_t Function::getFrameSize( void ) const
+{
+  return getNumArgs();
+}
+
+bool Function::call( const Location *loc, Scope *scope, Value &ret, const Args *call_args, index_t recursion_depth )
 {
   Scope::EnterLeaveGuard guard1( scope, getParent() );
-  CountPtr< Map > args = new Map( scope->getGC(), scope->getCurr() );
+  CountPtr< Frame > args = new Frame( scope->getGC(), scope->getCurr() );
   Scope::EnterLeaveGuard guard2( scope, args );
 
   fill_args( *args, *call_args );
   const index_t n_args = index_t( args->size() );
-  return call_impl( scope, ret, n_args, ( n_args ? &(*args)[ 0 ] : 0 ), recursion_depth );
+  return call_impl( loc, scope, ret, n_args, ( n_args ? args->get( 0 ) : 0 ), recursion_depth );
 }
 
-void Function::fill_args( Map &args, const Args &call_args )
+void Function::fill_args( Frame &args, const Args &call_args )
 {
   const Args &decl_args = *(m_decl.get());
 
@@ -54,7 +76,7 @@ void Function::fill_args( Map &args, const Args &call_args )
     const String &call_identifier = call_args[ pos ].identifier;
     if( call_identifier.empty() )
     {
-      args.set( Value( decl_args[ pos ].identifier ), call_args[ pos ].value );
+      args.push_back( decl_args[ pos ].identifier, call_args[ pos ].value );
       used[ pos ] = true;
     }
     else
@@ -79,7 +101,7 @@ void Function::fill_args( Map &args, const Args &call_args )
         {
           found = true;
           // Was not yet initialized (even with invalid Value)
-          args.set( Value( call_identifier ), call_args[ i ].value );
+          args.push_back( call_identifier, call_args[ i ].value );
           used[ i ] = true;
         }
       }
@@ -95,7 +117,7 @@ void Function::fill_args( Map &args, const Args &call_args )
       const Value &default_value = decl_args[ pos ].value;
       if( !default_value.isInvalid() )
       {
-        args.set( Value( decl_identifier ), default_value );
+        args.push_back( decl_identifier, default_value );
       }
       else
       {
@@ -119,7 +141,7 @@ void Function::gc_clear( void )
   m_decl.reset();
 }
 
-void Function::getChildren( Children &children ) const
+void Function::gc_getChildren( Children &children ) const
 {
   children.push_back( m_parent );
 

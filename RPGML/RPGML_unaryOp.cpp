@@ -1,18 +1,19 @@
-#include "UnaryOp.h"
+#include "RPGML_unaryOp.h"
 
 #include "String.h"
+#include "Scope.h"
 #include "ParserEnums.h"
 
 namespace RPGML {
 
-UnaryOp::UnaryOp( GarbageCollector *_gc, Map *parent )
-: Function( _gc, parent, genDeclArgs() )
+unaryOp::unaryOp( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
+: Function( _gc, parent, genDeclArgs(), so )
 {}
 
-UnaryOp::~UnaryOp( void )
+unaryOp::~unaryOp( void )
 {}
 
-namespace UnaryOp_impl {
+namespace unaryOp_impl {
 
   static inline
   Value minus( const Value &x )
@@ -66,18 +67,33 @@ namespace UnaryOp_impl {
     }
   }
 
-} // namespace UnaryOp_impl
+} // namespace unaryOp_impl
 
-bool UnaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args, index_t )
+bool unaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t )
 {
-  if( n_args != 2 ) throw "UnaryOp requires 2 arguments.";
+  using namespace unaryOp_impl;
 
-  if( !args[ 0 ].isInt() ) throw "First argument must be int";
+  if( n_args != 2 ) throw "unaryOp requires 2 arguments.";
 
-  const UOP op = UOP( args[ 0 ].getInt() );
-  const Value &x = args[ 1 ];
+  const Value &op_v = args[ ARG_OP ];
+  const Value &x_v  = args[ ARG_X  ];
 
-  using namespace UnaryOp_impl;
+  if( !op_v.isString() ) throw "First argument must be string";
+
+  if( x_v.isOutput() )
+  {
+    const String global_name =
+      scope->genGlobalName(
+           op_v.getString()
+         + "@" + toString( loc->withoutFilename() )
+         + "#" + toString( scope->getNr() )
+         );
+    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    return true;
+  }
+
+  const UOP op = getUOP( op_v.getString() );
+  const Value &x = x_v;
 
   switch( op )
   {
@@ -92,13 +108,33 @@ bool UnaryOp::call_impl( Scope *, Value &ret, index_t n_args, const Value *args,
   return true;
 }
 
-CountPtr< Function::Args > UnaryOp::genDeclArgs( void )
+CountPtr< Function::Args > unaryOp::genDeclArgs( void )
 {
-  CountPtr< Args > args = new Args( 2 );
-  args->at( 0 ) = Arg( String::Static( "op" ) );
-  args->at( 1 ) = Arg( String::Static( "x" ) );
+  CountPtr< Args > args = new Args( NUM_ARGS );
+  args->at( ARG_OP ) = Arg( String::Static( "op" ) );
+  args->at( ARG_X  ) = Arg( String::Static( "x" ) );
   return args;
 }
 
+unaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, global_name, n_args, args, so )
+{}
+
+unaryOp::Node::~Node( void )
+{}
+
+void unaryOp::Node::gc_clear( void )
+{
+  RPGML::Node::gc_clear();
+}
+
+void unaryOp::Node::gc_getChildren( Children &children ) const
+{
+  RPGML::Node::gc_getChildren( children );
+}
+
 } // namespace RPGML
+
+RPGML_CREATE_FUNCTION( unaryOp )
+RPGML_CREATE_NODE( unaryOp )
 

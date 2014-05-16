@@ -15,7 +15,7 @@ public:
   }
 
 private:
-  void bool_type_method( void ) const;
+  void bool_type_method( void ) const {}
 };
 
 } // namespace RPGML
