@@ -17,8 +17,6 @@ class SharedObject;
 class Frame : public Collectable
 {
 public:
-  static const index_t unknown = index_t(-1);
-
   explicit
   Frame( GarbageCollector *gc, Frame *parent=0, const String &path = String() );
   virtual ~Frame( void );
@@ -36,15 +34,15 @@ public:
 
   void reserve( index_t size );
 
-  index_t getIndex( const String &identifier ) const;
+  index_t getIndex( const char *identifier ) const;
   index_t getCreateIndex( const String &identifier, bool *existed_p=0 );
 
   index_t set( const String &identifier, const Value &value );
 
-  Value       *get( const String &identifier );
-  const Value *get( const String &identifier ) const;
-  Value       *get( index_t index );
-  const Value *get( index_t index ) const;
+  Value       *getVariable( const char *identifier );
+  const Value *getVariable( const char *identifier ) const;
+  Value       *getStack( index_t index );
+  const Value *getStack( index_t index ) const;
 
   Value *push_back( const String &identifier, const Value &value );
   void   pop_back( void );
@@ -60,6 +58,7 @@ public:
     Value *const m_value;
   };
 
+  // Load from the directory associated with this Frame
   Value *load( const String &identifier, const Scope *scope );
 
   index_t size( void ) const { return index_t( m_values.size() ); }

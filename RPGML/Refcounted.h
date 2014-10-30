@@ -49,32 +49,43 @@ private:
   mutable index_t m_count;
 };
 
-template< class RefcountedType >
+template< class _RefcountedType >
 class CountPtr
 {
 public:
-  typedef RefcountedType Type;
+  typedef _RefcountedType RefcountedType;
 
   CountPtr( void )
   : m_p( 0 )
   {}
 
-  CountPtr( Type *p )
+  template< class CompatibleRefcountedType >
+  CountPtr( CompatibleRefcountedType *p )
   : m_p( p )
   {
     if( m_p ) m_p->ref();
   }
 
-  CountPtr( const CountPtr &cp )
-  : m_p( cp.m_p )
+  template< class CompatibleRefcountedType >
+  CountPtr( const CountPtr< CompatibleRefcountedType > &other )
+  : m_p( other.get() )
   {
     if( m_p ) m_p->ref();
   }
 
   ~CountPtr( void )
   {
-    if( m_p && !m_p->unref() ) delete m_p;
+		clear();
   }
+
+	void clear( void )
+	{
+    if( m_p )
+		{
+			if( !m_p->unref() ) delete m_p;
+			m_p = 0;
+		}
+	}
 
   CountPtr &operator=( CountPtr cp )
   {
@@ -82,7 +93,8 @@ public:
     return (*this);
   }
 
-  CountPtr &operator=( Type *p )
+  template< class CompatibleRefcountedType >
+  CountPtr &operator=( CompatibleRefcountedType *p )
   {
     return this->reset( p );
   }
@@ -97,11 +109,17 @@ public:
     return m_p < cp.m_p;
   }
 
-  CountPtr &reset( Type *p=0 )
+  template< class CompatibleRefcountedType >
+  CountPtr &reset( CompatibleRefcountedType *p )
   {
     CountPtr tmp( p );
     this->swap( tmp );
     return (*this);
+  }
+
+  CountPtr &reset( void )
+  {
+    return reset( (RefcountedType*)0 );
   }
 
   void swap( CountPtr &cp )
@@ -109,28 +127,33 @@ public:
     std::swap( m_p, cp.m_p );
   }
 
-  Type *get( void ) const
+  RefcountedType *get( void ) const
   {
     return m_p;
   }
 
-  Type &operator*( void ) const
+  RefcountedType &operator*( void ) const
   {
     return *get();
   }
 
-  Type *operator->( void ) const
+  RefcountedType *operator->( void ) const
   {
     return get();
   }
 
-  operator Type*( void ) const
+  operator RefcountedType*( void ) const
   {
     return get();
+  }
+
+  bool isNull( void ) const
+  {
+    return !get();
   }
 
 private:
-  Type *m_p;
+  RefcountedType *m_p;
 };
 
 } // namespace RPGML

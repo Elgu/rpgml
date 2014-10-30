@@ -65,7 +65,7 @@ void Frame::reserve( index_t n )
   m_values.reserve( n );
 }
 
-index_t Frame::getIndex( const String &identifier ) const
+index_t Frame::getIndex( const char *identifier ) const
 {
   const int n = int( m_identifiers.size() );
   for( int i = n-1; i>=0; --i )
@@ -103,7 +103,7 @@ index_t Frame::set( const String &identifier, const Value &value )
   return index;
 }
 
-const Value *Frame::get( const String &identifier ) const
+const Value *Frame::getVariable( const char *identifier ) const
 {
   const index_t index = getIndex( identifier );
 
@@ -117,12 +117,12 @@ const Value *Frame::get( const String &identifier ) const
   }
 }
 
-Value *Frame::get( const String &identifier )
+Value *Frame::getVariable( const char *identifier )
 {
-  return const_cast< Value* >( ((const Frame*)this)->get( identifier ) );
+  return const_cast< Value* >( ((const Frame*)this)->getVariable( identifier ) );
 }
 
-const Value *Frame::get( index_t index ) const
+const Value *Frame::getStack( index_t index ) const
 {
   if( size_t( index ) < m_values.size() )
   {
@@ -134,9 +134,9 @@ const Value *Frame::get( index_t index ) const
   }
 }
 
-Value       *Frame::get( index_t index )
+Value       *Frame::getStack( index_t index )
 {
-  return const_cast< Value* >( ((const Frame*)this)->get( index ) );
+  return const_cast< Value* >( ((const Frame*)this)->getStack( index ) );
 }
 
 Value *Frame::push_back( const String &identifier, const Value &value )
@@ -222,7 +222,7 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
   if( dir_p )
   {
     closedir( dir_p );
-    return get( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
+    return getStack( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
   }
 
 	// Check whether identifier refers to a plugin
@@ -230,17 +230,22 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
   FILE *so_file = fopen( so.c_str(), "rb" );
   if( so_file )
   {
+//    std::cerr << "Found shared object '" << so << "'" << std::endl;
     fclose( so_file );
 
     String err;
     CountPtr< SharedObject > so_p = new SharedObject( so, err );
     if( so_p->isValid() )
     {
+//      std::cerr << "Loaded shared object '" << so << "'" << std::endl;
+
       create_Function_t create_function;
-      if( so_p->getSymbol( identifier + "_create_Function", create_function, err ) )
+      const String symbol = identifier + "_create_Function";
+      if( so_p->getSymbol( symbol, create_function, err ) )
       {
+//        std::cerr << "Got symbol '" << symbol << " from shared object '" << so << "'" << std::endl;
         CountPtr< Function > function = create_function( getGC(), this, so_p.get() );
-        return get( set( identifier, Value( function ) ) );
+        return getStack( set( identifier, Value( function.get() ) ) );
       }
     }
     else
@@ -267,7 +272,7 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
       throw e;
     }
 
-    Value *const ret = get( identifier );
+    Value *const ret = getVariable( identifier );
     if( !ret )
     {
       throw "variable was not defined in rpgml file";

@@ -28,11 +28,15 @@ public:
   virtual bool visit( const LookupVariableExpression     *node );
   virtual bool visit( const FunctionCallExpression       *node );
   virtual bool visit( const DotExpression                *node );
-  virtual bool visit( const AccessExpression             *node );
+  virtual bool visit( const FrameAccessExpression        *node );
+  virtual bool visit( const ArrayAccessExpression        *node );
   virtual bool visit( const UnaryExpression              *node );
   virtual bool visit( const BinaryExpression             *node );
   virtual bool visit( const IfThenElseExpression         *node );
+  virtual bool visit( const TypeExpression               *node );
+  virtual bool visit( const DimensionsExpression         *node );
   virtual bool visit( const CompoundStatement            *node );
+
   virtual bool visit( const FunctionDefinitionStatement  *node );
   virtual bool visit( const AssignIdentifierStatement    *node );
   virtual bool visit( const AssignDotStatement           *node );

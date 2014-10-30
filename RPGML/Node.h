@@ -3,6 +3,8 @@
 
 #include "GarbageCollector.h"
 #include "Frame.h"
+#include "Data.h"
+#include "Array.h"
 
 #include <vector>
 
@@ -16,11 +18,12 @@ class Node;
 class Port : public Collectable
 {
 public:
-  Port( GarbageCollector *gc, Node *parent, const String &identifier );
+  Port( GarbageCollector *gc, Node *parent );
   virtual ~Port( void );
 
   Node *getParent( void ) const;
   const String &getIdentifier( void ) const;
+  void setIdentifier( const String &identifier );
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
@@ -33,7 +36,7 @@ private:
 class Input : public Port
 {
 public:
-  Input( GarbageCollector *gc, Node *parent, const String &identifier );
+  Input( GarbageCollector *gc, Node *parent );
   virtual ~Input( void );
 
   virtual void gc_clear( void );
@@ -44,6 +47,10 @@ public:
 
   bool isConnected( void ) const;
 
+  const Output *getOutput( void ) const;
+  Data *getData( void );
+  const Data *getData( void ) const;
+
 private:
   CountPtr< Output > m_output;
 };
@@ -51,7 +58,7 @@ private:
 class Output : public Port
 {
 public:
-  Output( GarbageCollector *gc, Node *parent, const String &identifier );
+  Output( GarbageCollector *gc, Node *parent );
   virtual ~Output( void );
 
   void disconnect( void );
@@ -61,30 +68,50 @@ public:
 
   bool isConnected( void ) const;
 
+  void setData( Data *data );
+  Data *getData( void );
+  const Data *getData( void ) const;
+
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
 private:
-  typedef std::vector< CountPtr< Input > > inputs_t;
+  typedef Array< CountPtr< Input >, 1 > inputs_t;
   inputs_t m_inputs;
+  CountPtr< Data > m_data;
 };
 
 class Node : public Frame
 {
 public:
-  Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const SharedObject *so );
+  Node( GarbageCollector *gc, const String &name, const String &identifier, const SharedObject *so );
 
   virtual ~Node( void );
 
-  const String &getGlobalName( void ) const;
+  const String &getName( void ) const;
+  const String &getIdentifier( void ) const;
   const SharedObject *getSO( void ) const;
+
+  virtual bool tick( void );
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
+  Input *getInput( index_t i ) const;
+  Input *getInput( const char *identifier ) const;
+  Output *getOutput( index_t i ) const;
+  Output *getOutput( const char *identifier ) const;
+
+  void setNumInputs( index_t n );
+  void setNumOutputs( index_t n );
+
 private:
-  std::vector< Value > m_args;
-  const String m_global_name;
+  typedef Array< CountPtr< Input >, 1 > inputs_t;
+  typedef Array< CountPtr< Output >, 1 > outputs_t;
+  inputs_t m_inputs;
+  outputs_t m_outputs;
+  const String m_name;
+  const String m_identifier;
   CountPtr< const SharedObject > m_so;
 };
 
@@ -99,9 +126,9 @@ private:
 
 #define RPGML_CREATE_NODE( NAME ) \
   extern "C"\
-  RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &global_name, RPGML::index_t n_args, const RPGML::Value *args, const RPGML::SharedObject *so )\
+  RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &identifier, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::NAME::Node( gc, global_name, n_args, args, so );\
+    return new RPGML::NAME::Node( gc, identifier, so );\
   }\
 
 #endif

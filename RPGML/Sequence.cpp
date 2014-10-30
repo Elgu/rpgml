@@ -100,10 +100,9 @@ private:
       m_curr += m_step;
     }
 
-    virtual const Value *get( void )
+    virtual Value get( void )
     {
-      m_value.set( m_curr );
-      return &m_value;
+      return Value( m_curr );
     }
 
     virtual CountPtr< Iter > clone( void ) const
@@ -112,7 +111,6 @@ private:
     }
 
   private:
-    Value m_value;
     scalar_t m_curr;
     scalar_t m_to;
     scalar_t m_step;
@@ -133,7 +131,7 @@ CountPtr< Sequence > genSequenceFromToStep( GarbageCollector *gc, float from, fl
   return new SequenceFromToStep< float >( gc, from, to, step );
 }
 
-SequenceValueArray::SequenceValueArray( GarbageCollector *_gc, const Array *array )
+SequenceValueArray::SequenceValueArray( GarbageCollector *_gc, const ArrayBase *array )
 : Sequence( _gc )
 , m_array( array )
 {}
@@ -149,8 +147,7 @@ std::ostream &SequenceValueArray::print( std::ostream &o ) const
   for( CountPtr< Iter > i( getIter() ); !i->done(); i->next() )
   {
     if( !first ) o << ", "; else first = false;
-    const Value *const v = i->get();
-    o << (*v);
+    o << i->get();
   }
 
   o << " ]";
@@ -173,11 +170,11 @@ CountPtr< Sequence > SequenceValueArray::clone( void ) const
 
 CountPtr< Sequence::Iter > SequenceValueArray::getIter( void ) const
 {
-  return m_array->getElementsConst();
+  return m_array->getValueIterator();
 }
 
 SequenceValueArray::IteratorValueArray
-::IteratorValueArray( const Array *array, index_t i )
+::IteratorValueArray( const ArrayBase *array, index_t i )
 : m_array( array )
 , m_i( i )
 {}
@@ -198,10 +195,10 @@ void SequenceValueArray::IteratorValueArray
   ++m_i;
 }
 
-const Value *SequenceValueArray::IteratorValueArray
+Value SequenceValueArray::IteratorValueArray
 ::get( void )
 {
-  return m_array->get( m_i );
+  return m_array->getValue( m_i );
 }
 
 CountPtr< Sequence::Iter > SequenceValueArray::IteratorValueArray

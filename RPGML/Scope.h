@@ -2,6 +2,7 @@
 #define RPGML_Scope_h
 
 #include "Refcounted.h"
+#include "Function.h"
 
 #include <string>
 
@@ -48,6 +49,31 @@ public:
   const StringData *unify( const String &identifier ) const;
   const StringData *unify( const char *identifier ) const;
   const StringData *unify( const std::string &identifier ) const;
+
+  bool call(
+      const Location *loc
+    , index_t recursion_depth
+    , const String &function_identifier
+    , Value &ret
+    , const Function::Args *call_args
+    );
+
+  bool call(
+      const Location *loc
+    , index_t recursion_depth
+    , const String &function_identifier
+    , Value &ret
+    , const Value &arg0 = Value()
+    , const Value &arg1 = Value()
+    , const Value &arg2 = Value()
+    , const Value &arg3 = Value()
+    );
+
+  CountPtr< Output > toOutput(
+      const Location *loc
+    , index_t recursion_depth
+    , const Value &x
+    );
 
   CountPtr< Frame > new_Frame( void ) const;
 

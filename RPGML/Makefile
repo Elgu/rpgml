@@ -55,7 +55,6 @@ libRPGML_SOURCE=\
 	rpgml.tab.cc\
 	Scanner.cpp\
 	GarbageCollector.cpp\
-	Array.cpp\
 	Value.cpp\
 	Frame.cpp\
 	Parser.cpp\

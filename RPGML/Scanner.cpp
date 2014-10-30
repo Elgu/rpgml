@@ -106,7 +106,7 @@ struct Keyword
 {
   const char *const keyword;
   const _Parser::token::yytokentype token;
-  const Type::Enum type;
+  const Type::Enum type_enum;
 };
 
 static
@@ -192,9 +192,9 @@ int parse_identifier( char c, Source *s, StringUnifier *u, semantic_type *token,
   {
     if( str == i->keyword )
     {
-      if( i->type )
+      if( i->type_enum )
       {
-        token->type = i->type;
+        token->type_enum = i->type_enum;
       }
       return i->token;
     }

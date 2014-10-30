@@ -6,6 +6,7 @@
 namespace RPGML {
 
   typedef uint32_t index_t;
+  static const index_t unknown = index_t(-1);
 
   template< bool b > struct StaticAssert { enum{ valid }; };
   template<> struct StaticAssert< false >{};

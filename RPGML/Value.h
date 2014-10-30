@@ -10,7 +10,7 @@ namespace RPGML {
 
 class String  ;
 class StringData;
-class Array   ;
+class ArrayBase   ;
 class Frame     ;
 class Function;
 class Node    ;
@@ -57,12 +57,13 @@ public:
 
   explicit Value ( bool  _b );
   explicit Value ( int   _i );
+  explicit Value ( index_t _i );
   explicit Value ( float _f );
   explicit Value ( char const *_str  );
   explicit Value ( std::string const &_str  );
   explicit Value ( String   const &_str  );
   explicit Value ( StringData const *_str );
-  explicit Value ( Array          *_arr  );
+  explicit Value ( ArrayBase      *_arr  );
   explicit Value ( Frame          *_frame );
   explicit Value ( Function       *_func );
   explicit Value ( Node           *_node );
@@ -70,20 +71,26 @@ public:
   explicit Value ( Input          *_in   );
   explicit Value ( Sequence const *_seq  );
 
+//  template< class Invalid >
+//  explicit Value( const Invalid & )
+//  {}
+
   Value &set( bool  _b );
   Value &set( int   _i );
+  Value &set( index_t _i );
   Value &set( float _f );
   Value &set( std::string const &_str  );
   Value &set( char        const *_str  );
   Value &set( String      const &_str  );
   Value &set( StringData  const *_str );
-  Value &set( Array          *_arr  );
+  Value &set( ArrayBase      *_arr  );
   Value &set( Frame          *_frame );
   Value &set( Function       *_func );
   Value &set( Node           *_node );
   Value &set( Output         *_out  );
   Value &set( Input          *_in   );
   Value &set( Sequence const *_seq  );
+  Value &set( const Value &v );
 
   Type        getType    ( void ) const { return m_type; }
   Type::Enum  getEnum    ( void ) const { return m_type.getEnum(); }
@@ -97,7 +104,7 @@ public:
   bool isFloat   ( void ) const { return is( Type::FLOAT    ); }
   bool isString  ( void ) const { return is( Type::STRING   ); }
   bool isArray   ( void ) const { return is( Type::ARRAY    ); }
-  bool isFrame     ( void ) const { return is( Type::FRAME    ); }
+  bool isFrame   ( void ) const { return is( Type::FRAME    ); }
   bool isFunction( void ) const { return is( Type::FUNCTION ); }
   bool isNode    ( void ) const { return is( Type::NODE     ); }
   bool isOutput  ( void ) const { return is( Type::OUTPUT   ); }
@@ -108,17 +115,58 @@ public:
   bool isInteger( void ) const { return getType().isInteger(); }
   bool isPrimitive( void ) const { return getType().isPrimitive(); }
 
-  bool      getBool    ( void ) const { assert( isBool    () ); return b   ; }
-  int       getInt     ( void ) const { assert( isInt     () ); return i   ; }
-  float     getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
+  bool            getBool    ( void ) const { assert( isBool    () ); return b   ; }
+  int             getInt     ( void ) const { assert( isInt     () ); return i   ; }
+  float           getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
   String          getString  ( void ) const { assert( isString  () ); return String( str ); }
-  Array          *getArray   ( void ) const { assert( isArray   () ); return arr ; }
+  ArrayBase      *getArray   ( void ) const { assert( isArray   () ); return arr ; }
   Frame          *getFrame   ( void ) const { assert( isFrame   () ); return frame; }
   Function       *getFunction( void ) const { assert( isFunction() ); return func; }
   Node           *getNode    ( void ) const { assert( isNode    () ); return node; }
   Output         *getOutput  ( void ) const { assert( isOutput  () ); return out ; }
   Input          *getInput   ( void ) const { assert( isInput   () ); return in  ; }
   Sequence const *getSequence( void ) const { assert( isSequence() ); return seq ; }
+
+  operator bool            ( void ) const { return getBool    (); }
+  operator int             ( void ) const { return getInt     (); }
+  operator float           ( void ) const { return getFloat   (); }
+  operator String          ( void ) const { return getString  (); }
+  operator ArrayBase      *( void ) const { return getArray   (); }
+  operator Frame          *( void ) const { return getFrame   (); }
+  operator Function       *( void ) const { return getFunction(); }
+  operator Node           *( void ) const { return getNode    (); }
+  operator Output         *( void ) const { return getOutput  (); }
+  operator Input          *( void ) const { return getInput   (); }
+  operator Sequence const *( void ) const { return getSequence(); }
+
+  operator CountPtr< ArrayBase      >( void ) const;
+  operator CountPtr< Frame          >( void ) const;
+  operator CountPtr< Function       >( void ) const;
+  operator CountPtr< Node           >( void ) const;
+  operator CountPtr< Output         >( void ) const;
+  operator CountPtr< Input          >( void ) const;
+  operator CountPtr< Sequence const >( void ) const;
+
+  bool get( bool            &x ) const;
+  bool get( int             &x ) const;
+  bool get( float           &x ) const;
+  bool get( String          &x ) const;
+  bool get( ArrayBase      *&x ) const;
+  bool get( Frame          *&x ) const;
+  bool get( Function       *&x ) const;
+  bool get( Node           *&x ) const;
+  bool get( Output         *&x ) const;
+  bool get( Input          *&x ) const;
+  bool get( Sequence const *&x ) const;
+  bool get( CountPtr< ArrayBase > &x ) const;
+  bool get( CountPtr< Frame     > &x ) const;
+  bool get( CountPtr< Function  > &x ) const;
+  bool get( CountPtr< Node      > &x ) const;
+  bool get( CountPtr< Output    > &x ) const;
+  bool get( CountPtr< Input     > &x ) const;
+  bool get( CountPtr< const Sequence > &x ) const;
+  bool get( Value &x ) const { x = (*this); return true; }
+  template< class T > bool get( T & ) const { return false; }
 
   const void *getP( void ) const { return p; }
 
@@ -135,7 +183,7 @@ private:
     int       i   ;
     float     f   ;
     StringData const *str ;
-    Array          *arr ;
+    ArrayBase      *arr ;
     Frame          *frame;
     Function       *func;
     Node           *node;

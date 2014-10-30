@@ -69,18 +69,18 @@ namespace unaryOp_impl {
 
 } // namespace unaryOp_impl
 
-bool unaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t )
+bool unaryOp::call_impl( const Location *loc, index_t, Scope *scope, Value &ret, index_t n_args, const Value *args )
 {
   using namespace unaryOp_impl;
 
   if( n_args != 2 ) throw "unaryOp requires 2 arguments.";
 
   const Value &op_v = args[ ARG_OP ];
-  const Value &x_v  = args[ ARG_X  ];
+  const Value &in   = args[ ARG_IN  ];
 
-  if( !op_v.isString() ) throw "First argument must be string";
+  if( !op_v.isString() ) throw "argument 'op' must be string";
 
-  if( x_v.isOutput() )
+  if( in.isOutput() )
   {
     const String global_name =
       scope->genGlobalName(
@@ -88,19 +88,20 @@ bool unaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t 
          + "@" + toString( loc->withoutFilename() )
          + "#" + toString( scope->getNr() )
          );
-    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    CountPtr< Node > node( new Node( getGC(), global_name, getSO() ) );
+    node->getInput( "in" )->connect( in.getOutput() );
+    ret = Value( node->getOutput( "out" ) );
     return true;
   }
 
   const UOP op = getUOP( op_v.getString() );
-  const Value &x = x_v;
 
   switch( op )
   {
-    case UOP_MINUS  : ret = minus  ( x ); break;
-    case UOP_PLUS   : ret = plus   ( x ); break;
-    case UOP_LOG_NOT: ret = log_not( x ); break;
-    case UOP_BIT_NOT: ret = bit_not( x ); break;
+    case UOP_MINUS  : ret = minus  ( in ); break;
+    case UOP_PLUS   : ret = plus   ( in ); break;
+    case UOP_LOG_NOT: ret = log_not( in ); break;
+    case UOP_BIT_NOT: ret = bit_not( in ); break;
     default:
       throw "Invalid op";
   }
@@ -112,16 +113,27 @@ CountPtr< Function::Args > unaryOp::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( NUM_ARGS );
   args->at( ARG_OP ) = Arg( String::Static( "op" ) );
-  args->at( ARG_X  ) = Arg( String::Static( "x" ) );
+  args->at( ARG_IN ) = Arg( String::Static( "in" ) );
   return args;
 }
 
-unaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, global_name, n_args, args, so )
-{}
+unaryOp::Node::Node( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, String::Static( "UnaryOp" ), identifier, so )
+{
+  setNumInputs( NUM_INPUTS );
+  getInput( INPUT_IN )->setIdentifier( String::Static( "in" ) );
+
+  setNumOutputs( NUM_OUTPUTS );
+  getOutput( OUTPUT_OUT )->setIdentifier( String::Static( "out" ) );
+}
 
 unaryOp::Node::~Node( void )
 {}
+
+bool unaryOp::Node::tick( void )
+{
+  return true;
+}
 
 void unaryOp::Node::gc_clear( void )
 {

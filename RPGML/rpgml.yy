@@ -45,7 +45,7 @@ namespace RPGML
   bool         bval;
   int          ival;
   float        fval;
-  Type::Enum   type;
+  Type::Enum   type_enum;
   BOP          binop;
   UOP          uop;
   ASSIGN       assign;
@@ -59,12 +59,14 @@ namespace RPGML
   FunctionDefinitionStatement::ArgDeclList *fadl;
   FunctionCallExpression::Arg  *arg;
   FunctionCallExpression::Args *args;
+  TypeExpression *type;
+  DimensionsExpression *dims;
 }
 
 %destructor {} <bval>
 %destructor {} <ival>
 %destructor {} <fval>
-%destructor {} <type>
+%destructor {} <type_enum>
 %destructor {} <uop>
 %destructor {} <assign>
 %destructor { /*unified*/ } <str>
@@ -73,6 +75,8 @@ namespace RPGML
 %destructor { delete ($$); } <seq>
 %destructor { delete ($$); } <fad>
 %destructor { delete ($$); } <fadl>
+%destructor { delete ($$); } <type>
+%destructor { delete ($$); } <dims>
 
 
 %token            END          0 "end of file";
@@ -103,15 +107,15 @@ namespace RPGML
 %token  <assign>  AND_ASSIGN   "&=";
 %token  <assign>  XOR_ASSIGN   "^=";
 %token  <assign>  OR_ASSIGN    "|=";
-%token  <type>    BOOL         "bool";
-%token  <type>    INT          "int";
-%token  <type>    FLOAT        "float";
-%token  <type>    STRING       "string";
-%token  <type>    ARRAY        "Array";
-%token  <type>    FRAME          "Frame";
-%token  <type>    FUNCTION     "Function";
-%token  <type>    OUTPUT       "Output";
-%token  <type>    INPUT        "Input";
+%token  <type_enum>    BOOL         "bool";
+%token  <type_enum>    INT          "int";
+%token  <type_enum>    FLOAT        "float";
+%token  <type_enum>    STRING       "string";
+%token  <type_enum>    ARRAY        "Array";
+%token  <type_enum>    FRAME        "Frame";
+%token  <type_enum>    FUNCTION     "Function";
+%token  <type_enum>    OUTPUT       "Output";
+%token  <type_enum>    INPUT        "Input";
 %token            IF           "if";
 %token            ELSE         "else";
 %token            FOR          "for";
@@ -151,7 +155,12 @@ namespace RPGML
 %type <expr> expression
 %type <stmt> assignment_statement
 %type <assign> assignment_operator
-%type <type> type_specifier
+%type <expr> array_dimension
+%type <dims> array_dimensions_expression
+%type <dims> array_coordinates_expression
+%type <type_enum> primitive_type_expression
+%type <type> array_type_expression
+%type <type> type_expression
 %type <stmt> statement
 %type <comp> statements
 %type <comp> compound_statement
@@ -213,17 +222,17 @@ function_call_expression
     {
       ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
     } 
-//  | type_specifier '(' expression ')'
+//  | type_expression '(' expression ')'
   ;
 
 postfix_expression
-  : postfix_expression '[' expression ']'
+  : postfix_expression '[' array_coordinates_expression ']'
     {
-      ($$) = new AccessExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new ArrayAccessExpression( RPGML_LOC(@$), ($1), ($3) );
     }
   | postfix_expression '.' identifier
     {
-      ($$) = new AccessExpression( RPGML_LOC(@$), ($1), new ConstantExpression( RPGML_LOC(@$), ($3) ) );
+      ($$) = new FrameAccessExpression( RPGML_LOC(@$), ($1), ($3) );
     }
   | function_call_expression { ($$) = ($1); }
 //  | postfix_expression INC_OP
@@ -410,7 +419,7 @@ assignment_statement
     {
       ($$) = new AssignDotStatement( RPGML_LOC(@$), ($1), ($3), ($4), ($5) );
     }
-  | postfix_expression '[' expression ']' assignment_operator expression ';'
+  | postfix_expression '[' array_coordinates_expression ']' assignment_operator expression ';'
     {
       ($$) = new AssignBracketStatement( RPGML_LOC(@$), ($1), ($3), ($5), ($6) );
     }
@@ -430,16 +439,56 @@ assignment_operator
   | OR_ASSIGN
   ;
 
-type_specifier
+primitive_type_expression
   : BOOL
   | INT
   | FLOAT
   | STRING
-  | ARRAY
+//  | ARRAY
   | FRAME
 //  | FUNCTION
   | OUTPUT
   | INPUT
+  ;
+
+array_dimension
+  : expression
+  | /*empty*/
+    {
+      ($$) = 0;
+    }
+  ;
+
+array_dimensions_expression
+  : array_dimensions_expression ',' array_dimension
+    {
+      ($$) = ($1);
+      ($$)->push_back( ($3) );
+    }
+  | array_dimension
+    {
+      ($$) = new DimensionsExpression( RPGML_LOC(@$) );
+      ($$)->push_back( ($1) );
+    }
+  ;
+
+array_type_expression
+  : type_expression '[' array_dimensions_expression ']'
+    {
+      ($$) = new TypeExpression( RPGML_LOC(@$), Type::Array(), ($1), ($3) );
+    }
+  ;
+
+array_coordinates_expression
+  : array_dimensions_expression
+  ;
+
+type_expression
+  : primitive_type_expression
+    {
+      ($$) = new TypeExpression( RPGML_LOC(@$), ($1) );
+    }
+  | array_type_expression
   ;
 
 statement
@@ -585,7 +634,7 @@ function_definition_statement
     }
   | FUNCTION identifier '=' expression ';'
     {
-      ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
+      ($$) = new VariableCreationStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4) );
     }
   ;
 
@@ -597,12 +646,10 @@ function_call_statement
   ;
 
 variable_creation_statement
-  : type_specifier identifier '=' expression ';'
+  : type_expression identifier '=' expression ';'
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
     }
-//  | type_specifier postfix_expression '.' identifier '=' expression ';'
-//  | type_specifier postfix_expression '[' expression ']' '=' expression ';'
   ;
 
 return_statement

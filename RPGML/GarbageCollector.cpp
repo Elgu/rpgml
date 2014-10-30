@@ -6,6 +6,7 @@
 namespace RPGML {
 
 GarbageCollector::GarbageCollector( void )
+: m_root( 0 )
 {}
 
 GarbageCollector::~GarbageCollector( void )
@@ -16,6 +17,8 @@ GarbageCollector::~GarbageCollector( void )
 void GarbageCollector::add( const Collectable *c )
 {
   if( 0 == this ) return;
+	if( 0 == m_root ) m_root = c;
+	if( c->gc == this ) return;
   if( c->gc ) c->gc->remove( c );
 
   c->gc = this;
@@ -33,6 +36,8 @@ void GarbageCollector::remove( const Collectable *c )
   if( 0 == this ) return;
   assert( c->gc == this );
 
+	if( c == m_root ) m_root = 0;
+
   const index_t index = c->gc_index;
   if( index < m_cs.size() )
   {
@@ -49,9 +54,15 @@ void GarbageCollector::remove( const Collectable *c )
   }
 }
 
-void GarbageCollector::compact( std::vector< const Collectable* > &cs_new, const Collectable *root )
+void GarbageCollector::setRoot( const Collectable *c )
 {
-  if( !root ) return;
+	add( c );
+	m_root = c;
+}
+
+void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
+{
+  if( !m_root ) return;
 
   std::vector< const Collectable* > stack;
   stack.reserve( 512 );
@@ -61,12 +72,12 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new, const
   //       with dupplicate entries
 
   // Remove from old storage, add to new
-  m_cs[ root->gc_index ] = 0;
-  root->gc_index = index_t( cs_new.size() );
-  cs_new.push_back( root );
+  m_cs[ m_root->gc_index ] = 0;
+  m_root->gc_index = index_t( cs_new.size() );
+  cs_new.push_back( m_root );
 
   // Schedule root
-  stack.push_back( root );
+  stack.push_back( m_root );
 
   Collectable::Children children;
   children.reserve( 512 );
@@ -124,15 +135,13 @@ void GarbageCollector::sweep( std::vector< const Collectable* > &garbage )
 void GarbageCollector::run( void )
 {
   if( m_cs.empty() ) return;
-
-  const Collectable *const root = m_cs[ 0 ];
-  if( 0 == root ) return;
+  if( 0 == m_root ) return;
 
   std::vector< const Collectable* > cs_new;
   cs_new.reserve( m_cs.size() / 2 + 1 );
 
   // compact recursively
-  compact( cs_new, root );
+  compact( cs_new );
 
   // make new cs current
   std::swap( cs_new, m_cs );

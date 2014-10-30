@@ -93,7 +93,7 @@ public:
 
   //! Adds ref to str
   String( const String &str )
-  : m_str( str.m_str )
+  : m_str( str.getData() )
   {}
 
   //! Copies string
@@ -197,21 +197,38 @@ public:
     std::swap( m_str, other.m_str );
   }
 
-  int compare( const String &other ) const
+  int compare( const char *other ) const
   {
     if( !m_str )
     {
-      if( !other.m_str ) return 0;
+      if( !other ) return 0;
       else return -1;
     }
-    else if( !other.m_str )
+    else if( !other )
     {
       return 1;
     }
     else
     {
-      return strcmp( m_str->get(), other.m_str->get() );
+      return strcmp( m_str->get(), other );
     }
+  }
+
+  int compare( const String &other ) const
+  {
+    if( this == &other )
+    {
+      return 0;
+    }
+    else
+    {
+      return compare( other.get() );
+    }
+  }
+
+  bool equals( const char *other ) const
+  {
+    return 0 == compare( other );
   }
 
   bool equals( const String &other ) const
@@ -240,6 +257,12 @@ public:
   bool operator>=( const String &other ) const { return compare( other ) >= 0; }
   bool operator==( const String &other ) const { return compare( other ) == 0; }
   bool operator!=( const String &other ) const { return compare( other ) != 0; }
+  bool operator< ( const char *other ) const { return compare( other ) <  0; }
+  bool operator> ( const char *other ) const { return compare( other ) >  0; }
+  bool operator<=( const char *other ) const { return compare( other ) <= 0; }
+  bool operator>=( const char *other ) const { return compare( other ) >= 0; }
+  bool operator==( const char *other ) const { return compare( other ) == 0; }
+  bool operator!=( const char *other ) const { return compare( other ) != 0; }
 
   char operator[] ( size_t i ) const { return m_str->get()[ i ]; }
 

@@ -17,7 +17,7 @@ public:
 
   virtual std::ostream &print( std::ostream &o ) const = 0;
 
-  typedef Iterator< const Value* > Iter;
+  typedef Iterator< Value > Iter;
 
   virtual CountPtr< Sequence > clone( void ) const = 0;
   virtual CountPtr< Iter > getIter( void ) const = 0;
@@ -30,7 +30,7 @@ CountPtr< Sequence > genSequenceFromToStep( GarbageCollector *gc, float from, fl
 class SequenceValueArray : public Sequence
 {
 public:
-  SequenceValueArray( GarbageCollector *gc, const Array *array );
+  SequenceValueArray( GarbageCollector *gc, const ArrayBase *array );
   virtual ~SequenceValueArray( void );
 
   virtual std::ostream &print( std::ostream &o ) const;
@@ -45,18 +45,18 @@ private:
   class IteratorValueArray : public Iter
   {
   public:
-    IteratorValueArray( const Array *array, index_t i=0 );
+    IteratorValueArray( const ArrayBase *array, index_t i=0 );
     virtual ~IteratorValueArray( void );
     virtual bool done( void ); // not const
     virtual void next( void );
-    virtual const Value *get( void );
+    virtual Value get( void );
     virtual CountPtr< Iter > clone( void ) const;
   private:
-    CountPtr< const Array > m_array;
+    CountPtr< const ArrayBase > m_array;
     index_t m_i;
   };
 
-  CountPtr< const Array > m_array;
+  CountPtr< const ArrayBase > m_array;
 };
 
 } // namespace RPGML

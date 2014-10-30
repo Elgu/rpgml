@@ -124,11 +124,18 @@ bool PrettyPrinter::visit( const DotExpression             *node )
   return true;
 }
 
-bool PrettyPrinter::visit( const AccessExpression             *node )
+bool PrettyPrinter::visit( const FrameAccessExpression             *node )
+{
+  node->left->invite( this );
+  (*o) << "." << node->identifier;
+  return true;
+}
+
+bool PrettyPrinter::visit( const ArrayAccessExpression             *node )
 {
   node->left->invite( this );
   (*o) << "[ ";
-  node->key->invite( this );
+  node->coord->invite( this );
   (*o) << " ]";
   return true;
 }
@@ -161,6 +168,36 @@ bool PrettyPrinter::visit( const IfThenElseExpression         *node )
   (*o) << " : ";
   node->else_value->invite( this );
   (*o) << " )";
+  return true;
+}
+
+bool PrettyPrinter::visit( const TypeExpression               *node )
+{
+  if( node->type == Type::Array() )
+  {
+    node->of->invite( this );
+    (*o) << "[ ";
+    node->dims->invite( this );
+    (*o) << " ]";
+  }
+  else
+  {
+    (*o) << node->type.getTypeName();
+  }
+  return true;
+}
+
+bool PrettyPrinter::visit( const DimensionsExpression         *node )
+{
+  const size_t N = node->dims.size();
+
+  for( size_t i=0; i<N; ++i )
+  {
+    if( i>0 ) (*o) << ", ";
+    const Expression *const e = node->dims[ i ];
+    if( e ) e->invite( this );
+  }
+
   return true;
 }
 
@@ -253,7 +290,7 @@ bool PrettyPrinter::visit( const AssignBracketStatement       *node )
   // indent() must have been called, if neccessary
   node->left->invite( this );
   (*o) << "[ ";
-  node->key->invite( this );
+  node->coord->invite( this );
   (*o) << " ]";
   (*o) << " " << getAssign( node->op ) << " ";
   ++depth;
@@ -330,7 +367,7 @@ bool PrettyPrinter::visit( const FunctionCallStatement        *node )
 bool PrettyPrinter::visit( const VariableCreationStatement    *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << node->type.getTypeName() << " " << node->identifier << " = ";
+  (*o) << node->type->type.getTypeName() << " " << node->identifier << " = ";
   node->value->invite( this );
   (*o) << ";";
   return true;

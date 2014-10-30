@@ -26,10 +26,14 @@ class FromToStepSequenceExpression;
 class LookupVariableExpression;
 class FunctionCallExpression;
 class DotExpression;
-class AccessExpression;
+class FrameAccessExpression;
+class ArrayAccessExpression;
 class UnaryExpression;
 class BinaryExpression;
 class IfThenElseExpression;
+class TypeExpression;
+class DimensionsExpression;
+typedef DimensionsExpression CoordinatesExpression;
 
 class Statement;
 class CompoundStatement;
@@ -80,17 +84,20 @@ public:
 
   virtual bool visit( const ConstantExpression           *node ) = 0;
   virtual bool visit( const ArrayConstantExpression      *node ) = 0;
-  virtual bool visit( const FrameConstantExpression        *node ) = 0;
+  virtual bool visit( const FrameConstantExpression      *node ) = 0;
   virtual bool visit( const ParenthisSequenceExpression  *node ) = 0;
   virtual bool visit( const ExpressionSequenceExpression *node ) = 0;
   virtual bool visit( const FromToStepSequenceExpression *node ) = 0;
   virtual bool visit( const LookupVariableExpression     *node ) = 0;
   virtual bool visit( const FunctionCallExpression       *node ) = 0;
   virtual bool visit( const DotExpression                *node ) = 0;
-  virtual bool visit( const AccessExpression             *node ) = 0;
+  virtual bool visit( const FrameAccessExpression        *node ) = 0;
+  virtual bool visit( const ArrayAccessExpression        *node ) = 0;
   virtual bool visit( const UnaryExpression              *node ) = 0;
   virtual bool visit( const BinaryExpression             *node ) = 0;
   virtual bool visit( const IfThenElseExpression         *node ) = 0;
+  virtual bool visit( const TypeExpression               *node ) = 0;
+  virtual bool visit( const DimensionsExpression         *node ) = 0;
 
   virtual bool visit( const CompoundStatement            *node ) = 0;
   virtual bool visit( const FunctionDefinitionStatement  *node ) = 0;
@@ -316,20 +323,36 @@ public:
   const String member;
 };
 
-class AccessExpression : public Expression
+class FrameAccessExpression : public Expression
 {
 public:
-  AccessExpression( const Location *_loc, const Expression *_left, const Expression *_key )
+  FrameAccessExpression( const Location *_loc, const Expression *_left, const String &_identifier )
   : Expression( _loc )
   , left( _left )
-  , key( _key )
+  , identifier( _identifier )
   {}
-  virtual ~AccessExpression( void ) {}
+  virtual ~FrameAccessExpression( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
-  const CountPtr< const Expression > key;
+  const String identifier;
+};
+
+class ArrayAccessExpression : public Expression
+{
+public:
+  ArrayAccessExpression( const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord )
+  : Expression( _loc )
+  , left( _left )
+  , coord( _coord )
+  {}
+  virtual ~ArrayAccessExpression( void ) {}
+
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+
+  const CountPtr< const Expression > left;
+  const CountPtr< const CoordinatesExpression > coord;
 };
 
 class UnaryExpression : public Expression
@@ -384,8 +407,41 @@ public:
   const CountPtr< const Expression > else_value;
 };
 
+class TypeExpression : public Expression
+{
+public:
+  TypeExpression( const Location *_loc, Type _type, const TypeExpression *_of = 0, const DimensionsExpression *_dims = 0 )
+  : Expression( _loc )
+  , of( _of )
+  , dims( _dims )
+  , type( _type )
+  {}
+  virtual ~TypeExpression( void ) {}
 
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
+  const CountPtr< const TypeExpression > of;
+  const CountPtr< const DimensionsExpression > dims;
+  Type type;
+};
+
+class DimensionsExpression : public Expression
+{
+public:
+  DimensionsExpression( const Location *_loc )
+  : Expression( _loc )
+  {}
+  virtual ~DimensionsExpression( void ) {}
+
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+
+  void push_back( const Expression *dim )
+  {
+    dims.push_back( CountPtr< const Expression >( dim ) );
+  }
+
+  std::vector< CountPtr< const Expression > > dims;
+};
 
 //// Statements ////
 
@@ -523,17 +579,17 @@ public:
 class AssignBracketStatement : public AssignmentStatement
 {
 public:
-  AssignBracketStatement( const Location *_loc, const Expression *_left, const Expression *_key, ASSIGN _op, const Expression *_value )
+  AssignBracketStatement( const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord, ASSIGN _op, const Expression *_value )
   : AssignmentStatement( _loc, _op, _value )
   , left( _left )
-  , key( _key )
+  , coord( _coord )
   {}
   virtual ~AssignBracketStatement( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
-  const CountPtr< const Expression > key;
+  const CountPtr< const CoordinatesExpression > coord;
 };
 
 class IfStatement : public Statement
@@ -627,7 +683,7 @@ public:
 class VariableCreationStatement : public Statement
 {
 public:
-  VariableCreationStatement( const Location *_loc, Type _type, const String &_identifier, const Expression *_value )
+  VariableCreationStatement( const Location *_loc, const TypeExpression *_type, const String &_identifier, const Expression *_value )
   : Statement( _loc )
   , identifier( _identifier )
   , value( _value )
@@ -639,7 +695,7 @@ public:
 
   const String identifier;
   const CountPtr< const Expression > value;
-  const Type type;
+  const CountPtr< const TypeExpression > type;
 };
 
 class ReturnStatement : public Statement

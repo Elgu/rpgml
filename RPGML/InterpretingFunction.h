@@ -14,7 +14,7 @@ public:
   InterpretingFunction( GarbageCollector *gc, Frame *parent, const Args *decl_args, const AST::CompoundStatement *body );
   virtual ~InterpretingFunction( void );
 
-  virtual bool call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth );
+  virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
 
 private:
   const CountPtr< const AST::CompoundStatement > m_body;

@@ -27,12 +27,14 @@ protected:
   friend class Collectable;
   void add( const Collectable *c );
   void remove( const Collectable *c );
+  void setRoot( const Collectable *c );
 
 private:
-  void compact( std::vector< const Collectable* > &cs_new, const Collectable *root );
+  void compact( std::vector< const Collectable* > &cs_new );
   void sweep( std::vector< const Collectable* > &garbage );
 
   std::vector< const Collectable* > m_cs;
+  const Collectable *m_root;
 
 private:
   GarbageCollector( const GarbageCollector &other );
@@ -104,6 +106,12 @@ private:
   mutable GarbageCollector *gc;
   mutable index_t gc_index;
 };
+
+static inline bool isCollectable( const Collectable * ) { return true; }
+static inline bool isCollectable( const void * ) { return false; }
+
+template< class T >
+inline bool isCollectable( const CountPtr< T > * ) { return isCollectable( (const T*)0 ); }
 
 } // namespace RPGML
 

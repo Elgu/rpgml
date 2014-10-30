@@ -44,12 +44,13 @@ Value::Value( const Value &other )
 
 Value::Value( bool      _b    ) : m_type( Type::BOOL     ) { b    = _b   ; }
 Value::Value( int       _i    ) : m_type( Type::INT      ) { i    = _i   ; }
+Value::Value( index_t   _i    ) : m_type( Type::INT      ) { i    = int( _i ); }
 Value::Value( float     _f    ) : m_type( Type::FLOAT    ) { f    = _f   ; }
 Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { str  = _str.getData(); str->ref(); }
 Value::Value( StringData  const *_str  ) : m_type( Type::STRING   ) { str  = _str; str->ref(); }
-Value::Value( Array          *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; arr  ->ref(); }
+Value::Value( ArrayBase         *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; arr  ->ref(); }
 Value::Value( Frame          *_frame ) : m_type( Type::FRAME    ) { frame = _frame; frame->ref(); }
 Value::Value( Function       *_func  ) : m_type( Type::FUNCTION ) { func  = _func ; func ->ref(); }
 Value::Value( Node           *_node  ) : m_type( Type::NODE     ) { node  = _node ; node ->ref(); }
@@ -59,18 +60,47 @@ Value::Value( Sequence const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq
 
 Value &Value::set( bool               _b    ) { return (*this) = Value( _b    ); }
 Value &Value::set( int                _i    ) { return (*this) = Value( _i    ); }
+Value &Value::set( index_t            _i    ) { return (*this) = Value( _i    ); }
 Value &Value::set( float              _f    ) { return (*this) = Value( _f    ); }
 Value &Value::set( std::string const &_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( char        const *_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( String      const &_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( StringData  const *_str  ) { return (*this) = Value( _str  ); }
-Value &Value::set( Array             *_arr  ) { return (*this) = Value( _arr  ); }
+Value &Value::set( ArrayBase         *_arr  ) { return (*this) = Value( _arr  ); }
 Value &Value::set( Frame               *_frame  ) { return (*this) = Value( _frame  ); }
 Value &Value::set( Function          *_func ) { return (*this) = Value( _func ); }
 Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
 Value &Value::set( Output            *_out  ) { return (*this) = Value( _out  ); }
 Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   ); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
+Value &Value::set( const Value       &v     ) { return (*this) = v;              }
+
+bool Value::get( bool            &x ) const { if( isBool    () ) { x = getBool    (); return true; } else return false; }
+bool Value::get( int             &x ) const { if( isInt     () ) { x = getInt     (); return true; } else return false; }
+bool Value::get( float           &x ) const { if( isFloat   () ) { x = getFloat   (); return true; } else return false; }
+bool Value::get( String          &x ) const { if( isString  () ) { x = getString  (); return true; } else return false; }
+bool Value::get( ArrayBase      *&x ) const { if( isArray   () ) { x = getArray   (); return true; } else return false; }
+bool Value::get( Frame          *&x ) const { if( isFrame   () ) { x = getFrame   (); return true; } else return false; }
+bool Value::get( Function       *&x ) const { if( isFunction() ) { x = getFunction(); return true; } else return false; }
+bool Value::get( Node           *&x ) const { if( isNode    () ) { x = getNode    (); return true; } else return false; }
+bool Value::get( Output         *&x ) const { if( isOutput  () ) { x = getOutput  (); return true; } else return false; }
+bool Value::get( Input          *&x ) const { if( isInput   () ) { x = getInput   (); return true; } else return false; }
+bool Value::get( Sequence const *&x ) const { if( isSequence() ) { x = getSequence(); return true; } else return false; }
+bool Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) { x = getArray   (); return true; } else return false; }
+bool Value::get( CountPtr< Frame     > &x ) const { if( isFrame   () ) { x = getFrame   (); return true; } else return false; }
+bool Value::get( CountPtr< Function  > &x ) const { if( isFunction() ) { x = getFunction(); return true; } else return false; }
+bool Value::get( CountPtr< Node      > &x ) const { if( isNode    () ) { x = getNode    (); return true; } else return false; }
+bool Value::get( CountPtr< Output    > &x ) const { if( isOutput  () ) { x = getOutput  (); return true; } else return false; }
+bool Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) { x = getInput   (); return true; } else return false; }
+bool Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) { x = getSequence(); return true; } else return false; }
+
+Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
+Value::operator CountPtr< Frame          >( void ) const { return getFrame   (); }
+Value::operator CountPtr< Function       >( void ) const { return getFunction(); }
+Value::operator CountPtr< Node           >( void ) const { return getNode    (); }
+Value::operator CountPtr< Output         >( void ) const { return getOutput  (); }
+Value::operator CountPtr< Input          >( void ) const { return getInput   (); }
+Value::operator CountPtr< Sequence const >( void ) const { return getSequence(); }
 
 Value &Value::operator=( Value other )
 {
@@ -735,6 +765,8 @@ std::ostream &Value::print( std::ostream &o ) const
 
     case Type::ARRAY   :
       {
+        o << "[ TODO: print Array ]";
+        /*
         const Array &a = *getArray();
         o << "[ ";
         for( index_t j( 0 ), end( a.size() ); j < end; ++j )
@@ -743,6 +775,7 @@ std::ostream &Value::print( std::ostream &o ) const
           o << a[ j ];
         }
         o << " ]";
+        */
       }
       break;
 
@@ -760,13 +793,13 @@ std::ostream &Value::print( std::ostream &o ) const
       break;
 
     case Type::FUNCTION: o << "Function( " << (void*)getFunction() << " )"; break;
-    case Type::NODE    : o << "Node( " << getNode()->getGlobalName() << " )"; break;
+    case Type::NODE    : o << "Node( " << getNode()->getName() << ", " << getNode()->getIdentifier() << " )"; break;
 
     case Type::OUTPUT  :
       {
         const Output *const output = getOutput();
         o
-          << "Output( " << output->getParent()->getGlobalName()
+          << "Output( " << output->getParent()->getIdentifier()
           << ", " << output->getIdentifier() << " )"
           ;
       }
@@ -776,7 +809,7 @@ std::ostream &Value::print( std::ostream &o ) const
       {
         const Input *const input = getInput();
         o
-          << "Input( " << input->getParent()->getGlobalName()
+          << "Input( " << input->getParent()->getIdentifier()
           << ", " << input->getIdentifier() << " )"
           ;
       }

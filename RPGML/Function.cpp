@@ -42,7 +42,7 @@ size_t Function::getFrameSize( void ) const
   return getNumArgs();
 }
 
-bool Function::call( const Location *loc, Scope *scope, Value &ret, const Args *call_args, index_t recursion_depth )
+bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args )
 {
   Scope::EnterLeaveGuard guard1( scope, getParent() );
   CountPtr< Frame > args = new Frame( scope->getGC(), scope->getCurr() );
@@ -50,7 +50,7 @@ bool Function::call( const Location *loc, Scope *scope, Value &ret, const Args *
 
   fill_args( *args, *call_args );
   const index_t n_args = index_t( args->size() );
-  return call_impl( loc, scope, ret, n_args, ( n_args ? args->get( 0 ) : 0 ), recursion_depth );
+  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? args->getStack( 0 ) : 0 ) );
 }
 
 void Function::fill_args( Frame &args, const Args &call_args )

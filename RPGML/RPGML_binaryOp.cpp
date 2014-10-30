@@ -184,7 +184,7 @@ namespace binaryOp_impl {
   }
 } // namespace binaryOp_impl
 
-bool binaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t )
+bool binaryOp::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
 {
   using namespace binaryOp_impl;
 
@@ -204,7 +204,16 @@ bool binaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t
          + "@" + toString( loc->withoutFilename() )
          + "#" + toString( scope->getNr() )
          );
-    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    CountPtr< Node > node( new Node( getGC(), global_name, getSO() ) );
+
+    CountPtr< Output > left_output = scope->toOutput( loc, recursion_depth, left );
+    CountPtr< Output > right_output = scope->toOutput( loc, recursion_depth, right );
+
+    node->getInput   ( "left"  )->connect( left_output );
+    node->getVariable( "op"    )->set( op_v );
+    node->getInput   ( "right" )->connect( right_output );
+
+    ret = *node->getVariable( "out" );
     return true;
   }
 
@@ -223,12 +232,31 @@ CountPtr< Function::Args > binaryOp::genDeclArgs( void )
   return args;
 }
 
-binaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, global_name, n_args, args, so )
-{}
+binaryOp::Node::Node( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, String::Static( "BinaryOp" ), identifier, so )
+{
+  setNumInputs( NUM_INPUTS );
+  setNumOutputs( NUM_OUTPUTS );
+
+  getInput( INPUT_LEFT  )->setIdentifier( String::Static( "left"  ) );
+  getInput( INPUT_RIGHT )->setIdentifier( String::Static( "right" ) );
+  getOutput( OUTPUT_OUT )->setIdentifier( String::Static( "out" ) );
+
+  reserve( NUM_INPUTS + NUM_OUTPUTS );
+  push_back( String::Static( "left"  ), Value( getInput( INPUT_LEFT  ) ) );
+  push_back( String::Static( "op"    ), Value( String::Static( "undefined" ) ) );
+  push_back( String::Static( "right" ), Value( getInput( INPUT_RIGHT ) ) );
+
+  push_back( String::Static( "out"   ), Value( getOutput( OUTPUT_OUT ) ) );
+}
 
 binaryOp::Node::~Node( void )
 {}
+
+bool binaryOp::Node::tick( void )
+{
+  return true;
+}
 
 void binaryOp::Node::gc_clear( void )
 {

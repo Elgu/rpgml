@@ -12,17 +12,17 @@ InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent
 InterpretingFunction::~InterpretingFunction( void )
 {}
 
-bool InterpretingFunction::call_impl( const Location *, Scope *scope, Value &ret, index_t, const Value *, index_t recursion_depth )
+bool InterpretingFunction::call_impl( const Location *, index_t recursion_depth, Scope *scope, Value &ret, index_t, const Value * )
 {
   InterpretingASTVisitor interpreter( scope, recursion_depth+1 );
   if( !m_body->invite( &interpreter ) ) return false;
 
-  if( !interpreter.return_encountered )
+  if( !interpreter.get_return_encountered() )
   {
     throw "No return statement";
   }
 
-  ret.swap( interpreter.return_value );
+  ret = interpreter.get_return_value();
   return true;
 }
 

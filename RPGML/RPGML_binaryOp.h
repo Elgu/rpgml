@@ -12,16 +12,31 @@ public:
   binaryOp( GarbageCollector *gc, Frame *parent, const SharedObject *so );
   virtual ~binaryOp( void );
 
-  virtual bool call_impl( const Location *loc, Scope *scope, Value &ret, index_t n_args, const Value *args, index_t recursion_depth );
+  virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
 
   class Node : public RPGML::Node
   {
   public:
-    Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so );
+    Node( GarbageCollector *gc, const String &identifier, const SharedObject *so );
     virtual ~Node( void );
+
+    virtual bool tick( void );
 
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
+  private:
+    enum Inputs
+    {
+      INPUT_LEFT ,
+      INPUT_RIGHT,
+      NUM_INPUTS
+    };
+
+    enum Outputs
+    {
+      OUTPUT_OUT,
+      NUM_OUTPUTS
+    };
   };
 
 private:
