@@ -72,7 +72,7 @@ private:
 class Node : public Frame
 {
 public:
-  Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const SharedObject *so );
+  Node( GarbageCollector *gc, const String &global_name, const SharedObject *so );
 
   virtual ~Node( void );
 
@@ -82,8 +82,9 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
+  virtual void execute( void );
+
 private:
-  std::vector< Value > m_args;
   const String m_global_name;
   CountPtr< const SharedObject > m_so;
 };
@@ -99,9 +100,9 @@ private:
 
 #define RPGML_CREATE_NODE( NAME ) \
   extern "C"\
-  RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &global_name, RPGML::index_t n_args, const RPGML::Value *args, const RPGML::SharedObject *so )\
+  RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &global_name, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::NAME::Node( gc, global_name, n_args, args, so );\
+    return new RPGML::NAME::Node( gc, global_name, so );\
   }\
 
 #endif

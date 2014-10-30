@@ -2,6 +2,8 @@ print( "hallo\n" );
 
 Array a = [ 0 to 18 step 2 ];
 
+a[ 0 ] = 23;
+
 for i in a
 {
   print( i );

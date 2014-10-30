@@ -108,7 +108,7 @@ namespace RPGML
 %token  <type>    FLOAT        "float";
 %token  <type>    STRING       "string";
 %token  <type>    ARRAY        "Array";
-%token  <type>    FRAME          "Frame";
+%token  <type>    FRAME        "Frame";
 %token  <type>    FUNCTION     "Function";
 %token  <type>    OUTPUT       "Output";
 %token  <type>    INPUT        "Input";

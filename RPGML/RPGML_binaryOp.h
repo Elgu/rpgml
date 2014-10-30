@@ -17,11 +17,13 @@ public:
   class Node : public RPGML::Node
   {
   public:
-    Node( GarbageCollector *gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so );
+    Node( GarbageCollector *gc, const String &global_name, const RPGML::SharedObject *so );
     virtual ~Node( void );
 
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
+
+    virtual void execute( void );
   };
 
 private:

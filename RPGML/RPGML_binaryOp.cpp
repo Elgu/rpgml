@@ -204,7 +204,7 @@ bool binaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t
          + "@" + toString( loc->withoutFilename() )
          + "#" + toString( scope->getNr() )
          );
-    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    ret = Value( new Node( getGC(), global_name, getSO() ) );
     return true;
   }
 
@@ -223,8 +223,8 @@ CountPtr< Function::Args > binaryOp::genDeclArgs( void )
   return args;
 }
 
-binaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, global_name, n_args, args, so )
+binaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, global_name, so )
 {}
 
 binaryOp::Node::~Node( void )
@@ -239,6 +239,9 @@ void binaryOp::Node::gc_getChildren( Children &children ) const
 {
   RPGML::Node::gc_getChildren( children );
 }
+
+void binaryOp::Node::execute( void )
+{}
 
 } // namespace RPGML
 

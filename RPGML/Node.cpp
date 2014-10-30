@@ -178,19 +178,12 @@ bool Output::isConnected( void ) const
   return false;
 }
 
-Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const SharedObject *so )
+Node::Node( GarbageCollector *_gc, const String &global_name, const SharedObject *so )
 : Frame( _gc, 0 )
 , m_global_name( global_name )
 , m_so( so )
 {
-  for( index_t i=0; i<n_args; ++i )
-  {
-    if( !args[ i ].isPrimitive() && !args[ i ].isOutput() )
-    {
-      throw "Only primitive arg values allowed for Node";
-    }
-  }
-  m_args.insert( m_args.begin(), args, args+n_args );
+  setThis( true );
 }
 
 Node::~Node( void )
@@ -215,6 +208,9 @@ void Node::gc_getChildren( Children &children ) const
 {
   Frame::gc_getChildren( children );
 }
+
+void Node::execute( void )
+{}
 
 } // namespace RPGML
 

@@ -42,8 +42,8 @@ CountPtr< Function::Args > print::genDeclArgs( void )
   return args;
 }
 
-print::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, global_name, n_args, args, so )
+print::Node::Node( GarbageCollector *_gc, const String &global_name, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, global_name, so )
 {}
 
 print::Node::~Node( void )
@@ -57,6 +57,10 @@ void print::Node::gc_clear( void )
 void print::Node::gc_getChildren( Children &children ) const
 {
   RPGML::Node::gc_getChildren( children );
+}
+
+void print::Node::execute( void )
+{
 }
 
 } // namespace RPGML

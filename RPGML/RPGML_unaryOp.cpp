@@ -88,7 +88,7 @@ bool unaryOp::call_impl( const Location *loc, Scope *scope, Value &ret, index_t 
          + "@" + toString( loc->withoutFilename() )
          + "#" + toString( scope->getNr() )
          );
-    ret = Value( new Node( getGC(), global_name, n_args, args, getSO() ) );
+    ret = Value( new Node( getGC(), global_name, getSO() ) );
     return true;
   }
 
@@ -116,9 +116,14 @@ CountPtr< Function::Args > unaryOp::genDeclArgs( void )
   return args;
 }
 
-unaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, index_t n_args, const Value *args, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, global_name, n_args, args, so )
-{}
+unaryOp::Node::Node( GarbageCollector *_gc, const String &global_name, const RPGML::SharedObject *so )
+: RPGML::Node( _gc, global_name, so )
+{
+  reserve( NUM_MEMBERS );
+  push_back( String::Static( "x"   ), Value( new Input ( _gc, this, String::Static( "x"   ) ) ) );
+  push_back( String::Static( "op"  ), Value( new Input ( _gc, this, String::Static( "op"  ) ) ) );
+  push_back( String::Static( "out" ), Value( new Output( _gc, this, String::Static( "out" ) ) ) );
+}
 
 unaryOp::Node::~Node( void )
 {}
@@ -131,6 +136,14 @@ void unaryOp::Node::gc_clear( void )
 void unaryOp::Node::gc_getChildren( Children &children ) const
 {
   RPGML::Node::gc_getChildren( children );
+}
+
+void unaryOp::Node::execute( void )
+{
+  Input const *const in_x    = get( INPUT_X  )->getInput();
+  Input const *const in_op   = get( INPUT_OP )->getInput();
+  Output      *const out_out = get( INPUT_OP )->getOutput();
+
 }
 
 } // namespace RPGML
