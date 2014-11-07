@@ -53,7 +53,8 @@ public:
     if( s2 ) strncpy( str+len, s2, len2 );
     str[ len+len2 ] = '\0';
 
-    return ret.get();
+    // CountPtr for return must be created before CountPtr "ret" is destroyed
+    return CountPtr< const StringData >( ret.get() );
   }
 private:
   const char m_str[ 0 ];
@@ -62,7 +63,7 @@ private:
 class StdString : public StringData
 {
 public:
-  StdString( void ) {}
+  StdString( void ) { set( m_str.c_str() ); }
   explicit StdString( const char *s ) : m_str( s ) { set( m_str.c_str() ); }
   explicit StdString( const std::string &s ) : m_str( s ) { set( m_str.c_str() ); }
 
@@ -78,49 +79,71 @@ private:
   std::string m_str;
 };
 
-typedef StringData StaticString;
-
 class String
 {
 public:
   String( void )
+  : m_c_str( "" )
   {}
 
   //! Adds ref to str
   String( const StringData *str )
   : m_str( str )
+  , m_c_str( str ? str->get() : "" )
   {}
 
   //! Adds ref to str
   String( const String &str )
   : m_str( str.getData() )
-  {}
+  , m_c_str( str.get() ) // str can be from Static(), so m_str would be 0
+  {
+    if( !m_c_str ) m_c_str = "";
+  }
 
   //! Copies string
   String( const char *str, size_t len, const char *str2=0, size_t len2=0 )
   : m_str( MallocString::create( str, len, str2, len2 ) )
-  {}
+  , m_c_str( m_str->get() )
+  {
+    if( !m_c_str ) m_c_str = "";
+  }
 
   //! Copies string
   String( const char *str, const char *str2=0 )
+  : m_c_str( "" )
   {
     const size_t len = strlen( str );
     const size_t len2 = ( str2 ? strlen( str2 ) : 0 );
     m_str = MallocString::create( str, len, str2, len2 );
+    m_c_str = m_str->get();
+    if( !m_c_str ) m_c_str = "";
   }
 
   //! Copies string
   String( const std::string &str )
+  : m_c_str( "" )
   {
     const size_t len = str.length();
     m_str = MallocString::create( str.c_str(), len );
+    m_c_str = m_str->get();
+    if( !m_c_str ) m_c_str = "";
   }
 
   //! Wrapps static const string, use String::Static( "foo" )
   static
   String Static( const char *str )
   {
-    return String( new StaticString( str ) );
+    String ret;
+    ret.m_c_str = str; // might be NULL
+    return ret;
+  }
+
+  static
+  String MoveFrom( std::string &str )
+  {
+    String ret;
+    ret.moveFrom( str );
+    return ret;
   }
 
   virtual ~String( void )
@@ -131,16 +154,19 @@ public:
   void clear( void )
   {
     m_str.reset();
+    m_c_str = "";
   }
 
   bool empty( void ) const
   {
-    return !m_str || (m_str->get())[ 0 ] == '\0';
+    assert( m_c_str );
+    return m_c_str[ 0 ] == '\0';
   }
 
-  String &operator=( String str )
+  String &operator=( const String &str )
   {
-    this->swap( str );
+    String tmp( str );
+    this->swap( tmp );
     return (*this);
   }
 
@@ -166,7 +192,7 @@ public:
 
   const char *get( void ) const
   {
-    return ( m_str ? m_str->get() : 0 );
+    return m_c_str;
   }
 
   const char *c_str( void ) const
@@ -189,6 +215,8 @@ public:
     StdString *stdstring;
     m_str.reset( stdstring = new StdString() );
     stdstring->moveFrom( str );
+    m_c_str = m_str->get();
+    if( !m_c_str ) m_c_str = "";
     return (*this);
   }
 
@@ -199,7 +227,7 @@ public:
 
   int compare( const char *other ) const
   {
-    if( !m_str )
+    if( !m_c_str )
     {
       if( !other ) return 0;
       else return -1;
@@ -210,7 +238,7 @@ public:
     }
     else
     {
-      return strcmp( m_str->get(), other );
+      return strcmp( m_c_str, other );
     }
   }
 
@@ -238,7 +266,8 @@ public:
 
   size_t length( void ) const
   {
-    return ( m_str ? strlen( m_str->get() ) : 0 );
+    const char *const s = get();
+    return ( s ? strlen( s ) : 0 );
   }
 
   size_t size( void ) const
@@ -289,6 +318,7 @@ public:
 
 private:
   CountPtr< const StringData > m_str;
+  const char *m_c_str;
 };
 
 inline
