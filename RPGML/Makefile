@@ -22,6 +22,7 @@ CFLAGS=\
 CXXFLAGS=$(CFLAGS)
 
 LDFLAGS=\
+	-lpthread\
 
 .%.cpp.dep: %.cpp
 	@echo Generating dependencies for $<
