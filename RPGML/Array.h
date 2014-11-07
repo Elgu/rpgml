@@ -37,7 +37,7 @@ public:
   virtual index_t        size   ( void ) const = 0;
 
   virtual ArrayBase &resize( index_t dims, const index_t *new_size ) = 0;
-  virtual ArrayBase &resize( index_t x, index_t y=0, index_t z=0, index_t t=0 ) = 0;
+  virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 ) = 0;
 
   virtual CountPtr< ArrayBase > clone( void ) const = 0;
 
@@ -64,6 +64,8 @@ public:
   typedef typename elements_t::const_reverse_iterator const_reverse_iterator;
   typedef typename elements_t::reference              reference;
   typedef typename elements_t::const_reference        const_reference;
+
+  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
 
   explicit
   ArrayElements( GarbageCollector *_gc )
@@ -226,6 +228,8 @@ public:
   typedef typename Base::ValueIterator          ValueIterator;
   typedef typename Base::Children               Children;
 
+  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
+
   explicit
   Array( GarbageCollector *_gc )
   : Base( _gc )
@@ -273,7 +277,7 @@ public:
 
   virtual Type           getType( void ) const
   {
-    return TypeOf( (Element*)0 );
+    return TypeOf( (const Element*)0 );
   }
 
   virtual const index_t *getSize( void ) const
