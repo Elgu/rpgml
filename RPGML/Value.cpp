@@ -102,9 +102,10 @@ Value::operator CountPtr< Output         >( void ) const { return getOutput  ();
 Value::operator CountPtr< Input          >( void ) const { return getInput   (); }
 Value::operator CountPtr< Sequence const >( void ) const { return getSequence(); }
 
-Value &Value::operator=( Value other )
+Value &Value::operator=( const Value &other )
 {
-  this->swap( other );
+  Value tmp( other );
+  this->swap( tmp );
   return (*this);
 }
 
