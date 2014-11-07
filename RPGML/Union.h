@@ -68,9 +68,10 @@ public:
     clear();
   }
 
-  Union &operator=( Union other )
+  Union &operator=( const Union &other )
   {
-    this->swap( other );
+    Union tmp( other );
+    this->swap( tmp );
     return (*this);
   }
 
