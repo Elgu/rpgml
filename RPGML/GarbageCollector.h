@@ -38,7 +38,7 @@ private:
 
 private:
   GarbageCollector( const GarbageCollector &other );
-  GarbageCollector &operator=( GarbageCollector other );
+  GarbageCollector &operator=( const GarbageCollector &other );
 };
 
 class Collectable : public Refcounted
