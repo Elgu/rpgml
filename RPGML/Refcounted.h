@@ -15,6 +15,8 @@ class Refcounted
 {
   friend class GarbageCollector;
 public:
+  typedef index_t count_t;
+
   Refcounted( void )
   : m_count( 0 )
   {}
@@ -22,19 +24,19 @@ public:
   virtual ~Refcounted( void )
   {}
 
-  index_t ref( void ) const
+  count_t ref( void ) const
   {
     ++m_count;
     return m_count;
   }
 
-  index_t unref( void ) const
+  count_t unref( void ) const
   {
     --m_count;
     return m_count;
   }
 
-  index_t count( void ) const
+  count_t count( void ) const
   {
     return m_count;
   }
@@ -42,11 +44,11 @@ public:
 private:
   void deactivate_deletion( void ) const throw()
   {
-    // That way the next one gets index_t(-1), which is not 0
+    // That way the next one gets count_t(-1), which is not 0
     m_count = 0;
   }
 
-  mutable index_t m_count;
+  mutable count_t m_count;
 };
 
 template< class _RefcountedType >
@@ -66,6 +68,13 @@ public:
     if( m_p ) m_p->ref();
   }
 
+  // Sadly, this is needed, templates do not count as copy-constructor
+  CountPtr( const CountPtr &other )
+  : m_p( other.get() )
+  {
+    if( m_p ) m_p->ref();
+  }
+
   template< class CompatibleRefcountedType >
   CountPtr( const CountPtr< CompatibleRefcountedType > &other )
   : m_p( other.get() )
@@ -75,21 +84,29 @@ public:
 
   ~CountPtr( void )
   {
-		clear();
+    clear();
   }
 
-	void clear( void )
-	{
-    if( m_p )
-		{
-			if( !m_p->unref() ) delete m_p;
-			m_p = 0;
-		}
-	}
-
-  CountPtr &operator=( CountPtr cp )
+  void clear( void )
   {
-    this->swap( cp );
+    if( m_p )
+    {
+      if( !m_p->unref() ) delete m_p;
+      m_p = 0;
+    }
+  }
+
+  // This does not work! this operator is not used
+//  CountPtr &operator=( CountPtr cp )
+//  {
+//    this->swap( cp );
+//    return (*this);
+//  }
+
+  CountPtr &operator=( const CountPtr &cp )
+  {
+    CountPtr tmp( cp );
+    this->swap( tmp );
     return (*this);
   }
 
