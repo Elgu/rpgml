@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+using namespace std;
+
 namespace RPGML {
 
 Frame::Frame( GarbageCollector *_gc, Frame *parent, const String &path )
@@ -70,6 +72,7 @@ index_t Frame::getIndex( const char *identifier ) const
   const int n = int( m_identifiers.size() );
   for( int i = n-1; i>=0; --i )
   {
+//    cerr << "Frame::getIndex( '" << identifier << "' ): " << i << " = " << m_identifiers[ i ] << endl;
     if( m_identifiers[ i ] == identifier )
     {
       return index_t( i );
@@ -141,6 +144,8 @@ Value       *Frame::getStack( index_t index )
 
 Value *Frame::push_back( const String &identifier, const Value &value )
 {
+//  cerr << "Frame::push_back( '" << identifier << "', '" << value << "' )" << endl;
+
   assert( m_values.size() == m_identifiers.size() );
   const index_t index = index_t( m_values.size() );
 

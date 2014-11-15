@@ -5,6 +5,9 @@
 #include "String.h"
 #include "SharedObject.h"
 
+#include <iostream>
+using namespace std;
+
 namespace RPGML {
 
 Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, const SharedObject *so )
@@ -12,7 +15,17 @@ Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, cons
 , m_parent( parent )
 , m_decl( decl )
 , m_so( so )
-{}
+{
+//  {
+//    const Args &decl_args = *decl;
+//
+//    cerr << "Function::Function(): " << endl;
+//    for( index_t pos = 0; pos < decl_args.size(); ++pos )
+//    {
+//      cerr << "  decl_args[ " << pos << " ] = { '" << decl_args[ pos ].identifier << "', '" << decl_args[ pos ].value << "' )" << endl;
+//    }
+//  }
+}
 
 Function::~Function( void )
 {}
@@ -64,6 +77,18 @@ void Function::fill_args( Frame &args, const Args &call_args )
   {
     throw "too many arguments";
   }
+
+//  {
+//    cerr << "Function::fill_args(): " << endl;
+//    for( index_t pos = 0; pos < decl_args.size(); ++pos )
+//    {
+//      cerr << "  decl_args[ " << pos << " ] = { '" << decl_args[ pos ].identifier << "', '" << decl_args[ pos ].value << "' )" << endl;
+//    }
+//    for( index_t pos = 0; pos < call_args.size(); ++pos )
+//    {
+//      cerr << "  call_args[ " << pos << " ] = { '" << call_args[ pos ].identifier << "', '" << call_args[ pos ].value << "' )" << endl;
+//    }
+//  }
 
   args.reserve( n_decl_args );
   std::vector< int8_t > used( call_args.size(), int8_t( false ) );
