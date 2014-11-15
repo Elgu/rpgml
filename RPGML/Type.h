@@ -9,6 +9,7 @@ class Function;
 class Node;
 class Output;
 class Input;
+class Param;
 class Sequence;
 class ArrayBase;
 class Collectable;
@@ -28,6 +29,7 @@ struct Type
     , NODE
     , OUTPUT
     , INPUT
+    , PARAM
     , SEQUENCE
     , ARRAY
   };
@@ -47,6 +49,7 @@ struct Type
       , "Node"
       , "Output"
       , "Input"
+      , "Param"
       , "Sequence"
       , "Array"
     };
@@ -81,6 +84,7 @@ struct Type
   static Type Node     ( void ) { return Type( Type::NODE     ); }
   static Type Output   ( void ) { return Type( Type::OUTPUT   ); }
   static Type Input    ( void ) { return Type( Type::INPUT    ); }
+  static Type Param    ( void ) { return Type( Type::PARAM    ); }
   static Type Sequence ( void ) { return Type( Type::SEQUENCE ); }
   static Type Array    ( void ) { return Type( Type::ARRAY    ); }
 
@@ -100,6 +104,8 @@ struct Type
   explicit Type( const RPGML::Output      * ) : m_e( Type::OUTPUT   ) {}
   explicit Type( const RPGML::Input       & ) : m_e( Type::INPUT    ) {}
   explicit Type( const RPGML::Input       * ) : m_e( Type::INPUT    ) {}
+  explicit Type( const RPGML::Param       & ) : m_e( Type::PARAM    ) {}
+  explicit Type( const RPGML::Param       * ) : m_e( Type::PARAM    ) {}
   explicit Type( const RPGML::Sequence    & ) : m_e( Type::SEQUENCE ) {}
   explicit Type( const RPGML::Sequence    * ) : m_e( Type::SEQUENCE ) {}
   explicit Type( const RPGML::ArrayBase   & ) : m_e( Type::ARRAY    ) {}
@@ -115,6 +121,7 @@ struct Type
   bool isNode     ( void ) const { return ( m_e == Type::NODE     ); }
   bool isOutput   ( void ) const { return ( m_e == Type::OUTPUT   ); }
   bool isInput    ( void ) const { return ( m_e == Type::INPUT    ); }
+  bool isParam    ( void ) const { return ( m_e == Type::PARAM    ); }
   bool isSequence ( void ) const { return ( m_e == Type::SEQUENCE ); }
   bool isArray    ( void ) const { return ( m_e == Type::ARRAY    ); }
 private:
@@ -142,6 +149,8 @@ static inline Type TypeOf( const RPGML::Output      & ) { return Type( Type::OUT
 static inline Type TypeOf( const RPGML::Output      * ) { return Type( Type::OUTPUT   ); }
 static inline Type TypeOf( const RPGML::Input       & ) { return Type( Type::INPUT    ); }
 static inline Type TypeOf( const RPGML::Input       * ) { return Type( Type::INPUT    ); }
+static inline Type TypeOf( const RPGML::Param       & ) { return Type( Type::PARAM    ); }
+static inline Type TypeOf( const RPGML::Param       * ) { return Type( Type::PARAM    ); }
 static inline Type TypeOf( const RPGML::Sequence    & ) { return Type( Type::SEQUENCE ); }
 static inline Type TypeOf( const RPGML::Sequence    * ) { return Type( Type::SEQUENCE ); }
 static inline Type TypeOf( const RPGML::ArrayBase   & ) { return Type( Type::ARRAY    ); }
