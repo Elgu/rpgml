@@ -92,6 +92,7 @@ public:
     Children( void ) {}
     ~Children( void ) {}
 
+    void add( Collectable *c ) { if( c ) push_back( c ); }
     void add( const Collectable *c ) { if( c ) push_back( c ); }
     template< class Value >
     void add( const Value &v ) { add( v.getCollectable() ); }
