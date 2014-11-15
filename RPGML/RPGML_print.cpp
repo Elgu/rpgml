@@ -15,7 +15,7 @@ print::print( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
 print::~print( void )
 {}
 
-bool print::call_impl( const Location *loc, index_t, Scope *scope, Value &ret, index_t n_args, const Value *args )
+bool print::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
 {
   if( n_args != 1 ) throw "print requires 1 argument.";
   const Value &in = args[ 0 ];
@@ -34,9 +34,10 @@ bool print::call_impl( const Location *loc, index_t, Scope *scope, Value &ret, i
              + "#" + toString( scope->getNr() )
              );
         CountPtr< Node > node( new Node( getGC(), global_name, getSO() ) );
-        node->getInput( "in" )->connect( in.getOutput() );
 
-        ret = Value( true );
+        scope->toOutput( loc, recursion_depth+1, in )->connect( node->getInput( "in" ) );
+
+        ret = Value( String::Static() );
         return true;
       }
       break;
@@ -58,7 +59,7 @@ CountPtr< Function::Args > print::genDeclArgs( void )
 }
 
 print::Node::Node( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, String::Static( "Print" ), identifier, so )
+: RPGML::Node( _gc, identifier, so )
 {
   setNumInputs( NUM_INPUTS );
   getInput( INPUT_IN )->setIdentifier( String::Static( "in" ) );

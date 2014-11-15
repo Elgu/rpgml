@@ -233,7 +233,7 @@ CountPtr< Function::Args > binaryOp::genDeclArgs( void )
 }
 
 binaryOp::Node::Node( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, String::Static( "BinaryOp" ), identifier, so )
+: RPGML::Node( _gc, identifier, so )
 {
   setNumInputs( NUM_INPUTS );
   setNumOutputs( NUM_OUTPUTS );
@@ -242,12 +242,12 @@ binaryOp::Node::Node( GarbageCollector *_gc, const String &identifier, const RPG
   getInput( INPUT_RIGHT )->setIdentifier( String::Static( "right" ) );
   getOutput( OUTPUT_OUT )->setIdentifier( String::Static( "out" ) );
 
-  reserve( NUM_INPUTS + NUM_OUTPUTS );
-  push_back( String::Static( "left"  ), Value( getInput( INPUT_LEFT  ) ) );
-  push_back( String::Static( "op"    ), Value( String::Static( "undefined" ) ) );
-  push_back( String::Static( "right" ), Value( getInput( INPUT_RIGHT ) ) );
+  this->reserve( NUM_INPUTS + NUM_OUTPUTS );
+  this->push_back( String::Static( "left"  ), Value( getInput( INPUT_LEFT  ) ) );
+  this->push_back( String::Static( "op"    ), Value( String::Static( "undefined" ) ) );
+  this->push_back( String::Static( "right" ), Value( getInput( INPUT_RIGHT ) ) );
 
-  push_back( String::Static( "out"   ), Value( getOutput( OUTPUT_OUT ) ) );
+  this->push_back( String::Static( "out"   ), Value( getOutput( OUTPUT_OUT ) ) );
 }
 
 binaryOp::Node::~Node( void )

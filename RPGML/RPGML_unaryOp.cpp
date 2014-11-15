@@ -2,7 +2,6 @@
 
 #include "String.h"
 #include "Scope.h"
-#include "ParserEnums.h"
 
 namespace RPGML {
 
@@ -118,20 +117,46 @@ CountPtr< Function::Args > unaryOp::genDeclArgs( void )
 }
 
 unaryOp::Node::Node( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
-: RPGML::Node( _gc, String::Static( "UnaryOp" ), identifier, so )
+: RPGML::Node( _gc, identifier, so )
+, m_op( UOP_PLUS )
 {
   setNumInputs( NUM_INPUTS );
   getInput( INPUT_IN )->setIdentifier( String::Static( "in" ) );
 
   setNumOutputs( NUM_OUTPUTS );
   getOutput( OUTPUT_OUT )->setIdentifier( String::Static( "out" ) );
+
+  push_back( String::Static( "in"  ), Value( getInput( INPUT_IN ) ) );
+  push_back( String::Static( "out" ), Value( getOutput( OUTPUT_OUT ) ) );
+  push_back( String::Static( "op" ), Value( new NodeParam< Node >( getGC(), this, String::Static( "op" ), &Node::set_op ) ) );
 }
 
 unaryOp::Node::~Node( void )
 {}
 
+bool unaryOp::Node::set_op( const Value &value, index_t )
+{
+  if( value.getType() != Type::String() )
+  {
+    throw "Param 'op' must be set with string.";
+  }
+
+  try
+  {
+    m_op = getUOP( value.getString() );
+  }
+  catch( const char * )
+  {
+    throw "Invalid op";
+  }
+
+  return true;
+}
+
 bool unaryOp::Node::tick( void )
 {
+
+
   return true;
 }
 

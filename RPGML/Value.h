@@ -16,6 +16,7 @@ class Function;
 class Node    ;
 class Output  ;
 class Input   ;
+class Param   ;
 class Sequence;
 class Collectable;
 
@@ -69,6 +70,7 @@ public:
   explicit Value ( Node           *_node );
   explicit Value ( Output         *_out  );
   explicit Value ( Input          *_in   );
+  explicit Value ( Param          *_param );
   explicit Value ( Sequence const *_seq  );
 
 //  template< class Invalid >
@@ -89,6 +91,7 @@ public:
   Value &set( Node           *_node );
   Value &set( Output         *_out  );
   Value &set( Input          *_in   );
+  Value &set( Param          *_param );
   Value &set( Sequence const *_seq  );
   Value &set( const Value &v );
 
@@ -109,6 +112,7 @@ public:
   bool isNode    ( void ) const { return is( Type::NODE     ); }
   bool isOutput  ( void ) const { return is( Type::OUTPUT   ); }
   bool isInput   ( void ) const { return is( Type::INPUT    ); }
+  bool isParam   ( void ) const { return is( Type::PARAM    ); }
   bool isSequence( void ) const { return is( Type::SEQUENCE ); }
 
   bool isScalar( void ) const { return getType().isScalar(); }
@@ -125,6 +129,7 @@ public:
   Node           *getNode    ( void ) const { assert( isNode    () ); return node; }
   Output         *getOutput  ( void ) const { assert( isOutput  () ); return out ; }
   Input          *getInput   ( void ) const { assert( isInput   () ); return in  ; }
+  Param          *getParam   ( void ) const { assert( isParam   () ); return param  ; }
   Sequence const *getSequence( void ) const { assert( isSequence() ); return seq ; }
 
   operator bool            ( void ) const { return getBool    (); }
@@ -137,6 +142,7 @@ public:
   operator Node           *( void ) const { return getNode    (); }
   operator Output         *( void ) const { return getOutput  (); }
   operator Input          *( void ) const { return getInput   (); }
+  operator Param          *( void ) const { return getParam   (); }
   operator Sequence const *( void ) const { return getSequence(); }
 
   operator CountPtr< ArrayBase      >( void ) const;
@@ -145,6 +151,7 @@ public:
   operator CountPtr< Node           >( void ) const;
   operator CountPtr< Output         >( void ) const;
   operator CountPtr< Input          >( void ) const;
+  operator CountPtr< Param          >( void ) const;
   operator CountPtr< Sequence const >( void ) const;
 
   bool get( bool            &x ) const;
@@ -157,6 +164,7 @@ public:
   bool get( Node           *&x ) const;
   bool get( Output         *&x ) const;
   bool get( Input          *&x ) const;
+  bool get( Param          *&x ) const;
   bool get( Sequence const *&x ) const;
   bool get( CountPtr< ArrayBase > &x ) const;
   bool get( CountPtr< Frame     > &x ) const;
@@ -189,6 +197,7 @@ private:
     Node           *node;
     Output         *out ;
     Input          *in  ;
+    Param          *param  ;
     Sequence const *seq ;
   };
   Type m_type;

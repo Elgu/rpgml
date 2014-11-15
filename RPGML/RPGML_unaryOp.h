@@ -3,6 +3,7 @@
 
 #include "Function.h"
 #include "Node.h"
+#include "ParserEnums.h"
 
 namespace RPGML {
 
@@ -20,10 +21,14 @@ public:
     Node( GarbageCollector *gc, const String &identifier, const SharedObject *so );
     virtual ~Node( void );
 
+    virtual const char *getName( void ) const { return "unaryOp"; }
+
     virtual bool tick( void );
 
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
+
+    bool set_op( const Value &value, index_t );
   private:
     enum Inputs
     {
@@ -36,6 +41,14 @@ public:
       OUTPUT_OUT,
       NUM_OUTPUTS
     };
+
+    enum Params
+    {
+      PARAM_OP,
+      NUM_PARAMS
+    };
+
+    UOP m_op;
   };
 
 private:

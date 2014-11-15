@@ -38,6 +38,7 @@ Value::Value( const Value &other )
     case Type::NODE    : node->ref(); break;
     case Type::OUTPUT  : out ->ref(); break;
     case Type::INPUT   : in  ->ref(); break;
+    case Type::PARAM   : param->ref(); break;
     case Type::SEQUENCE: seq ->ref(); break;
   }
 }
@@ -56,6 +57,7 @@ Value::Value( Function       *_func  ) : m_type( Type::FUNCTION ) { func  = _fun
 Value::Value( Node           *_node  ) : m_type( Type::NODE     ) { node  = _node ; node ->ref(); }
 Value::Value( Output         *_out   ) : m_type( Type::OUTPUT   ) { out   = _out  ; out  ->ref(); }
 Value::Value( Input          *_in    ) : m_type( Type::INPUT    ) { in    = _in   ; in   ->ref(); }
+Value::Value( Param          *_param ) : m_type( Type::PARAM    ) { param = _param; param->ref(); }
 Value::Value( Sequence const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; seq  ->ref(); }
 
 Value &Value::set( bool               _b    ) { return (*this) = Value( _b    ); }
@@ -72,6 +74,7 @@ Value &Value::set( Function          *_func ) { return (*this) = Value( _func );
 Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
 Value &Value::set( Output            *_out  ) { return (*this) = Value( _out  ); }
 Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   ); }
+Value &Value::set( Param             *_param) { return (*this) = Value( _param); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 Value &Value::set( const Value       &v     ) { return (*this) = v;              }
 
@@ -85,6 +88,7 @@ bool Value::get( Function       *&x ) const { if( isFunction() ) { x = getFuncti
 bool Value::get( Node           *&x ) const { if( isNode    () ) { x = getNode    (); return true; } else return false; }
 bool Value::get( Output         *&x ) const { if( isOutput  () ) { x = getOutput  (); return true; } else return false; }
 bool Value::get( Input          *&x ) const { if( isInput   () ) { x = getInput   (); return true; } else return false; }
+bool Value::get( Param          *&x ) const { if( isParam   () ) { x = getParam   (); return true; } else return false; }
 bool Value::get( Sequence const *&x ) const { if( isSequence() ) { x = getSequence(); return true; } else return false; }
 bool Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) { x = getArray   (); return true; } else return false; }
 bool Value::get( CountPtr< Frame     > &x ) const { if( isFrame   () ) { x = getFrame   (); return true; } else return false; }
@@ -100,6 +104,7 @@ Value::operator CountPtr< Function       >( void ) const { return getFunction();
 Value::operator CountPtr< Node           >( void ) const { return getNode    (); }
 Value::operator CountPtr< Output         >( void ) const { return getOutput  (); }
 Value::operator CountPtr< Input          >( void ) const { return getInput   (); }
+Value::operator CountPtr< Param          >( void ) const { return getParam   (); }
 Value::operator CountPtr< Sequence const >( void ) const { return getSequence(); }
 
 Value &Value::operator=( const Value &other )
@@ -124,6 +129,7 @@ void Value::clear( void )
     case Type::NODE    : if( !node->unref() ) delete node; break;
     case Type::OUTPUT  : if( !out ->unref() ) delete out ; break;
     case Type::INPUT   : if( !in  ->unref() ) delete in  ; break;
+    case Type::PARAM   : if( !param->unref() ) delete param; break;
     case Type::SEQUENCE: if( !seq ->unref() ) delete seq ; break;
   }
   p = 0;
@@ -150,6 +156,7 @@ bool Value::isCollectable( void ) const
     | ( 1 << Type::NODE     )
     | ( 1 << Type::OUTPUT   )
     | ( 1 << Type::INPUT    )
+    | ( 1 << Type::PARAM    )
     | ( 1 << Type::SEQUENCE )
     ;
   return flags & ( 1 << m_type.getEnum() );
@@ -170,6 +177,7 @@ const Collectable *Value::getCollectable( void ) const
     case Type::NODE    : return node;
     case Type::OUTPUT  : return out ;
     case Type::INPUT   : return in  ;
+    case Type::PARAM   : return param;
     case Type::SEQUENCE: return seq ;
   }
   return 0;
@@ -228,7 +236,6 @@ Value Value::to( Type type ) const
 
         return Value( String( s.str() ) );
       }
-
 
     default:
       throw "Invalid type for Value::to( type )";
@@ -812,6 +819,16 @@ std::ostream &Value::print( std::ostream &o ) const
         o
           << "Input( " << input->getParent()->getIdentifier()
           << ", " << input->getIdentifier() << " )"
+          ;
+      }
+      break;
+
+    case Type::PARAM   :
+      {
+        const Param *const pm = getParam();
+        o
+          << "Param( " << pm->getParent()->getIdentifier()
+          << ", " << pm->getIdentifier() << " )"
           ;
       }
       break;

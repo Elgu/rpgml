@@ -20,6 +20,8 @@ public:
     Node( GarbageCollector *gc, const String &identifier, const SharedObject *so );
     virtual ~Node( void );
 
+    virtual const char *getName( void ) const { return "print"; }
+
     virtual bool tick( void );
 
     virtual void gc_clear( void );
