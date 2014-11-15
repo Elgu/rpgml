@@ -42,20 +42,7 @@ private:
   MallocString( void ) : m_str() { set( m_str ); }
 public:
   virtual ~MallocString( void ) {}
-  static CountPtr< const StringData > create( const char *s, size_t len, const char *s2=0, size_t len2=0 )
-  {
-    assert( s2 || !len2 );
-    const size_t memsize = ( sizeof( MallocString )+1 ) + ( len + len2 );
-    CountPtr< MallocString > ret( new ( ::operator new( memsize ) ) MallocString() );
-
-    char *str = (char*)ret->m_str;
-    strncpy( str, s, len );
-    if( s2 ) strncpy( str+len, s2, len2 );
-    str[ len+len2 ] = '\0';
-
-    // CountPtr for return must be created before CountPtr "ret" is destroyed
-    return CountPtr< const StringData >( ret.get() );
-  }
+  static CountPtr< const StringData > create( const char *s, size_t len, const char *s2=0, size_t len2=0 );
 private:
   const char m_str[ 0 ];
 };
@@ -82,107 +69,39 @@ private:
 class String
 {
 public:
-  String( void )
-  : m_c_str( "" )
-  {}
+  String( void );
 
   //! Adds ref to str
-  String( const StringData *str )
-  : m_str( str )
-  , m_c_str( str ? str->get() : "" )
-  {}
+  String( const StringData *str );
 
   //! Adds ref to str
-  String( const String &str )
-  : m_str( str.getData() )
-  , m_c_str( str.get() ) // str can be from Static(), so m_str would be 0
-  {
-    if( !m_c_str ) m_c_str = "";
-  }
+  String( const String &str );
 
   //! Copies string
-  String( const char *str, size_t len, const char *str2=0, size_t len2=0 )
-  : m_str( MallocString::create( str, len, str2, len2 ) )
-  , m_c_str( m_str->get() )
-  {
-    if( !m_c_str ) m_c_str = "";
-  }
+  String( const char *str, size_t len, const char *str2=0, size_t len2=0 );
 
   //! Copies string
-  String( const char *str, const char *str2=0 )
-  : m_c_str( "" )
-  {
-    const size_t len = strlen( str );
-    const size_t len2 = ( str2 ? strlen( str2 ) : 0 );
-    m_str = MallocString::create( str, len, str2, len2 );
-    m_c_str = m_str->get();
-    if( !m_c_str ) m_c_str = "";
-  }
+  String( const char *str, const char *str2=0 );
 
   //! Copies string
-  String( const std::string &str )
-  : m_c_str( "" )
-  {
-    const size_t len = str.length();
-    m_str = MallocString::create( str.c_str(), len );
-    m_c_str = m_str->get();
-    if( !m_c_str ) m_c_str = "";
-  }
+  String( const std::string &str );
 
   //! Wrapps static const string, use String::Static( "foo" )
   static
-  String Static( const char *str )
-  {
-    String ret;
-    ret.m_c_str = str; // might be NULL
-    return ret;
-  }
+  String Static( const char *str="" );
 
   static
-  String MoveFrom( std::string &str )
-  {
-    String ret;
-    ret.moveFrom( str );
-    return ret;
-  }
+  String MoveFrom( std::string &str );
 
-  virtual ~String( void )
-  {
-    clear();
-  }
+  virtual ~String( void );
 
-  void clear( void )
-  {
-    m_str.reset();
-    m_c_str = "";
-  }
+  void clear( void );
 
-  bool empty( void ) const
-  {
-    assert( m_c_str );
-    return m_c_str[ 0 ] == '\0';
-  }
+  bool empty( void ) const;
 
-  String &operator=( const String &str )
-  {
-    String tmp( str );
-    this->swap( tmp );
-    return (*this);
-  }
-
-  String &operator=( const std::string &str )
-  {
-    String tmp( str );
-    this->swap( tmp );
-    return (*this);
-  }
-
-  String &operator=( const char *str )
-  {
-    String tmp( str );
-    this->swap( tmp );
-    return (*this);
-  }
+  String &operator=( const String &str );
+  String &operator=( const std::string &str );
+  String &operator=( const char *str );
 
   template< class S >
   String &assign( const S &s )
@@ -205,120 +124,46 @@ public:
     return get();
   }
 
-  const StringData *getData( void ) const
-  {
-    return m_str;
-  }
+  const StringData *getData( void ) const;
 
-  String &moveFrom( std::string &str )
-  {
-    StdString *stdstring;
-    m_str.reset( stdstring = new StdString() );
-    stdstring->moveFrom( str );
-    m_c_str = m_str->get();
-    if( !m_c_str ) m_c_str = "";
-    return (*this);
-  }
+  String &moveFrom( std::string &str );
 
-  void swap( String &other )
-  {
-    std::swap( m_str, other.m_str );
-  }
+  void swap( String &other );
 
-  int compare( const char *other ) const
-  {
-    if( !m_c_str )
-    {
-      if( !other ) return 0;
-      else return -1;
-    }
-    else if( !other )
-    {
-      return 1;
-    }
-    else
-    {
-      return strcmp( m_c_str, other );
-    }
-  }
+  int compare( const char *other ) const;
+  int compare( const String &other ) const;
 
-  int compare( const String &other ) const
-  {
-    if( this == &other )
-    {
-      return 0;
-    }
-    else
-    {
-      return compare( other.get() );
-    }
-  }
+  bool equals( const char *other ) const;
+  bool equals( const String &other ) const;
 
-  bool equals( const char *other ) const
-  {
-    return 0 == compare( other );
-  }
+  size_t length( void ) const;
+  size_t size( void ) const;
 
-  bool equals( const String &other ) const
-  {
-    return 0 == compare( other );
-  }
+  index_t count( void ) const;
 
-  size_t length( void ) const
-  {
-    const char *const s = get();
-    return ( s ? strlen( s ) : 0 );
-  }
+  bool operator< ( const String &other ) const;
+  bool operator> ( const String &other ) const;
+  bool operator<=( const String &other ) const;
+  bool operator>=( const String &other ) const;
+  bool operator==( const String &other ) const;
+  bool operator!=( const String &other ) const;
+  bool operator< ( const char *other ) const;
+  bool operator> ( const char *other ) const;
+  bool operator<=( const char *other ) const;
+  bool operator>=( const char *other ) const;
+  bool operator==( const char *other ) const;
+  bool operator!=( const char *other ) const;
 
-  size_t size( void ) const
-  {
-    return length();
-  }
+  char operator[] ( size_t i ) const;
 
-  index_t count( void ) const
-  {
-    return ( m_str ? m_str->count() : index_t(-1) );
-  }
-
-  bool operator< ( const String &other ) const { return compare( other ) <  0; }
-  bool operator> ( const String &other ) const { return compare( other ) >  0; }
-  bool operator<=( const String &other ) const { return compare( other ) <= 0; }
-  bool operator>=( const String &other ) const { return compare( other ) >= 0; }
-  bool operator==( const String &other ) const { return compare( other ) == 0; }
-  bool operator!=( const String &other ) const { return compare( other ) != 0; }
-  bool operator< ( const char *other ) const { return compare( other ) <  0; }
-  bool operator> ( const char *other ) const { return compare( other ) >  0; }
-  bool operator<=( const char *other ) const { return compare( other ) <= 0; }
-  bool operator>=( const char *other ) const { return compare( other ) >= 0; }
-  bool operator==( const char *other ) const { return compare( other ) == 0; }
-  bool operator!=( const char *other ) const { return compare( other ) != 0; }
-
-  char operator[] ( size_t i ) const { return m_str->get()[ i ]; }
-
-  String &operator+=( const String &other )
-  {
-    String tmp = (*this) + other;
-    this->swap( tmp );
-    return (*this);
-  }
-
-  String &operator+=( const std::string &other )
-  {
-    String tmp = (*this) + other;
-    this->swap( tmp );
-    return (*this);
-  }
-
-  String &operator+=( const char *other )
-  {
-    String tmp = (*this) + other;
-    this->swap( tmp );
-    return (*this);
-  }
+  String &operator+=( const String &other );
+  String &operator+=( const std::string &other );
+  String &operator+=( const char *other );
 
 private:
-  CountPtr< const StringData > m_str;
+  mutable CountPtr< const StringData > m_str;
   const char *m_c_str;
+  static const char *const empty_c_str;
 };
 
 inline
