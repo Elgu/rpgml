@@ -583,11 +583,30 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
 
   if( node->op == ID_ASSIGN )
   {
-    if( value.getType() != lvalue_type )
+    if( Type::Param() == lvalue_type )
     {
-      throw "expression type does not match lvalue type";
+      Param *const param = lvalue->getParam();
+
+      try
+      {
+        if( !param->set( value ) )
+        {
+          throw "Setting Param failed";
+        }
+      }
+      catch( const char *e )
+      {
+        throw;
+      }
     }
-    lvalue->swap( value );
+    else
+    {
+      if( value.getType() != lvalue_type )
+      {
+        throw "expression type does not match lvalue type";
+      }
+      lvalue->swap( value );
+    }
   }
   else
   {
@@ -923,7 +942,10 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   } // isArray
   else
   {
-    if( value.getType() != expected_type->type )
+    if(
+         expected_type->type != Type::Invalid()
+      && value.getType() != expected_type->type
+    )
     {
       cerr << "value '" << value.getTypeName() << "' != expected_type '" << expected_type->type.getTypeName() << "'" << endl;
       throw "Type right of '=' does not match declared type";
