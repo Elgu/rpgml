@@ -44,6 +44,7 @@ public:
     Arg( void )
     {}
 
+    explicit
     Arg( const String &_identifier )
     : identifier( _identifier )
     {}
