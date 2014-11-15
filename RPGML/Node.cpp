@@ -61,7 +61,14 @@ const Output *Input::getOutput( void ) const
 
 const Data *Input::getData( void ) const
 {
-  return getOutput()->getData();
+  if( isConnected() )
+  {
+    return getOutput()->getData();
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 void Input::gc_getChildren( Children &children ) const
@@ -200,22 +207,16 @@ bool Output::isConnected( void ) const
   return false;
 }
 
-Node::Node( GarbageCollector *_gc, const String &name, const String &identifier, const SharedObject *so )
+Node::Node( GarbageCollector *_gc, const String &identifier, const SharedObject *so )
 : Frame( _gc, 0 )
 , m_inputs( 0 )
 , m_outputs( 0 )
-, m_name( name )
 , m_identifier( identifier )
 , m_so( so )
 {}
 
 Node::~Node( void )
 {}
-
-const String &Node::getName( void ) const
-{
-  return m_name;
-}
 
 const String &Node::getIdentifier( void ) const
 {
