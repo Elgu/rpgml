@@ -48,7 +48,6 @@ public:
   bool isConnected( void ) const;
 
   const Output *getOutput( void ) const;
-  Data *getData( void );
   const Data *getData( void ) const;
 
 private:
@@ -81,14 +80,37 @@ private:
   CountPtr< Data > m_data;
 };
 
+class Param : public Collectable
+{
+public:
+  explicit Param(
+      GarbageCollector *_gc
+    , const String &identifier
+    )
+  : Collectable( _gc )
+  , m_identifier( identifier )
+  {}
+
+  virtual ~Param( void ) {}
+
+  virtual void gc_clear( void ) {}
+  virtual void gc_getChildren( Children & ) const {}
+
+  virtual bool set( const Value &value ) = 0;
+  virtual Node *getParent( void ) const = 0;
+  const String &getIdentifier( void ) const { return m_identifier; }
+private:
+  const String m_identifier;
+};
+
 class Node : public Frame
 {
 public:
-  Node( GarbageCollector *gc, const String &name, const String &identifier, const SharedObject *so );
+  Node( GarbageCollector *gc, const String &identifier, const SharedObject *so );
 
   virtual ~Node( void );
 
-  const String &getName( void ) const;
+  virtual const char *getName( void ) const = 0;
   const String &getIdentifier( void ) const;
   const SharedObject *getSO( void ) const;
 
@@ -105,12 +127,56 @@ public:
   void setNumInputs( index_t n );
   void setNumOutputs( index_t n );
 
+protected:
+  template< class ParentNode >
+  class NodeParam : public Param
+  {
+  public:
+    typedef bool (ParentNode::*callback_t)( const Value &value, index_t );
+
+    explicit NodeParam(
+        GarbageCollector *_gc
+      , ParentNode *parent
+      , const String &identifier
+      , callback_t callback
+      , index_t index=0
+      )
+    : Param( _gc, identifier )
+    , m_parent( parent )
+    , m_callback( callback )
+    , m_index( index )
+    {}
+    virtual ~NodeParam( void ) {}
+
+    virtual void gc_clear( void ) { Param::gc_clear(); m_parent.clear(); }
+    virtual void gc_getChildren( Children &children ) const
+    {
+      Param::gc_getChildren( children );
+      children.add( static_cast< Collectable* >( m_parent.get() ) );
+    }
+
+    virtual bool set( const Value &value )
+    {
+      if( !(m_parent->*m_callback)( value, m_index ) ) return false;
+      return true;
+    }
+
+    virtual Node *getParent( void ) const
+    {
+      return m_parent.get();
+    }
+
+  private:
+    CountPtr< ParentNode > m_parent;
+    callback_t m_callback;
+    index_t m_index;
+  };
+
 private:
-  typedef Array< CountPtr< Input >, 1 > inputs_t;
+  typedef Array< CountPtr< Input  >, 1 > inputs_t;
   typedef Array< CountPtr< Output >, 1 > outputs_t;
-  inputs_t m_inputs;
+  inputs_t  m_inputs;
   outputs_t m_outputs;
-  const String m_name;
   const String m_identifier;
   CountPtr< const SharedObject > m_so;
 };
