@@ -116,6 +116,8 @@ namespace RPGML
 %token  <type_enum>    FUNCTION     "Function";
 %token  <type_enum>    OUTPUT       "Output";
 %token  <type_enum>    INPUT        "Input";
+%token  <type_enum>    NODE         "Node";
+%token  <type_enum>    PARAM        "Param";
 %token            IF           "if";
 %token            ELSE         "else";
 %token            FOR          "for";
@@ -183,7 +185,7 @@ namespace RPGML
 identifier
   : IDENTIFIER { ($$) = ($1); }
   | IN         { ($$) = scanner.unify( String::Static( "in" ) ); }
-  | TO         { ($$) = scanner.unify( String::Static( "to"  ) ); }
+  | TO         { ($$) = scanner.unify( String::Static( "to" ) ); }
   | STEP       { ($$) = scanner.unify( String::Static( "step" ) ); }
   ;
 
@@ -449,6 +451,8 @@ primitive_type_expression
 //  | FUNCTION
   | OUTPUT
   | INPUT
+  | NODE
+  | PARAM
   ;
 
 array_dimension
@@ -649,6 +653,26 @@ variable_creation_statement
   : type_expression identifier '=' expression ';'
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
+    }
+  | postfix_expression identifier '(' ')' ';'
+    {
+      ($$) =
+        new VariableCreationStatement(
+            RPGML_LOC(@$)
+          , new TypeExpression( RPGML_LOC(@$), Type::Invalid() )
+          , ($2)
+          , new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() )
+          );
+    }
+  | postfix_expression identifier '(' argument_expression_list ')' ';'
+    {
+      ($$) =
+        new VariableCreationStatement(
+            RPGML_LOC(@$)
+          , new TypeExpression( RPGML_LOC(@$), Type::Invalid() )
+          , ($2)
+          , new FunctionCallExpression( RPGML_LOC(@$), ($1), ($4) )
+          );
     }
   ;
 
