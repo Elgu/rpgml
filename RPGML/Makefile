@@ -57,6 +57,7 @@ libRPGML_SOURCE=\
 	Scanner.cpp\
 	GarbageCollector.cpp\
 	Value.cpp\
+	String.cpp\
 	Frame.cpp\
 	Parser.cpp\
 	AST_PrettyPrinter.cpp\

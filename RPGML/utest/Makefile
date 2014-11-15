@@ -18,6 +18,7 @@ OBJECTS=\
 	utest_main.o\
 	GarbageCollector.o\
 	Value.o\
+	String.o\
 	Node.o\
 	Frame.o\
 	Scope.o\
