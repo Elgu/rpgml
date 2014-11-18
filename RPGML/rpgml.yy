@@ -49,34 +49,39 @@ namespace RPGML
   BOP          binop;
   UOP          uop;
   ASSIGN       assign;
-  const StringData *str;
-  Statement   *stmt;
-  CompoundStatement *comp;
-  Expression  *expr;
-  SequenceExpression *seq;
-  ExpressionSequenceExpression *expr_seq;
+  StringData const                         *str;
+  Statement                                *stmt;
+  CompoundStatement                        *comp;
+  Expression                               *expr;
+  SequenceExpression                       *seq;
+  ExpressionSequenceExpression             *expr_seq;
   FunctionDefinitionStatement::ArgDecl     *fad;
   FunctionDefinitionStatement::ArgDeclList *fadl;
-  FunctionCallExpression::Arg  *arg;
-  FunctionCallExpression::Args *args;
-  TypeExpression *type;
-  DimensionsExpression *dims;
+  FunctionCallExpression::Arg              *arg;
+  FunctionCallExpression::Args             *args;
+  TypeExpression                           *type;
+  DimensionsExpression                     *dims;
 }
 
 %destructor {} <bval>
 %destructor {} <ival>
 %destructor {} <fval>
 %destructor {} <type_enum>
+%destructor {} <binop>
 %destructor {} <uop>
 %destructor {} <assign>
-%destructor { /*unified*/ } <str>
-%destructor { delete ($$); } <stmt>
-%destructor { delete ($$); } <expr>
-%destructor { delete ($$); } <seq>
-%destructor { delete ($$); } <fad>
-%destructor { delete ($$); } <fadl>
-%destructor { delete ($$); } <type>
-%destructor { delete ($$); } <dims>
+%destructor { if( !($$)->unref() ) delete ($$); } <str>
+%destructor { if( !($$)->unref() ) delete ($$); } <stmt>
+%destructor { if( !($$)->unref() ) delete ($$); } <comp>
+%destructor { if( !($$)->unref() ) delete ($$); } <expr>
+%destructor { if( !($$)->unref() ) delete ($$); } <seq>
+%destructor { if( !($$)->unref() ) delete ($$); } <expr_seq>
+%destructor { if( !($$)->unref() ) delete ($$); } <fad>
+%destructor { if( !($$)->unref() ) delete ($$); } <fadl>
+%destructor { if( !($$)->unref() ) delete ($$); } <arg>
+%destructor { if( !($$)->unref() ) delete ($$); } <args>
+%destructor { if( !($$)->unref() ) delete ($$); } <type>
+%destructor { if( !($$)->unref() ) delete ($$); } <dims>
 
 
 %token            END          0 "end of file";
@@ -133,7 +138,8 @@ namespace RPGML
 
 %type <str> identifier
 %type <expr> array_constant
-%type <expr> map_constant
+%type <expr> frame_constant
+%type <expr> function_expression
 %type <expr> primary_expression
 %type <expr> constant
 %type <expr> function_call_expression
@@ -194,13 +200,12 @@ array_constant
   | '[' sequence ']' { ($$) = new ArrayConstantExpression( RPGML_LOC(@$), ($2) ); }
   ;
 
-map_constant
-  : compound_statement { ($1)->own_map = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($1) ); }
+frame_constant
+  : compound_statement { ($1)->own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($1) ); }
   ;
 
 primary_expression
-  : identifier         { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($1) ); }
-  | constant           { ($$) = ($1); }
+  : constant           { ($$) = ($1); }
   | '(' expression ')' { ($$) = ($2); }
   | '(' sequence_expression ')' { ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($2) ); }
   ;
@@ -211,23 +216,13 @@ constant
   | S_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), ($1) ); }
   | TRUE       { ($$) = new ConstantExpression( RPGML_LOC(@$), true ); }
   | FALSE      { ($$) = new ConstantExpression( RPGML_LOC(@$), false ); }
+  | THIS       { ($$) = new ThisExpression( RPGML_LOC(@$) ); }
   | array_constant 
-  | map_constant
+  | frame_constant
   ;
 
-function_call_expression
-  : postfix_expression '(' ')'
-    {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() );
-    } 
-  | postfix_expression '(' argument_expression_list ')'
-    {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
-    } 
-//  | type_expression '(' expression ')'
-  ;
-
-postfix_expression
+// Expressions that can potentially be of type Function
+function_expression
   : postfix_expression '[' array_coordinates_expression ']'
     {
       ($$) = new ArrayAccessExpression( RPGML_LOC(@$), ($1), ($3) );
@@ -236,6 +231,22 @@ postfix_expression
     {
       ($$) = new FrameAccessExpression( RPGML_LOC(@$), ($1), ($3) );
     }
+  | identifier         { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($1) ); }
+  ;
+
+function_call_expression
+  : function_expression '(' ')'
+    {
+      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() );
+    } 
+  | function_expression '(' argument_expression_list ')'
+    {
+      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
+    } 
+  ;
+
+postfix_expression
+  : function_expression { ($$) = ($1); }
   | function_call_expression { ($$) = ($1); }
 //  | postfix_expression INC_OP
 //  | postfix_expression DEC_OP
@@ -633,6 +644,7 @@ function_definition_statement
     }
   | FUNCTION identifier '(' function_argument_decl_list ')' compound_statement
     {
+      ($6)->own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), ($4), ($6) );
       (void)($1);
     }
@@ -654,7 +666,7 @@ variable_creation_statement
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
     }
-  | postfix_expression identifier '(' ')' ';'
+  | function_expression identifier '(' ')' ';'
     {
       ($$) =
         new VariableCreationStatement(
@@ -664,7 +676,7 @@ variable_creation_statement
           , new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() )
           );
     }
-  | postfix_expression identifier '(' argument_expression_list ')' ';'
+  | function_expression identifier '(' argument_expression_list ')' ';'
     {
       ($$) =
         new VariableCreationStatement(
