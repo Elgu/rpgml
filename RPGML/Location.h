@@ -119,6 +119,8 @@ private:
 
 } // namespace RPGML
 
+namespace std {
+
 inline
 std::ostream &operator<<( std::ostream &o, const RPGML::Location &p )
 {
@@ -130,6 +132,8 @@ std::ostream &operator<<( std::ostream &o, const RPGML::Location::WithoutFilenam
 {
   return p.loc->print( o, false );
 }
+
+} // namespace std
 
 #endif
 
