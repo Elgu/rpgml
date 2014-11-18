@@ -17,6 +17,7 @@ public:
   virtual ~InterpretingASTVisitor( void );
 
   virtual bool visit( const AST::ConstantExpression           *node );
+  virtual bool visit( const AST::ThisExpression               *node );
   virtual bool visit( const AST::ArrayConstantExpression      *node );
   virtual bool visit( const AST::FrameConstantExpression      *node );
   virtual bool visit( const AST::ParenthisSequenceExpression  *node );

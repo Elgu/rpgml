@@ -193,6 +193,22 @@ bool InterpretingASTVisitor::visit( const AST::ConstantExpression           *nod
   return true;
 }
 
+bool InterpretingASTVisitor::visit( const AST::ThisExpression           * )
+{
+  for( Frame *frame = scope->getCurr(); frame; frame = frame->getParent() )
+  {
+    if( frame->isThis() )
+    {
+      return_value = Value( frame );
+      return true;
+    }
+  }
+
+  throw "No frame that qualifies as 'this'";
+  return_value.clear();
+  return false;
+}
+
 bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *node )
 {
   if( !node->sequence->invite( this ) ) return false;
@@ -307,11 +323,13 @@ bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *nod
   const Value *const value = scope->lookup( node->identifier );
   if( value )
   {
+//    cerr << "AST::LookupVariableExpression( '" << node->identifier << "' ): value = '" << (*value) << "'" << endl;
     return_value = (*value);
     return true;
   }
   else
   {
+    return_value.clear();
     throw "Identifier not found.";
     return false;
   }
@@ -324,8 +342,11 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
 
   if( !function.isFunction() )
   {
+//    cerr << "Is not a Function, is '" << function << "'." << endl;
     throw "Is not a Function.";
   }
+
+//  cerr << "calling Function '" << function.getFunction()->getName() << "'" << endl;
 
   const size_t n_args = node->args->size();
   Function::Args args;
@@ -529,7 +550,7 @@ bool InterpretingASTVisitor::visit( const AST::DimensionsExpression         *nod
 
 bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
-  CountPtr< Frame > body = ( node->own_map ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
+  CountPtr< Frame > body = ( node->own_frame ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
   Scope::EnterLeaveGuard guard( scope, body );
 
   const index_t n = index_t( node->statements.size() );
@@ -539,6 +560,7 @@ bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *nod
     if( !node->statements[ i ]->invite( this ) ) return false;
   }
 
+  // do not modify return_value, could have been set by return statement
   return true;
 }
 
@@ -566,7 +588,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     decl_args->at( i ) = Function::Arg( identifier, default_value );
   }
 
-  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), decl_args, node->body ) );
+  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), node->identifier, decl_args, node->body ) );
 
   if( !scope->create_unified( node->identifier, function ) ) return false;
 
@@ -872,6 +894,7 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
       case Type::NODE    : value = new_Array< CountPtr< Node           > >( gc, expected_size, expected_type_of, value ); break;
       case Type::OUTPUT  : value = new_Array< CountPtr< Output         > >( gc, expected_size, expected_type_of, value ); break;
       case Type::INPUT   : value = new_Array< CountPtr< Input          > >( gc, expected_size, expected_type_of, value ); break;
+      case Type::PARAM   : value = new_Array< CountPtr< Param          > >( gc, expected_size, expected_type_of, value ); break;
       case Type::SEQUENCE: value = new_Array< CountPtr< Sequence const > >( gc, expected_size, expected_type_of, value ); break;
 
       // From Array
@@ -911,6 +934,7 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
               case Type::NODE    : value.set( new_Array< CountPtr< Node           > >( gc, value_array ).get() ); break;
               case Type::OUTPUT  : value.set( new_Array< CountPtr< Output         > >( gc, value_array ).get() ); break;
               case Type::INPUT   : value.set( new_Array< CountPtr< Input          > >( gc, value_array ).get() ); break;
+              case Type::PARAM   : value.set( new_Array< CountPtr< Param          > >( gc, value_array ).get() ); break;
               case Type::SEQUENCE: value.set( new_Array< CountPtr< Sequence const > >( gc, value_array ).get() ); break;
               case Type::ARRAY   :
                 {

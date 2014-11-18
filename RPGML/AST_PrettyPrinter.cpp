@@ -17,6 +17,12 @@ bool PrettyPrinter::visit( const ConstantExpression           *node )
   return true;
 }
 
+bool PrettyPrinter::visit( const ThisExpression           * )
+{
+  (*o) << "this";
+  return true;
+}
+
 bool PrettyPrinter::visit( const ArrayConstantExpression      *node )
 {
   if( node->sequence  )

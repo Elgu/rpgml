@@ -17,6 +17,7 @@ class Visitor;
 
 class Expression;
 class ConstantExpression;
+class ThisExpression;
 class ArrayConstantExpression;
 class FrameConstantExpression;
 class SequenceExpression;
@@ -83,6 +84,7 @@ public:
   }
 
   virtual bool visit( const ConstantExpression           *node ) = 0;
+  virtual bool visit( const ThisExpression               *node ) = 0;
   virtual bool visit( const ArrayConstantExpression      *node ) = 0;
   virtual bool visit( const FrameConstantExpression      *node ) = 0;
   virtual bool visit( const ParenthisSequenceExpression  *node ) = 0;
@@ -153,6 +155,15 @@ public:
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const Value value;
+};
+
+class ThisExpression : public Expression
+{
+public:
+  explicit ThisExpression( const Location *_loc ) : Expression( _loc ) {}
+  virtual ~ThisExpression( void ) {}
+
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 };
 
 class ArrayConstantExpression : public Expression
@@ -460,7 +471,7 @@ public:
   explicit
   CompoundStatement( const Location *_loc )
   : Statement( _loc )
-  , own_map( true )
+  , own_frame( true )
   {}
 
   virtual ~CompoundStatement( void ) {}
@@ -475,7 +486,7 @@ public:
   }
 
   std::vector< CountPtr< const Statement > > statements;
-  bool own_map;
+  bool own_frame;
 };
 
 class FunctionDefinitionStatement : public Statement

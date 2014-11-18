@@ -20,6 +20,7 @@ public:
   std::ostream &getStream( void ) { return (*o); }
 
   virtual bool visit( const ConstantExpression           *node );
+  virtual bool visit( const ThisExpression               *node );
   virtual bool visit( const ArrayConstantExpression      *node );
   virtual bool visit( const FrameConstantExpression      *node );
   virtual bool visit( const ParenthisSequenceExpression  *node );
