@@ -4,6 +4,7 @@
 #include "Scope.h"
 #include "SharedObject.h"
 #include "Function.h"
+#include "Node.h"
 #include "InterpretingParser.h"
 #include "FileSource.h"
 
@@ -13,6 +14,66 @@
 using namespace std;
 
 namespace RPGML {
+
+namespace Frame_impl {
+
+class NodeCreator : public Function
+{
+public:
+  NodeCreator( GarbageCollector *gc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so=0 );
+  virtual ~NodeCreator( void );
+
+  virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children ) const;
+
+  virtual const char *getName( void ) const;
+
+private:
+  String m_name;
+  create_Node_t m_create_Node;
+};
+
+NodeCreator::NodeCreator( GarbageCollector *_gc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so )
+: Function( _gc, parent, 0, so )
+, m_name( name )
+, m_create_Node( create_Node )
+{}
+
+NodeCreator::~NodeCreator( void )
+{}
+
+bool NodeCreator::call_impl( const Location *loc, index_t /*recursion_depth*/, Scope *scope, Value &ret, index_t /*n_args*/, const Value * /*args*/ )
+{
+  const String global_name =
+    scope->genGlobalName(
+         ":" + m_name + "@" + toString( loc->withoutFilename() )
+       + "#" + toString( scope->getNr() )
+       );
+  CountPtr< Node > node( m_create_Node( getGC(), global_name, getSO() ) );
+
+  ret = Value( node.get() );
+  return true;
+}
+
+void NodeCreator::gc_clear( void )
+{
+  Function::gc_clear();
+  m_name.clear();
+  m_create_Node = 0;
+}
+
+void NodeCreator::gc_getChildren( Children &children ) const
+{
+  Function::gc_getChildren( children );
+}
+
+const char *NodeCreator::getName( void ) const
+{
+  return m_name.get();
+}
+
+} // namespace Frame_impl
 
 Frame::Frame( GarbageCollector *_gc, Frame *parent, const String &path )
 : Collectable( _gc )
@@ -142,10 +203,31 @@ Value       *Frame::getStack( index_t index )
   return const_cast< Value* >( ((const Frame*)this)->getStack( index ) );
 }
 
+String Frame::genGlobalName( const String &identifier ) const
+{
+  String ret = identifier;
+
+  for( const Frame *m = this; m; m = m->getParent() )
+  {
+    const String &id = m->getIdentifier();
+    if( !id.empty() )
+    {
+      if( ret.empty() )
+      {
+        ret = id;
+      }
+      else
+      {
+        ret = id + "." + ret;
+      }
+    }
+  }
+
+  return ret;
+}
+
 Value *Frame::push_back( const String &identifier, const Value &value )
 {
-//  cerr << "Frame::push_back( '" << identifier << "', '" << value << "' )" << endl;
-
   assert( m_values.size() == m_identifiers.size() );
   const index_t index = index_t( m_values.size() );
 
@@ -230,59 +312,100 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
     return getStack( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
   }
 
-	// Check whether identifier refers to a plugin
-  const String so = path + "/libRPGML_" + identifier + ".so";
-  FILE *so_file = fopen( so.c_str(), "rb" );
-  if( so_file )
+	// Check whether identifier refers to a Function-plugin
   {
-//    std::cerr << "Found shared object '" << so << "'" << std::endl;
-    fclose( so_file );
-
-    String err;
-    CountPtr< SharedObject > so_p = new SharedObject( so, err );
-    if( so_p->isValid() )
+    const String so = path + "/libRPGML_Function_" + identifier + ".so";
+    FILE *so_file = fopen( so.c_str(), "rb" );
+    if( so_file )
     {
-//      std::cerr << "Loaded shared object '" << so << "'" << std::endl;
+  //    std::cerr << "Found shared object '" << so << "'" << std::endl;
+      fclose( so_file );
 
-      create_Function_t create_function;
-      const String symbol = identifier + "_create_Function";
-      if( so_p->getSymbol( symbol, create_function, err ) )
+      String err;
+      CountPtr< SharedObject > so_p = new SharedObject( so, err );
+      if( so_p->isValid() )
       {
-//        std::cerr << "Got symbol '" << symbol << " from shared object '" << so << "'" << std::endl;
-        CountPtr< Function > function = create_function( getGC(), this, so_p.get() );
-        return getStack( set( identifier, Value( function.get() ) ) );
+  //      std::cerr << "Loaded shared object '" << so << "'" << std::endl;
+
+        create_Function_t create_function;
+        const String symbol = identifier + "_create_Function";
+        if( so_p->getSymbol( symbol, create_function, err ) )
+        {
+  //        std::cerr << "Got symbol '" << symbol << " from shared object '" << so << "'" << std::endl;
+          CountPtr< Function > function = create_function( getGC(), this, so_p.get() );
+          return getStack( set( identifier, Value( function.get() ) ) );
+        }
+      }
+      else
+      {
+        std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
+        throw "Opening so failed";
       }
     }
-    else
+  }
+
+	// Check whether identifier refers to a Node-plugin
+  {
+    const String so = path + "/libRPGML_Node_" + identifier + ".so";
+    FILE *so_file = fopen( so.c_str(), "rb" );
+    if( so_file )
     {
-      std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
-      throw "Opening so failed";
+  //    std::cerr << "Found shared object '" << so << "'" << std::endl;
+      fclose( so_file );
+
+      String err;
+      CountPtr< SharedObject > so_p = new SharedObject( so, err );
+      if( so_p->isValid() )
+      {
+  //      std::cerr << "Loaded shared object '" << so << "'" << std::endl;
+
+        create_Node_t create_Node;
+        const String symbol = identifier + "_create_Node";
+        if( so_p->getSymbol( symbol, create_Node, err ) )
+        {
+  //        std::cerr << "Got symbol '" << symbol << " from shared object '" << so << "'" << std::endl;
+          const String name = genGlobalName( identifier );
+          CountPtr< Function > node_creator(
+            new Frame_impl::NodeCreator(
+              getGC(), this, name, create_Node, so_p.get()
+              )
+            );
+          return getStack( set( identifier, Value( node_creator.get() ) ) );
+        }
+      }
+      else
+      {
+        std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
+        throw "Opening so failed";
+      }
     }
   }
 
 	// Check whether identifier refers to a script
-  const String rpgml = path + "/" + identifier + ".rpgml";
-  FILE *const rpgml_p = fopen( rpgml.c_str(), "r" );
-  if( rpgml_p )
   {
-    CountPtr< Source > source = new FileSource( rpgml_p );
-    CountPtr< Scope > new_scope = new Scope( *scope );
-    CountPtr< InterpretingParser > parser = new InterpretingParser( new_scope, source );
-    try
+    const String rpgml = path + "/" + identifier + ".rpgml";
+    FILE *const rpgml_p = fopen( rpgml.c_str(), "r" );
+    if( rpgml_p )
     {
-      parser->parse();
-    }
-    catch( const char *e )
-    {
-      throw e;
-    }
+      CountPtr< Source > source = new FileSource( rpgml_p );
+      CountPtr< Scope > new_scope = new Scope( *scope );
+      CountPtr< InterpretingParser > parser = new InterpretingParser( new_scope, source );
+      try
+      {
+        parser->parse();
+      }
+      catch( const char *e )
+      {
+        throw e;
+      }
 
-    Value *const ret = getVariable( identifier );
-    if( !ret )
-    {
-      throw "variable was not defined in rpgml file";
+      Value *const ret = getVariable( identifier );
+      if( !ret )
+      {
+        throw "variable was not defined in rpgml file";
+      }
+      return ret;
     }
-    return ret;
   }
 
   return 0;

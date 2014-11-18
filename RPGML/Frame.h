@@ -44,6 +44,9 @@ public:
   Value       *getStack( index_t index );
   const Value *getStack( index_t index ) const;
 
+  //! like 'foo.bar.identifier'
+  String genGlobalName( const String &identifier ) const;
+
   Value *push_back( const String &identifier, const Value &value );
   void   pop_back( void );
 
@@ -100,7 +103,6 @@ public:
   virtual void gc_getChildren( Children &children ) const;
 
 private:
-  typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *parent, const SharedObject *so );
 
   Value *load_local ( const String &identifier, const Scope *scope );
   Value *load_global( const String &identifier, const Scope *scope );
