@@ -6,9 +6,10 @@
 
 namespace RPGML {
 
-InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const Args *decl_args, const AST::CompoundStatement *body )
+InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const String &name, const Args *decl_args, const AST::CompoundStatement *body )
 : Function( _gc, parent, decl_args )
 , m_body( body )
+, m_name( name )
 {}
 
 InterpretingFunction::~InterpretingFunction( void )

@@ -70,6 +70,8 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
+  virtual const char *getName( void ) const = 0;
+
 private:
   void fill_args( Frame &args, const Args &call_args );
 
