@@ -1,6 +1,8 @@
 #ifndef RPGML_Type_h
 #define RPGML_Type_h
 
+#include <ostream>
+
 namespace RPGML {
 
 class String;
@@ -162,5 +164,14 @@ template< class RefcountedType> static inline Type TypeOf( const CountPtr< Refco
 
 } // namespace RPGML
 
+namespace std {
+
+  static inline
+  std::ostream &operator<<( std::ostream &o, const RPGML::Type &t )
+  {
+    return o << t.getTypeName();
+  }
+
+} // namespace std
 #endif
 
