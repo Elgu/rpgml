@@ -9,6 +9,7 @@
 #include "Node.h"
 
 #include <iostream>
+using namespace std;
 
 namespace RPGML {
 
@@ -173,13 +174,36 @@ bool Scope::call(
   return call( loc, recursion_depth, function_identifier, ret, &args );
 }
 
+CountPtr< Node > Scope::create_Node(
+    const Location *loc
+  , index_t recursion_depth
+  , const String &name
+  , const Value &arg0
+  , const Value &arg1
+  , const Value &arg2
+  , const Value &arg3
+  )
+{
+  Value ret;
+  if( !call( loc, recursion_depth+1, name, ret, arg0, arg1, arg2, arg3 ) )
+  {
+    throw "Could not find/instantiate Node";
+  }
+
+  if( !ret.isNode() )
+  {
+    throw "Did not create a Node";
+  }
+
+  return ret.getNode();
+}
+
 CountPtr< Output > Scope::toOutput(
     const Location *loc
   , index_t recursion_depth
   , const Value &x
   )
 {
-
   if( x.isOutput() )
   {
     return x.getOutput();
@@ -212,25 +236,7 @@ CountPtr< Frame > Scope::new_Frame( void ) const
 
 String Scope::genGlobalName( const String &identifier ) const
 {
-  String ret = identifier;
-
-  for( const Frame *m = getCurr(); m; m = m->getParent() )
-  {
-    const String &id = m->getIdentifier();
-    if( !id.empty() )
-    {
-      if( ret.empty() )
-      {
-        ret = id;
-      }
-      else
-      {
-        ret = id + "." + ret;
-      }
-    }
-  }
-
-  return ret;
+  return getCurr()->genGlobalName( identifier );
 }
 
 size_t Scope::getNr( void ) const

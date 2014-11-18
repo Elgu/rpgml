@@ -69,6 +69,16 @@ public:
     , const Value &arg3 = Value()
     );
 
+  CountPtr< Node > create_Node(
+      const Location *loc
+    , index_t recursion_depth
+    , const String &node_name
+    , const Value &arg0 = Value()
+    , const Value &arg1 = Value()
+    , const Value &arg2 = Value()
+    , const Value &arg3 = Value()
+    );
+
   CountPtr< Output > toOutput(
       const Location *loc
     , index_t recursion_depth
@@ -77,6 +87,7 @@ public:
 
   CountPtr< Frame > new_Frame( void ) const;
 
+  //! like 'foo.bar.identifier'
   String genGlobalName( const String &identifier ) const;
 
   size_t getNr( void ) const;
