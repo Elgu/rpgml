@@ -794,13 +794,13 @@ std::ostream &Value::print( std::ostream &o ) const
         for( CountPtr< RPGML::Frame::Iterator > j( m->getIterator() ); !j->done(); j->next() )
         {
           const Frame::Iterator::Type v( j->get() );
-          o << " " << v.second.getTypeName() << " [ " << v.first << " ] = " << v.second << ";";
+          o << " " << v.second.getTypeName() << " " << v.first << " = " << v.second << ";";
         }
         o << " }";
       }
       break;
 
-    case Type::FUNCTION: o << "Function( " << (void*)getFunction() << " )"; break;
+    case Type::FUNCTION: o << "Function( '" << getFunction()->getName() << "' (" << (void*)getFunction() << ") )"; break;
     case Type::NODE    : o << "Node( " << getNode()->getName() << ", " << getNode()->getIdentifier() << " )"; break;
 
     case Type::OUTPUT  :
