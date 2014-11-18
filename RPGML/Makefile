@@ -35,14 +35,22 @@ LDFLAGS=\
 libRPGML_%.so: RPGML_%.o libRPGML.so
 	g++ -shared -o $@ $(LDFLAGS) -L. -lRPGML $<
 
-SOs=\
+FUNCTION_PLUGINS=\
 		binaryOp\
 		print\
 		unaryOp\
 
+NODE_PLUGINS=\
+		BinaryOp\
+		Print\
+		UnaryOp\
+
 .PHONY: all
 
-all: rpgml $(foreach so, $(SOs), libRPGML_$(so).so )
+all:\
+ 	rpgml\
+ 	$(foreach f, $(FUNCTION_PLUGINS), libRPGML_Function_$(f).so )\
+ 	$(foreach n, $(NODE_PLUGINS), libRPGML_Node_$(n).so )\
 
 rpgml_SOURCE=\
 	main.cpp\
