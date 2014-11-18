@@ -209,8 +209,9 @@ bool Output::isConnected( void ) const
 
 Node::Node( GarbageCollector *_gc, const String &identifier, const SharedObject *so )
 : Frame( _gc, 0 )
-, m_inputs( 0 )
-, m_outputs( 0 )
+, m_inputs( _gc )
+, m_outputs( _gc )
+, m_params( _gc )
 , m_identifier( identifier )
 , m_so( so )
 {}
@@ -283,6 +284,24 @@ Output *Node::getOutput( const char *identifier ) const
   return 0;
 }
 
+Param *Node::getParam( index_t i ) const
+{
+  if( i < m_params.size() )
+  {
+    return m_params[ i ];
+  }
+  return 0;
+}
+
+Param *Node::getParam( const char *identifier ) const
+{
+  for( params_t::const_iterator i( m_params.begin() ), end( m_params.end() ); i != end; ++i )
+  {
+    if( !(*i).isNull() && (*i)->getIdentifier() == identifier ) return (*i);
+  }
+  return 0;
+}
+
 void Node::setNumInputs( index_t n )
 {
   index_t old_n = m_inputs.size();
@@ -303,6 +322,11 @@ void Node::setNumOutputs( index_t n )
   {
     m_outputs[ i ] = new Output( getGC(), this );
   }
+}
+
+void Node::setNumParams( index_t n )
+{
+  m_params.resize( n );
 }
 
 } // namespace RPGML

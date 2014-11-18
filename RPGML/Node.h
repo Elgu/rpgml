@@ -123,9 +123,12 @@ public:
   Input *getInput( const char *identifier ) const;
   Output *getOutput( index_t i ) const;
   Output *getOutput( const char *identifier ) const;
+  Param *getParam( index_t i ) const;
+  Param *getParam( const char *identifier ) const;
 
   void setNumInputs( index_t n );
   void setNumOutputs( index_t n );
+  void setNumParams( index_t n );
 
 protected:
   template< class ParentNode >
@@ -175,11 +178,16 @@ protected:
 private:
   typedef Array< CountPtr< Input  >, 1 > inputs_t;
   typedef Array< CountPtr< Output >, 1 > outputs_t;
+  typedef Array< CountPtr< Param  >, 1 > params_t;
   inputs_t  m_inputs;
   outputs_t m_outputs;
+  params_t  m_params;
   const String m_identifier;
   CountPtr< const SharedObject > m_so;
 };
+
+typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *parent, const SharedObject *so );
+typedef CountPtr< Node > (*create_Node_t)( GarbageCollector *gc, const String &identifier, const SharedObject *so );
 
 } // namespace RPGML
 
@@ -187,14 +195,14 @@ private:
   extern "C"\
   RPGML::CountPtr< RPGML::Function > NAME ## _create_Function( RPGML::GarbageCollector *gc, RPGML::Frame *parent, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::NAME( gc, parent, so );\
+    return new RPGML::Function_ ## NAME( gc, parent, so );\
   }\
 
 #define RPGML_CREATE_NODE( NAME ) \
   extern "C"\
   RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &identifier, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::NAME::Node( gc, identifier, so );\
+    return new RPGML::NAME( gc, identifier, so );\
   }\
 
 #endif
