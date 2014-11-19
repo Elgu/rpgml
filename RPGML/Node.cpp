@@ -214,7 +214,9 @@ Node::Node( GarbageCollector *_gc, const String &identifier, const SharedObject 
 , m_params( _gc )
 , m_identifier( identifier )
 , m_so( so )
-{}
+{
+  setThis( true );
+}
 
 Node::~Node( void )
 {}
