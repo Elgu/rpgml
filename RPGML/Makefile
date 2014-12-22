@@ -1,5 +1,5 @@
 
-#.SUFFIXES: .o .cpp .cc .hh .yy .dep
+.SUFFIXES: .o .cpp .cc .hh .yy .dep
 
 CFLAGS=\
 	-Wall\
@@ -44,6 +44,8 @@ NODE_PLUGINS=\
 		BinaryOp\
 		Print\
 		UnaryOp\
+		Constant\
+		Counter\
 
 .PHONY: all
 
@@ -78,6 +80,12 @@ libRPGML_SOURCE=\
 	Node.cpp\
 	SharedObject.cpp\
 	Thread.cpp\
+	Exception.cpp\
+	Semaphore.cpp\
+	Mutex.cpp\
+	JobQueue.cpp\
+	Graph.cpp\
+	ThreadPool.cpp\
 
 libRPGML_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(libRPGML_SOURCE)))
 
@@ -110,7 +118,7 @@ test:
 	@echo DEP_FILES=$(DEP_FILES)
 
 .depend: $(DEP_FILES)
-	cat $(DEP_FILES) > .depend
+	@cat $(DEP_FILES) > .depend
 
 clean:
 	rm -f $(DEP_FILES)
