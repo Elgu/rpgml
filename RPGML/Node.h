@@ -3,10 +3,26 @@
 
 #include "GarbageCollector.h"
 #include "Frame.h"
-#include "Data.h"
 #include "Array.h"
+#include "Exception.h"
 
 #include <vector>
+
+#define DEFINE_INPUT( INPUT_ENUM, identifier ) \
+  getInput( INPUT_ENUM )->setIdentifier( String::Static( identifier ) ); \
+  push_back( String::Static( identifier  ), Value( getInput( INPUT_ENUM ) ) ); \
+
+#define DEFINE_OUTPUT( OUTPUT_ENUM, identifier ) \
+  getOutput( OUTPUT_ENUM )->setIdentifier( String::Static( identifier ) ); \
+  push_back( String::Static( identifier  ), Value( getOutput( OUTPUT_ENUM ) ) ); \
+
+#define DEFINE_OUTPUT_INIT( OUTPUT_ENUM, identifier, type, dims ) \
+  getOutput( OUTPUT_ENUM )->init< type, dims >( String::Static( identifier ) ); \
+  push_back( String::Static( identifier  ), Value( getOutput( OUTPUT_ENUM ) ) ); \
+
+#define DEFINE_PARAM( PARAM_ENUM, identifier, method ) \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method ) ); \
+  push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
 namespace RPGML {
 
@@ -39,6 +55,8 @@ public:
   Input( GarbageCollector *gc, Node *parent );
   virtual ~Input( void );
 
+  void init( const String &identifier );
+
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
@@ -48,7 +66,7 @@ public:
   bool isConnected( void ) const;
 
   const Output *getOutput( void ) const;
-  const Data *getData( void ) const;
+  const ArrayBase *getData( void ) const;
 
 private:
   CountPtr< Output > m_output;
@@ -60,6 +78,9 @@ public:
   Output( GarbageCollector *gc, Node *parent );
   virtual ~Output( void );
 
+  template< class T, int DIMS >
+  void init( const String &identifier, const index_t *size = 0 );
+
   void disconnect( void );
   void disconnect( Input *input );
 
@@ -67,9 +88,26 @@ public:
 
   bool isConnected( void ) const;
 
-  void setData( Data *data );
-  Data *getData( void );
-  const Data *getData( void ) const;
+  void setData( ArrayBase *data );
+  ArrayBase *getData( void );
+  const ArrayBase *getData( void ) const;
+
+  template< class T >
+  void initData( int dims, const index_t *size );
+
+  template< class DataType >
+  DataType *getAs( DataType* &as )
+  {
+    if( !m_data.isNull() ) return m_data->getAs( as );
+    as = 0; return 0;
+  }
+
+  template< class DataType >
+  const DataType *getAs( const DataType* &as ) const
+  {
+    if( !m_data.isNull() ) return m_data->getAs( as );
+    as = 0; return 0;
+  }
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
@@ -77,7 +115,7 @@ public:
 private:
   typedef Array< CountPtr< Input >, 1 > inputs_t;
   inputs_t m_inputs;
-  CountPtr< Data > m_data;
+  CountPtr< ArrayBase > m_data;
 };
 
 class Param : public Collectable
@@ -96,7 +134,7 @@ public:
   virtual void gc_clear( void ) {}
   virtual void gc_getChildren( Children & ) const {}
 
-  virtual bool set( const Value &value ) = 0;
+  virtual void set( const Value &value ) = 0;
   virtual Node *getParent( void ) const = 0;
   const String &getIdentifier( void ) const { return m_identifier; }
 private:
@@ -106,7 +144,59 @@ private:
 class Node : public Frame
 {
 public:
-  Node( GarbageCollector *gc, const String &identifier, const SharedObject *so );
+  EXCEPTION_BASE( Exception );
+  typedef Frame Base;
+
+  class NotConnected : public Exception
+  {
+  public:
+    typedef Exception Base;
+    explicit NotConnected( const Input *_input );
+    EXCEPTION_BODY( NotConnected )
+    CountPtr< const Input > input;
+  };
+
+  class GetAsFailed : public Exception
+  {
+  public:
+    typedef Exception Base;
+
+    template< class T, int DIMS >
+    explicit GetAsFailed( const Port *_port, const Array< T, DIMS > * )
+    : port( _port )
+    {
+      (*this) << "Could not get '" << port->getIdentifier() << "' as 'Array< " << getTypeName< T >() << ", " << DIMS << " >'";
+    }
+
+    template< class T >
+    explicit GetAsFailed( const Port *_port, const ArrayElements< T > * )
+    : port( _port )
+    {
+      (*this) << "Could not get '" << port->getIdentifier() << "' as 'ArrayElements< " << getTypeName< T >() << " >'";
+    }
+
+    EXCEPTION_BODY( GetAsFailed )
+    CountPtr< const Port > port;
+  };
+
+  class InitFailed : public Exception
+  {
+  public:
+    typedef Exception Base;
+    explicit
+    InitFailed( const Output *_output );
+    EXCEPTION_BODY( InitFailed )
+    CountPtr< const Output > output;
+  };
+
+  Node(
+      GarbageCollector *gc
+    , const String &identifier
+    , const SharedObject *so
+    , index_t num_inputs = 0
+    , index_t num_outputs = 0
+    , index_t num_params = 0
+    );
 
   virtual ~Node( void );
 
@@ -120,22 +210,31 @@ public:
   virtual void gc_getChildren( Children &children ) const;
 
   Input *getInput( index_t i ) const;
+  Input *getInput( int     i ) const;
   Input *getInput( const char *identifier ) const;
   Output *getOutput( index_t i ) const;
+  Output *getOutput( int     i ) const;
   Output *getOutput( const char *identifier ) const;
   Param *getParam( index_t i ) const;
+  Param *getParam( int     i ) const;
   Param *getParam( const char *identifier ) const;
+
+  Param *setParam( index_t i, Param *param );
 
   void setNumInputs( index_t n );
   void setNumOutputs( index_t n );
   void setNumParams( index_t n );
+
+  index_t getNumInputs( void ) const;
+  index_t getNumOutputs( void ) const;
+  index_t getNumParams( void ) const;
 
 protected:
   template< class ParentNode >
   class NodeParam : public Param
   {
   public:
-    typedef bool (ParentNode::*callback_t)( const Value &value, index_t );
+    typedef void (ParentNode::*callback_t)( const Value &value, index_t );
 
     explicit NodeParam(
         GarbageCollector *_gc
@@ -158,10 +257,9 @@ protected:
       children.add( static_cast< Collectable* >( m_parent.get() ) );
     }
 
-    virtual bool set( const Value &value )
+    virtual void set( const Value &value )
     {
-      if( !(m_parent->*m_callback)( value, m_index ) ) return false;
-      return true;
+      (m_parent->*m_callback)( value, m_index );
     }
 
     virtual Node *getParent( void ) const
@@ -188,6 +286,58 @@ private:
 
 typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *parent, const SharedObject *so );
 typedef CountPtr< Node > (*create_Node_t)( GarbageCollector *gc, const String &identifier, const SharedObject *so );
+
+template< class T, int DIMS >
+void Output::init( const String &identifier, const index_t *size )
+{
+  setIdentifier( identifier );
+
+  CountPtr< ArrayBase > out = getData();
+
+  if(
+       out.isNull()
+    || TypeOf< T >::E == Type::OTHER
+    || out->getType() != TypeOf< T >::E
+    || out->getDims() != DIMS
+    )
+  {
+    setData( new Array< T, DIMS >( getGC(), DIMS, size ) );
+  }
+  else
+  {
+    if( size ) out->resize( DIMS, size );
+  }
+}
+
+template< class T >
+void Output::initData( int dims, const index_t *size )
+{
+  CountPtr< ArrayBase > out = getData();
+
+  if(
+       out.isNull()
+    || TypeOf< T >::E == Type::OTHER
+    || out->getType() != TypeOf< T >::E
+    || out->getDims() != dims
+    )
+  {
+    switch( dims )
+    {
+      case 0: out.reset( new Array< T, 0 >( getGC(), dims, size ) ); break;
+      case 1: out.reset( new Array< T, 1 >( getGC(), dims, size ) ); break;
+      case 2: out.reset( new Array< T, 2 >( getGC(), dims, size ) ); break;
+      case 3: out.reset( new Array< T, 3 >( getGC(), dims, size ) ); break;
+      case 4: out.reset( new Array< T, 4 >( getGC(), dims, size ) ); break;
+      default:
+        throw Node::InitFailed( this )
+          << ": Number of dimensions greater than 4 not supported."
+          ;
+    }
+    setData( out );
+  }
+
+  out->resize( dims, size );
+}
 
 } // namespace RPGML
 

@@ -36,7 +36,7 @@ void Port::gc_clear( void )
 
 void Port::gc_getChildren( Children &children ) const
 {
-  children.push_back( m_parent );
+  children.add( m_parent.get() );
 }
 
 Input::Input( GarbageCollector *_gc, Node *parent )
@@ -46,6 +46,11 @@ Input::Input( GarbageCollector *_gc, Node *parent )
 Input::~Input( void )
 {
   disconnect();
+}
+
+void Input::init( const String &identifier )
+{
+  setIdentifier( identifier );
 }
 
 void Input::gc_clear( void )
@@ -59,7 +64,7 @@ const Output *Input::getOutput( void ) const
   return m_output;
 }
 
-const Data *Input::getData( void ) const
+const ArrayBase *Input::getData( void ) const
 {
   if( isConnected() )
   {
@@ -77,7 +82,7 @@ void Input::gc_getChildren( Children &children ) const
 
   if( isConnected() )
   {
-    children.push_back( m_output.get() );
+    children.add( m_output.get() );
   }
 }
 
@@ -116,17 +121,17 @@ Output::~Output( void )
   disconnect();
 }
 
-void Output::setData( Data *data )
+void Output::setData( ArrayBase *data )
 {
   m_data = data;
 }
 
-Data *Output::getData( void )
+ArrayBase *Output::getData( void )
 {
   return m_data;
 }
 
-const Data *Output::getData( void ) const
+const ArrayBase *Output::getData( void ) const
 {
   return m_data;
 }
@@ -207,7 +212,14 @@ bool Output::isConnected( void ) const
   return false;
 }
 
-Node::Node( GarbageCollector *_gc, const String &identifier, const SharedObject *so )
+Node::Node(
+    GarbageCollector *_gc
+  , const String &identifier
+  , const SharedObject *so
+  , index_t num_inputs
+  , index_t num_outputs
+  , index_t num_params
+  )
 : Frame( _gc, 0 )
 , m_inputs( _gc )
 , m_outputs( _gc )
@@ -215,6 +227,10 @@ Node::Node( GarbageCollector *_gc, const String &identifier, const SharedObject 
 , m_identifier( identifier )
 , m_so( so )
 {
+  if( num_inputs  ) setNumInputs ( num_inputs  );
+  if( num_outputs ) setNumOutputs( num_outputs );
+  if( num_params  ) setNumParams ( num_params  );
+  reserve( num_inputs + num_outputs + num_params );
   setThis( true );
 }
 
@@ -256,7 +272,12 @@ Input *Node::getInput( index_t i ) const
   {
     return m_inputs[ i ];
   }
-  return 0;
+  throw "Node::getInput( i ): Index out of bounds";
+}
+
+Input *Node::getInput( int i ) const
+{
+  return getInput( index_t( i ) );
 }
 
 Input *Node::getInput( const char *identifier ) const
@@ -265,7 +286,7 @@ Input *Node::getInput( const char *identifier ) const
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
   }
-  return 0;
+  throw "Node::getInput(): Identifier not found";
 }
 
 Output *Node::getOutput( index_t i ) const
@@ -274,7 +295,12 @@ Output *Node::getOutput( index_t i ) const
   {
     return m_outputs[ i ];
   }
-  return 0;
+  throw "Node::getOutput( i ): Index out of bounds";
+}
+
+Output *Node::getOutput( int i ) const
+{
+  return getOutput( index_t( i ) );
 }
 
 Output *Node::getOutput( const char *identifier ) const
@@ -283,7 +309,7 @@ Output *Node::getOutput( const char *identifier ) const
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
   }
-  return 0;
+  throw "Node::getOutput(): Identifier not found";
 }
 
 Param *Node::getParam( index_t i ) const
@@ -292,7 +318,12 @@ Param *Node::getParam( index_t i ) const
   {
     return m_params[ i ];
   }
-  return 0;
+  throw "Node::getParam( i ): Index out of bounds";
+}
+
+Param *Node::getParam( int i ) const
+{
+  return getParam( index_t( i ) );
 }
 
 Param *Node::getParam( const char *identifier ) const
@@ -301,7 +332,19 @@ Param *Node::getParam( const char *identifier ) const
   {
     if( !(*i).isNull() && (*i)->getIdentifier() == identifier ) return (*i);
   }
-  return 0;
+  throw "Node::getParam(): Identifier not found";
+}
+
+Param *Node::setParam( index_t i, Param *param )
+{
+  if( i < m_params.size() )
+  {
+    return ( m_params[ i ] = param );
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 void Node::setNumInputs( index_t n )
@@ -329,6 +372,37 @@ void Node::setNumOutputs( index_t n )
 void Node::setNumParams( index_t n )
 {
   m_params.resize( n );
+}
+
+index_t Node::getNumInputs( void ) const
+{
+  return m_inputs.size();
+}
+
+index_t Node::getNumOutputs( void ) const
+{
+  return m_outputs.size();
+}
+
+index_t Node::getNumParams( void ) const
+{
+  return m_params.size();
+}
+
+Node::NotConnected::NotConnected( const Input *_input )
+: input( _input )
+{
+  (*this)
+    << "Input '" << input->getIdentifier() << "' is not connected."
+    ;
+}
+
+Node::InitFailed::InitFailed( const Output *_output )
+: output( _output )
+{
+  (*this)
+    << "Initializing Output '" << output->getIdentifier() << "' failed"
+    ;
 }
 
 } // namespace RPGML
