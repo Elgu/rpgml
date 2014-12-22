@@ -3,10 +3,13 @@
 #include <RPGML/InterpretingASTVisitor.h>
 #include <RPGML/Scope.h>
 #include <RPGML/Context.h>
-#include <RPGML/GarbageCollector.h>
+#include <RPGML/JobQueue.h>
+#include <RPGML/Thread.h>
+#include <RPGML/Graph.h>
 #include <RPGML/Frame.h>
 #include <RPGML/FileSource.h>
 #include <RPGML/InterpretingParser.h>
+#include <RPGML/ThreadPool.h>
 
 #include <cerrno>
 #include <cstring>
@@ -37,6 +40,8 @@ private:
 
 int main( int argc, char **argv )
 {
+  const int num_threads = 2;
+
   try
   {
     CountPtr< Source > source;
@@ -65,11 +70,27 @@ int main( int argc, char **argv )
 
     parser.parse();
 
+    source.reset();
+    scope.reset();
+
+    CountPtr< Graph > graph = context->createGraph();
+    CountPtr< ThreadPool > pool = new ThreadPool( 0, num_threads );
+
+    for(;;)
+    {
+      graph->execute( pool->getQueue() );
+    }
+
     return 0;
   }
   catch( const char *e )
   {
     std::cerr << e << std::endl;
+    return -1;
+  }
+  catch( const std::exception &e )
+  {
+    std::cerr << e.what() << std::endl;
     return -1;
   }
 }
