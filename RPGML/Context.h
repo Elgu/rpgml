@@ -7,6 +7,7 @@
 
 namespace RPGML {
 
+class Graph;
 class Scope;
 class Frame;
 class StringUnifier;
@@ -26,6 +27,8 @@ public:
 
   StringUnifier *getUnifier( void ) const { return m_unifier; }
   GarbageCollector *getGC( void ) const { return m_gc.get(); }
+
+  CountPtr< Graph > createGraph( void ) const;
 
   size_t getNr( void );
 private:
