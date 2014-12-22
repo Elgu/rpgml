@@ -72,7 +72,7 @@ public:
       {
         if( !connections[ i ].isNull() )
         {
-          children.push_back( connections[ i ] );
+          children.add( connections[ i ] );
         }
       }
     }
