@@ -160,7 +160,7 @@ void SequenceValueArray::gc_clear( void )
 
 void SequenceValueArray::gc_getChildren( Children &children ) const
 {
-  children.push_back( m_array );
+  children.add( m_array.get() );
 }
 
 CountPtr< Sequence > SequenceValueArray::clone( void ) const
