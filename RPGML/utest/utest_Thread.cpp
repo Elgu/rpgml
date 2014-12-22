@@ -24,9 +24,9 @@ public:
   {
     Thread thread( 0 );
     CPPUNIT_ASSERT_EQUAL( false, thread.isRunning() );
-    CPPUNIT_ASSERT_EQUAL( true, thread.start() );
+    CPPUNIT_ASSERT_NO_THROW( thread.start() );
     CPPUNIT_ASSERT_EQUAL( true, thread.isRunning() );
-    CPPUNIT_ASSERT_EQUAL( true, thread.join() );
+    CPPUNIT_ASSERT_NO_THROW( thread.join() );
     CPPUNIT_ASSERT_EQUAL( false, thread.isRunning() );
   }
 
@@ -38,14 +38,16 @@ public:
     , m_value( value )
     {}
 
-    void method1( void )
+    size_t method1( void )
     {
       (*m_marker) = 1*m_value;
+      return 1;
     }
 
-    void method2( void )
+    size_t method2( void )
     {
       (*m_marker) = 2*m_value;
+      return 2;
     }
 
   private:
@@ -61,12 +63,16 @@ public:
 
     Thread thread( 0 );
 
-    CPPUNIT_ASSERT_EQUAL( true, thread.start( &obj, &TestObject::method1 ) );
-    CPPUNIT_ASSERT_EQUAL( true, thread.join() );
+    CPPUNIT_ASSERT_NO_THROW( thread.start( &obj, &TestObject::method1 ) );
+    size_t join_ret1 = 0;
+    CPPUNIT_ASSERT_NO_THROW( thread.join( &join_ret1 ) );
+    CPPUNIT_ASSERT_EQUAL( size_t( 1 ), join_ret1 );
     CPPUNIT_ASSERT_EQUAL( 1, marker );
 
-    CPPUNIT_ASSERT_EQUAL( true, thread.start( &obj, &TestObject::method2 ) );
-    CPPUNIT_ASSERT_EQUAL( true, thread.join() );
+    CPPUNIT_ASSERT_NO_THROW( thread.start( &obj, &TestObject::method2 ) );
+    size_t join_ret2 = 0;
+    CPPUNIT_ASSERT_NO_THROW( thread.join( &join_ret2 ) );
+    CPPUNIT_ASSERT_EQUAL( size_t( 2 ), join_ret2 );
     CPPUNIT_ASSERT_EQUAL( 2, marker );
   }
 };
