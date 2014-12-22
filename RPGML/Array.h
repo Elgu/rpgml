@@ -3,19 +3,30 @@
 
 #include "GarbageCollector.h"
 #include "Value.h"
-#include "Data.h"
 #include "Iterator.h"
 #include "types.h"
+#include "Type.h"
+#include "Exception.h"
+
+#include <typeinfo>
 
 namespace RPGML {
+
+class Value;
 
 template< class _Element, int _Dims >
 class Array;
 
-class ArrayBase : public Data
+class ArrayBase : public Collectable
 {
-  typedef Data Base;
+  typedef Collectable Base;
 public:
+  //! @brief Array Exception base class
+  EXCEPTION_BASE( Exception );
+
+  //! @brief Exception for when the specified dimensions do not match the Array's
+  EXCEPTION_DERIVED( DimensionsMismatch, Exception );
+
   explicit
   ArrayBase( GarbageCollector *_gc )
   : Base( _gc )
@@ -27,7 +38,21 @@ public:
 
   virtual ~ArrayBase( void ) {}
 
-  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
+  template< class DataType >
+  DataType *getAs( DataType* &as )
+  {
+    as = dynamic_cast< DataType* >( this );
+    return as;
+  }
+
+  template< class DataType >
+  const DataType *getAs( const DataType* &as ) const
+  {
+    as = dynamic_cast< const DataType* >( this );
+    return as;
+  }
+
+  virtual const std::type_info &getTypeInfo( void ) const = 0;
 
   virtual ArrayBase &clear( void ) = 0;
 
@@ -43,9 +68,9 @@ public:
 
   typedef Iterator< Value > ValueIterator;
   virtual CountPtr< ValueIterator > getValueIterator( void ) const = 0;
-  virtual Value getValue( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const = 0;
+  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const = 0;
   virtual Value getValue( index_t dims, const index_t *x ) const = 0;
-  virtual void setValue( const Value &value, index_t x, index_t y=0, index_t z=0, index_t t=0 ) = 0;
+  virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) = 0;
   virtual void setValue( const Value &value, index_t dims, const index_t *x ) = 0;
   virtual bool isValue( void ) const = 0;
 };
@@ -86,6 +111,11 @@ public:
     return (*this);
   }
 
+  bool empty( void ) const
+  {
+    return m_elements.empty();
+  }
+
   virtual index_t size( void ) const
   {
     return index_t( m_elements.size() );
@@ -122,6 +152,11 @@ public:
   reverse_iterator       rend  ( void )       { return m_elements.rend  (); }
   const_reverse_iterator rend  ( void ) const { return m_elements.rend  (); }
 
+  Element       &back( void )       { return m_elements.back(); }
+  const Element &back( void ) const { return m_elements.back(); }
+  Element       &front( void )       { return m_elements.front(); }
+  const Element &front( void ) const { return m_elements.front(); }
+
   virtual void gc_clear( void )
   {
     clear();
@@ -154,6 +189,11 @@ protected:
     m_elements.push_back( x );
   }
 
+  void _pop_back( void )
+  {
+    m_elements.pop_back();
+  }
+
   ArrayElements &_resize( size_t new_size )
   {
     m_elements.resize( new_size );
@@ -173,14 +213,14 @@ private:
   void addElement( Children &children, const Collectable *const *element )
   {
 //    std::cerr << " addElement Collectable* " << std::endl;
-    children.push_back( *element );
+    children.add( *element );
   }
 
   static inline
   void addElement( Children &children, const Collectable *element )
   {
 //    std::cerr << " addElement Collectable* " << std::endl;
-    children.push_back( element );
+    children.add( element );
   }
 
   template< class T >
@@ -236,6 +276,7 @@ public:
   {
     if( Dims > 0 ) std::fill( m_size, m_size+Dims, index_t( 0 ) );
     if( Dims > 1 ) std::fill( m_size2, m_size2+(Dims-1), index_t( 0 ) );
+    if( Dims == 0 ) Base::_resize( 1 );
   }
 
   explicit
@@ -243,6 +284,7 @@ public:
   : Base( _gc )
   {
     resize( x, y, z, t );
+    if( Dims == 0 ) Base::_resize( 1 );
   }
 
   explicit
@@ -250,6 +292,7 @@ public:
   : Base( _gc )
   {
     resize( _dims, _size );
+    if( Dims == 0 ) Base::_resize( 1 );
   }
 
   Array( const Array &other )
@@ -277,7 +320,7 @@ public:
 
   virtual Type           getType( void ) const
   {
-    return TypeOf( (const Element*)0 );
+    return TypeOf< Element >::E;
   }
 
   virtual const index_t *getSize( void ) const
@@ -434,6 +477,18 @@ public:
     return at( x );
   }
 
+  reference operator*( void )
+  {
+    assert( Dims == 0 );
+    return Base::elements_at( 0 );
+  }
+
+  const_reference operator*( void ) const
+  {
+    assert( Dims == 0 );
+    return Base::elements_at( 0 );
+  }
+
   void swap( Array &other )
   {
     Base::swap( other );
@@ -454,12 +509,22 @@ public:
     Base::_push_back( x );
   }
 
+  void pop_back( void )
+  {
+    if( Dims != 1 ) throw "push_back() only makes sense on 1D-arrays";
+    if( m_size[ 0 ] > 0 )
+    {
+      --m_size[ 0 ];
+      Base::_pop_back();
+    }
+  }
+
   virtual CountPtr< ValueIterator > getValueIterator( void ) const
   {
     return new _ValueIterator( this );
   }
 
-  virtual Value getValue( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
+  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const
   {
     if( inRange( x, y, z, t ) )
     {
@@ -483,7 +548,7 @@ public:
     }
   }
 
-  virtual void setValue( const Value &value, index_t x, index_t y=0, index_t z=0, index_t t=0 )
+  virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 )
   {
     if( inRange( x, y, z, t ) )
     {
