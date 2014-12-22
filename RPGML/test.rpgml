@@ -1,5 +1,5 @@
 
-print( [ "a", "b", "c" ][ 1 ] + "\n" );
+#print( [ "a", "b", "c" ][ 1 ] + "\n" );
 
 #int[][] a = [ [ 0 to 0 ], [ 0 to 1 ], [ 0 to 2 ], [ 0 to 4 ], [ 0 to 5 ] ];
 #
@@ -12,38 +12,60 @@ print( [ "a", "b", "c" ][ 1 ] + "\n" );
 #  print( "\n" );
 #}
 
-int[2,3] c = 1;
+#int[2,3] c = 1;
+#
+#c[1,1] = 2;
+#
+#for i = 0 to 1
+#{
+#  for j = 0 to 2
+#  {
+#    print( c[i,j] );
+#  }
+#  print( "\n" );
+#}
+#
+#Function F( x )
+#{
+#  return { int i=x; };
+#}
+#
+#F f( 23 );
+#print( f.i + "\n" );
+#
+#{ int i=42; }
+#F( 11 );
+#
+#Function A( x )
+#{
+#  int i = x;
+#  int j = 2*x;
+#  return this;
+#}
 
-c[1,1] = 2;
+#A a( 42 );
+#print( a.i + ", " + a.j + "\n" );
 
-for i = 0 to 1
+Function counter( start=0, step=1 )
 {
-  for j = 0 to 2
-  {
-    print( c[i,j] );
-  }
-  print( "\n" );
+  Counter ret( start=start, step=step );
+  return ret.out;
 }
 
-Function F( x )
+Function print_runtime( foo )
 {
-  return { int i=x; };
+  Print printer();
+  foo -> printer.in;
+  return printer;
 }
 
-F f( 23 );
-print( f.i + "\n" );
+#print_runtime p( counter( 100, 2 ) + "\n" );
 
-{ int i=42; }
-F( 11 );
+Counter c( start=100, step=2 );
+Print p();
+BinaryOp concat( op="+" );
+c.out -> concat.in1;
+"\n" -> concat.in2;
 
-Function A( x )
-{
-  int i = x;
-  int j = 2*x;
-  return this;
-}
-
-A a( 42 );
-print( a.i + ", " + a.j + "\n" );
-
+concat.out -> p.in;
 
