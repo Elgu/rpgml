@@ -6,7 +6,8 @@
 namespace RPGML {
 
 GarbageCollector::GarbageCollector( void )
-: m_root( 0 )
+: m_lock( Mutex::Recursive() )
+, m_root( 0 )
 {}
 
 GarbageCollector::~GarbageCollector( void )
@@ -17,14 +18,17 @@ GarbageCollector::~GarbageCollector( void )
 void GarbageCollector::add( const Collectable *c )
 {
   if( 0 == this ) return;
-	if( 0 == m_root ) m_root = c;
+  if( 0 == c ) return;
 	if( c->gc == this ) return;
   if( c->gc ) c->gc->remove( c );
 
-  c->gc = this;
-  c->gc_index = index_t( m_cs.size() );
+  { Mutex::ScopedLock lock( &m_lock );
 
-  m_cs.push_back( c );
+    c->gc = this;
+    c->gc_index = index_t( m_cs.size() );
+    m_cs.push_back( c );
+	  if( 0 == m_root ) m_root = c;
+  } // m_lock
 
 #ifdef GC_DEBUG
   std::cerr << "add " << c << " to " << this << ", index = " << c->gc_index << std::endl;
@@ -36,22 +40,25 @@ void GarbageCollector::remove( const Collectable *c )
   if( 0 == this ) return;
   assert( c->gc == this );
 
-	if( c == m_root ) m_root = 0;
+  { Mutex::ScopedLock lock( &m_lock );
 
-  const index_t index = c->gc_index;
-  if( index < m_cs.size() )
-  {
-    if( m_cs[ index ] == c )
+    if( c == m_root ) m_root = 0;
+
+    const index_t index = c->gc_index;
+    if( index < m_cs.size() )
     {
+      if( m_cs[ index ] == c )
+      {
 #ifdef GC_DEBUG
-      std::cerr << "remove " << c << " from " << this << ", index = " << c->gc_index << std::endl;
+        std::cerr << "remove " << c << " from " << this << ", index = " << c->gc_index << std::endl;
 #endif
 
-      m_cs[ index ] = 0;
-      c->gc = 0;
-      c->gc_index = 0;
+        m_cs[ index ] = 0;
+        c->gc = 0;
+        c->gc_index = 0;
+      }
     }
-  }
+  } // m_lock
 }
 
 void GarbageCollector::setRoot( const Collectable *c )
@@ -137,17 +144,26 @@ void GarbageCollector::run( void )
   if( m_cs.empty() ) return;
   if( 0 == m_root ) return;
 
-  std::vector< const Collectable* > cs_new;
-  cs_new.reserve( m_cs.size() / 2 + 1 );
+  { Mutex::ScopedLock lock( &m_lock );
 
-  // compact recursively
-  compact( cs_new );
+    std::vector< const Collectable* > cs_new;
+    cs_new.reserve( m_cs.size() / 2 + 1 );
 
-  // make new cs current
-  std::swap( cs_new, m_cs );
+    // compact recursively
+    compact( cs_new );
 
-  // cs_new now contains garbage
-  sweep( cs_new );
+    // make new cs current
+    std::swap( cs_new, m_cs );
+
+    // cs_new now contains garbage
+    sweep( cs_new );
+
+  } // m_lock
+}
+
+bool Collectable::Children::contains( Collectable *c ) const
+{
+  return ( m_children.end() != std::find( m_children.begin(), m_children.end(), c ) );
 }
 
 } // namespace RPGML

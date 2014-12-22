@@ -1,9 +1,10 @@
 #ifndef RPGML_GarbageCollector_h
 #define RPGML_GarbageCollector_h
 
+#include "types.h"
 #include "Iterator.h"
 #include "Refcounted.h"
-#include "types.h"
+#include "Mutex.h"
 
 #include <vector>
 
@@ -34,6 +35,7 @@ private:
   void sweep( std::vector< const Collectable* > &garbage );
 
   std::vector< const Collectable* > m_cs;
+  Mutex m_lock;
   const Collectable *m_root;
 
 private:
@@ -86,19 +88,26 @@ public:
     return gc;
   }
 
-  class Children : public std::vector< const Collectable* >
+  class Children
   {
+    friend class GarbageCollector;
   public:
     Children( void ) {}
     ~Children( void ) {}
-
-    void add( Collectable *c ) { if( c ) push_back( c ); }
-    void add( const Collectable *c ) { if( c ) push_back( c ); }
-    template< class Value >
-    void add( const Value &v ) { add( v.getCollectable() ); }
+    void add( Collectable *c ) { if( c ) m_children.push_back( c ); }
+    void add( const Collectable *c ) { if( c ) m_children.push_back( c ); }
+    //! For testing (utest) only
+    bool contains( Collectable *c ) const;
+  private:
+    void reserve( size_t n ) { m_children.reserve( n ); }
+    size_t size( void ) const { return m_children.size(); }
+    void clear( void ) { m_children.clear(); }
+    const Collectable *const &operator[]( size_t i ) const { return m_children[ i ]; }
+    const Collectable *      &operator[]( size_t i ) { return m_children[ i ]; }
+    std::vector< const Collectable* > m_children;
   };
 
-  //! Do not implement recursively, only clear, what is not reachable over gc_getChildren(), clear references to those
+  //! Do not implement recursively, only clear what is not reachable over gc_getChildren(), clear references to those
   virtual void gc_clear( void ) = 0;
   //! Do not implement recursively
   virtual void gc_getChildren( Children &children ) const = 0;
