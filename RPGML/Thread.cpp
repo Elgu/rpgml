@@ -1,16 +1,34 @@
+/*! @file Thread.cpp
+ * @brief Thread base class implementation
+ * @author Gunnar Payer
+ * @date November 27th 2014
+ */
 #include "Thread.h"
+
+#include <cerrno>
 
 namespace RPGML {
 
-Thread::Thread( GarbageCollector *_gc )
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Thread, AlreadyRunning, "Thread already running" );
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Thread, NotRunning, "Thread not running" );
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Thread, InsufficientResources, "Insufficient resources to create another thread, or a system-imposed limit on the number of threads was encountered" );
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Thread, DeadLock, "A deadlock was detected" );
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Thread, NotJoinable, "thread is not a joinable thread or Another thread is already waiting to join with this thread" );
+
+Thread::Thread( GarbageCollector *_gc, bool start_immediately )
 : Collectable( _gc )
 , m_running( false )
-{}
+{
+  if( start_immediately ) start();
+}
 
 Thread::~Thread( void )
 {
-  cancel();
-  join();
+  if( isRunning() )
+  {
+    cancel();
+    join();
+  }
 }
 
 void Thread::gc_clear( void )
@@ -24,58 +42,90 @@ bool Thread::isRunning( void ) const
   return m_running;
 }
 
-bool Thread::start( void )
+void Thread::start( void )
 {
   return start( &dispatch_run, this );
 }
 
-bool Thread::start( void *(*start_routine)(void*), void *arg )
+void Thread::start( void *(*start_routine)(void*), void *arg )
 {
-  if( isRunning() ) return false;
+  if( isRunning() ) throw AlreadyRunning();
 
-  if( 0 != pthread_create( &m_thread, 0, start_routine, arg ) )
+  const int ret = pthread_create( &m_thread, 0, start_routine, arg );
+
+  switch( ret )
   {
-    return false;
+    case EAGAIN: throw InsufficientResources();
+    case EINVAL: throw StartException( "Internal: Invalid settings in attr" );
+    case EPERM : throw StartException( "Internal: No permission to set the scheduling policy and parameters specified in attr" );
+    default: {}
   }
 
   m_running = true;
-  return true;
 }
 
-bool Thread::join( void )
+void Thread::join( size_t *exit_status )
 {
-  if( !isRunning() ) return false;
-  void *ret = 0;
-  if( 0 != pthread_join( m_thread, &ret ) ) return false;
+  if( !isRunning() ) throw NotRunning();
+
+  void *exit_status_v = 0;
+
+  const int ret = pthread_join( m_thread, &exit_status_v );
+
+  switch( ret )
+  {
+    case EDEADLK: throw DeadLock();
+    case EINVAL : throw NotJoinable();
+    case ESRCH  : throw JoinException( "Internal: No thread with the ID thread could be found" );
+    default: {}
+  }
+
   m_arg.reset();
   m_running = false;
-  return true;
+  if( exit_status ) (*exit_status) = reinterpret_cast< size_t >( exit_status_v );
 }
 
-bool Thread::cancel( void )
+void Thread::cancel( void )
 {
-  if( !isRunning() ) return false;
-  if( 0 != pthread_cancel( m_thread ) ) return false;
-  return true;
+  if( !isRunning() ) throw NotRunning();
+
+  const int ret = pthread_cancel( m_thread );
+
+  switch( ret )
+  {
+    case ESRCH: throw CancelException( "Internal: No thread with the ID thread could be found" );
+    default: {}
+  }
+
+  // nothing else to do, join() must be called
 }
 
-bool Thread::start( DispatchArg *arg )
+void Thread::yield( void )
 {
-  return start( &dispatch_arg, arg );
+  pthread_yield();
+}
+
+size_t Thread::run( void )
+{
+  // Was not overloaded
+  return size_t(-1);
+}
+
+void Thread::start( DispatchArg *arg )
+{
+  start( &dispatch_arg, arg );
 }
 
 void *Thread::dispatch_arg( void *arg )
 {
   DispatchArg *const dispatch_arg = (DispatchArg*)arg;
-  dispatch_arg->run();
-  return 0;
+  return (void*)dispatch_arg->run();
 }
 
 void *Thread::dispatch_run( void *arg )
 {
   Thread *const thread = (Thread*)arg;
-  thread->run();
-  return 0;
+  return (void*)thread->run();
 }
 
 } // namespace RPGML
