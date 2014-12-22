@@ -3,6 +3,7 @@
 
 #include "Type.h"
 #include "String.h"
+#include "Exception.h"
 
 #include <cassert>
 
@@ -23,6 +24,18 @@ class Collectable;
 class Value
 {
 public:
+  EXCEPTION_BASE( Exception );
+
+  class CastException : public Exception
+  {
+  public:
+    typedef Exception Base;
+    CastException( Type _from, Type _to );
+    EXCEPTION_BODY( CastException )
+    Type const from;
+    Type const to  ;
+  };
+
   Value( void );
   ~Value( void );
 
@@ -56,10 +69,10 @@ public:
 
   std::ostream &print( std::ostream &o ) const;
 
-  explicit Value ( bool  _b );
-  explicit Value ( int   _i );
+  explicit Value ( bool    _b );
+  explicit Value ( int     _i );
   explicit Value ( index_t _i );
-  explicit Value ( float _f );
+  explicit Value ( float   _f );
   explicit Value ( char const *_str  );
   explicit Value ( std::string const &_str  );
   explicit Value ( String   const &_str  );
@@ -121,6 +134,7 @@ public:
 
   bool            getBool    ( void ) const { assert( isBool    () ); return b   ; }
   int             getInt     ( void ) const { assert( isInt     () ); return i   ; }
+  int             getInt32   ( void ) const { assert( isInt     () ); return i   ; }
   float           getFloat   ( void ) const { assert( isFloat   () ); return f   ; }
   String          getString  ( void ) const { assert( isString  () ); return String( str ); }
   ArrayBase      *getArray   ( void ) const { assert( isArray   () ); return arr ; }

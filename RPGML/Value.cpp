@@ -12,6 +12,16 @@
 
 namespace RPGML {
 
+Value::CastException::CastException( Type _from, Type _to )
+: from( _from )
+, to( _to )
+{
+  (*this)
+    << "Cannot cast directly from " << from
+    << " to " << to
+    ;
+}
+
 Value::Value( void )
 : p( 0 )
 {}
@@ -29,8 +39,16 @@ Value::Value( const Value &other )
   {
     case Type::INVALID : break;
     case Type::BOOL    : break;
-    case Type::INT     : break;
+    case Type::UINT8   : break;
+    case Type::INT8    : break;
+    case Type::UINT16  : break;
+    case Type::INT16   : break;
+    case Type::UINT32  : break;
+    case Type::INT32   : break;
+    case Type::UINT64  : break;
+    case Type::INT64   : break;
     case Type::FLOAT   : break;
+    case Type::DOUBLE  : break;
     case Type::STRING  : str ->ref(); break;
     case Type::ARRAY   : arr ->ref(); break;
     case Type::FRAME   : frame->ref(); break;
@@ -40,6 +58,7 @@ Value::Value( const Value &other )
     case Type::INPUT   : in  ->ref(); break;
     case Type::PARAM   : param->ref(); break;
     case Type::SEQUENCE: seq ->ref(); break;
+    case Type::OTHER   : break;
   }
 }
 
@@ -120,8 +139,16 @@ void Value::clear( void )
   {
     case Type::INVALID : break;
     case Type::BOOL    : break;
-    case Type::INT     : break;
+    case Type::UINT8   : break;
+    case Type::INT8    : break;
+    case Type::UINT16  : break;
+    case Type::INT16   : break;
+    case Type::UINT32  : break;
+    case Type::INT32   : break;
+    case Type::UINT64  : break;
+    case Type::INT64   : break;
     case Type::FLOAT   : break;
+    case Type::DOUBLE  : break;
     case Type::STRING  : if( !str ->unref() ) delete str ; break;
     case Type::ARRAY   : if( !arr ->unref() ) delete arr ; break;
     case Type::FRAME   : if( !frame->unref() ) delete frame ; break;
@@ -131,6 +158,7 @@ void Value::clear( void )
     case Type::INPUT   : if( !in  ->unref() ) delete in  ; break;
     case Type::PARAM   : if( !param->unref() ) delete param; break;
     case Type::SEQUENCE: if( !seq ->unref() ) delete seq ; break;
+    case Type::OTHER   : break;
   }
   p = 0;
   m_type = Type::INVALID;
@@ -168,8 +196,16 @@ const Collectable *Value::getCollectable( void ) const
   {
     case Type::INVALID : return 0;
     case Type::BOOL    : return 0;
-    case Type::INT     : return 0;
+    case Type::UINT8   : return 0;
+    case Type::INT8    : return 0;
+    case Type::UINT16  : return 0;
+    case Type::INT16   : return 0;
+    case Type::UINT32  : return 0;
+    case Type::INT32   : return 0;
+    case Type::UINT64  : return 0;
+    case Type::INT64   : return 0;
     case Type::FLOAT   : return 0;
+    case Type::DOUBLE  : return 0;
     case Type::STRING  : return 0;
     case Type::ARRAY   : return arr ;
     case Type::FRAME   : return frame ;
@@ -179,6 +215,7 @@ const Collectable *Value::getCollectable( void ) const
     case Type::INPUT   : return in  ;
     case Type::PARAM   : return param;
     case Type::SEQUENCE: return seq ;
+    case Type::OTHER   : return 0;
   }
   return 0;
 }
@@ -196,9 +233,9 @@ Value Value::to( Type type ) const
       {
         case Type::INT   : return Value( bool( getInt  () ) );
         case Type::FLOAT : return Value( bool( getFloat() ) );
-        case Type::STRING: throw "Cannot cast string directly to bool";
+        case Type::STRING: throw CastException( x.getType(), type );
         default:
-          throw "Invalid type x for to( type, x )";
+          throw CastException( x.getType(), type );
       }
 
     case Type::INT   :
@@ -208,7 +245,7 @@ Value Value::to( Type type ) const
         case Type::FLOAT : return Value( int( getFloat() ) );
         case Type::STRING: return Value( atoi( getString().c_str() ) );
         default:
-          throw "Invalid type x for to( type, x )";
+          throw CastException( x.getType(), type );
       }
 
     case Type::FLOAT :
@@ -218,7 +255,7 @@ Value Value::to( Type type ) const
         case Type::INT   : return Value( float( getInt()  ) );
         case Type::STRING: return Value( float( atof( getString().c_str() ) ) );
         default:
-          throw "Invalid type x for to( type, x )";
+          throw CastException( x.getType(), type );
       }
 
     case Type::STRING:
@@ -231,14 +268,14 @@ Value Value::to( Type type ) const
           case Type::INT   : s << getInt(); break;
           case Type::FLOAT : s << getFloat(); break;
           default:
-            throw "Invalid type x for to( type, x )";
+            throw CastException( x.getType(), type );
         }
 
         return Value( String( s.str() ) );
       }
 
     default:
-      throw "Invalid type for Value::to( type )";
+      throw CastException( x.getType(), type );
   }
 }
 
@@ -258,7 +295,7 @@ bool Value::operator< ( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  < r.getInt() );
       case Type::FLOAT: return ( l.getFloat() < r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -271,7 +308,11 @@ bool Value::operator< ( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      << " directly"
+      ;
   }
 }
 
@@ -291,7 +332,7 @@ bool Value::operator<=( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  <= r.getInt() );
       case Type::FLOAT: return ( l.getFloat() <= r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -304,7 +345,11 @@ bool Value::operator<=( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      << " directly"
+      ;
   }
 }
 
@@ -324,7 +369,7 @@ bool Value::operator> ( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  > r.getInt() );
       case Type::FLOAT: return ( l.getFloat() > r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -337,7 +382,11 @@ bool Value::operator> ( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      <<" directly"
+      ;
   }
 }
 
@@ -357,7 +406,7 @@ bool Value::operator>=( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  >= r.getInt() );
       case Type::FLOAT: return ( l.getFloat() >= r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -370,7 +419,11 @@ bool Value::operator>=( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      << " directly"
+      ;
   }
 }
 
@@ -390,7 +443,7 @@ bool Value::operator==( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  == r.getInt() );
       case Type::FLOAT: return ( l.getFloat() == r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -403,7 +456,11 @@ bool Value::operator==( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      << " directly"
+      ;
   }
 }
 
@@ -423,7 +480,7 @@ bool Value::operator!=( const Value &right ) const
       case Type::INT  : return ( l.getInt ()  != r.getInt() );
       case Type::FLOAT: return ( l.getFloat() != r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -436,7 +493,11 @@ bool Value::operator!=( const Value &right ) const
   }
   else
   {
-    throw std::string( "Cannot compare " ) + left.getTypeName() + " and " + right.getTypeName() + " directly";
+    throw Exception()
+      << "Cannot compare " << left.getTypeName()
+      << " and " << right.getTypeName()
+      << " directly"
+      ;
   }
 }
 
@@ -451,15 +512,15 @@ bool Value::operator&&( const Value &right ) const
   }
   else if( !left.isScalar() )
   {
-    throw "left must be scalar";
+    throw Exception( "left must be scalar" );
   }
   else if( !right.isScalar() )
   {
-    throw "right must be scalar";
+    throw Exception( "right must be scalar" );
   }
   else
   {
-    throw "left and right must be scalar";
+    throw Exception( "left and right must be scalar" );
   }
 }
 
@@ -474,15 +535,15 @@ bool Value::operator||( const Value &right ) const
   }
   else if( !left.isScalar() )
   {
-    throw "left must be scalar";
+    throw Exception( "left must be scalar" );
   }
   else if( !right.isScalar() )
   {
-    throw "right must be scalar";
+    throw Exception( "right must be scalar" );
   }
   else
   {
-    throw "left and right must be scalar";
+    throw Exception( "left and right must be scalar" );
   }
 }
 
@@ -497,23 +558,23 @@ bool Value::log_xor   ( const Value &right ) const
   }
   else if( !left.isScalar() )
   {
-    throw "left must be scalar";
+    throw Exception( "left must be scalar" );
   }
   else if( !right.isScalar() )
   {
-    throw "right must be scalar";
+    throw Exception( "right must be scalar" );
   }
   else
   {
-    throw "left and right must be scalar";
+    throw Exception( "left and right must be scalar" );
   }
 }
 
 Value Value::operator<<( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw "left must be integer";
-  if( !right.isInteger() ) throw "right must be integer";
+  if( !left.isInteger() ) throw Exception( "left must be integer" );
+  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
   const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
@@ -524,8 +585,8 @@ Value Value::operator<<( const Value &right ) const
 Value Value::operator>>( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw "left must be integer";
-  if( !right.isInteger() ) throw "right must be integer";
+  if( !left.isInteger() ) throw Exception( "left must be integer" );
+  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
   const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
@@ -536,8 +597,8 @@ Value Value::operator>>( const Value &right ) const
 Value Value::operator& ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw "left must be integer";
-  if( !right.isInteger() ) throw "right must be integer";
+  if( !left.isInteger() ) throw Exception( "left must be integer" );
+  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
   const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
@@ -548,8 +609,8 @@ Value Value::operator& ( const Value &right ) const
 Value Value::operator| ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw "left must be integer";
-  if( !right.isInteger() ) throw "right must be integer";
+  if( !left.isInteger() ) throw Exception( "left must be integer" );
+  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
   const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
@@ -560,8 +621,8 @@ Value Value::operator| ( const Value &right ) const
 Value Value::operator^ ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw "left must be integer";
-  if( !right.isInteger() ) throw "right must be integer";
+  if( !left.isInteger() ) throw Exception( "left must be integer" );
+  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
   const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
@@ -585,12 +646,12 @@ Value Value::operator* ( const Value &right ) const
       case Type::INT  : return Value( l.getInt ()  * r.getInt() );
       case Type::FLOAT: return Value( l.getFloat() * r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else
   {
-    throw "left and right must be scalar.";
+    throw Exception( "left and right must be scalar" );
   }
 }
 
@@ -610,27 +671,27 @@ Value Value::operator/ ( const Value &right ) const
         if( r.getBool()  )
           return Value( l.getBool()  / r.getBool() );
         else
-          throw "Division by zero";
+          throw Exception( "Division by zero" );
 
       case Type::INT  :
         if( r.getInt()   )
           return Value( l.getInt ()  / r.getInt() );
         else
-          throw "Division by zero";
+          throw Exception( "Division by zero" );
 
       case Type::FLOAT:
         if( r.getFloat() )
           return Value( l.getFloat() / r.getFloat() );
         else
-          throw "Division by zero";
+          throw Exception( "Division by zero" );
 
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else
   {
-    throw "left and right must be scalar.";
+    throw Exception( "left and right must be scalar." );
   }
 }
 
@@ -650,7 +711,7 @@ Value Value::operator+ ( const Value &right ) const
       case Type::INT  : return Value( l.getInt ()  + r.getInt() );
       case Type::FLOAT: return Value( l.getFloat() + r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else if( left.isString() && right.isString() )
@@ -673,7 +734,7 @@ Value Value::operator+ ( const Value &right ) const
   }
   else
   {
-    throw "left and right must be scalar or string.";
+    throw Exception( "left and right must be scalar or string" );
   }
 }
 
@@ -693,12 +754,12 @@ Value Value::operator- ( const Value &right ) const
       case Type::INT  : return Value( l.getInt ()  - r.getInt() );
       case Type::FLOAT: return Value( l.getFloat() - r.getFloat() );
       default:
-        throw "Internal error: unhandled scalar";
+        throw Exception( "Internal error: unhandled scalar" );
     }
   }
   else
   {
-    throw "left and right must be scalar.";
+    throw Exception( "left and right must be scalar" );
   }
 }
 
@@ -716,15 +777,15 @@ Value Value::operator% ( const Value &right ) const
         case Type::INT  : return Value( left.getInt() % right.getInt() );
         case Type::FLOAT:
           {
-            const float l = float( left.getInt() );
-            const float r = float( left.getFloat() );
+            const float l = float( left .getInt() );
+            const float r = float( right.getFloat() );
             if( r )
               return Value( l - floorf( l / r ) * r );
             else
-              throw "Modulo by zero";
+              throw Exception( "Modulo by zero" );
           }
         default:
-          throw "left and right must be scalar.";
+          throw Exception( "left and right must be scalar" );
       }
 
     case Type::FLOAT:
@@ -737,27 +798,27 @@ Value Value::operator% ( const Value &right ) const
           case Type::BOOL : return Value( false );
 
           case Type::INT  :
-            l = float( left.getFloat() );
-            r = float( left.getInt() );
+            l = float( left .getFloat() );
+            r = float( right.getInt() );
             break;
 
           case Type::FLOAT:
-            l = float( left.getFloat() );
-            r = float( left.getFloat() );
+            l = float( left .getFloat() );
+            r = float( right.getFloat() );
             break;
 
           default:
-            throw "left and right must be scalar.";
+            throw Exception( "left and right must be scalar" );
         }
 
         if( r )
           return Value( l - floorf( l / r ) * r );
         else
-          throw "Modulo by zero";
+          throw Exception( "Modulo by zero" );
       }
 
     default:
-      throw "left and right must be scalar.";
+      throw Exception( "left and right must be scalar" );
   }
 }
 
@@ -767,8 +828,16 @@ std::ostream &Value::print( std::ostream &o ) const
   {
     case Type::INVALID : o << "nil"; break;
     case Type::BOOL    : o << ( getBool() ? "true" : "false" ); break;
-    case Type::INT     : o << getInt(); break;
-    case Type::FLOAT   : o << getFloat(); break;
+//    case Type::UINT8   : o << getUInt8 (); break;
+//    case Type::INT8    : o << getInt8  (); break;
+//    case Type::UINT16  : o << getUInt16(); break;
+//    case Type::INT16   : o << getInt16 (); break;
+//    case Type::UINT32  : o << getUInt32(); break;
+    case Type::INT32   : o << getInt32 (); break;
+//    case Type::UINT64  : o << getUInt64(); break;
+//    case Type::INT64   : o << getInt64 (); break;
+    case Type::FLOAT   : o << getFloat (); break;
+//    case Type::DOUBLE  : o << getDouble(); break;
     case Type::STRING  : o << "\"" << getString() << "\""; break;
 
     case Type::ARRAY   :
@@ -834,6 +903,9 @@ std::ostream &Value::print( std::ostream &o ) const
       break;
 
     case Type::SEQUENCE: getSequence()->print( o ); break;
+
+    default:
+      throw Exception( "Invalid Type for Value::print()" );
   }
 
   return o;
