@@ -20,9 +20,13 @@ namespace Frame_impl {
 class NodeCreator : public Function
 {
 public:
+  typedef Function Base;
+  EXCEPTION_BASE( Exception );
+
   NodeCreator( GarbageCollector *gc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so=0 );
   virtual ~NodeCreator( void );
 
+  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
   virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
@@ -43,8 +47,11 @@ NodeCreator::NodeCreator( GarbageCollector *_gc, Frame *parent, const String &na
 NodeCreator::~NodeCreator( void )
 {}
 
-bool NodeCreator::call_impl( const Location *loc, index_t /*recursion_depth*/, Scope *scope, Value &ret, index_t /*n_args*/, const Value * /*args*/ )
+bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args )
 {
+  (void)recursion_depth;
+  (void)call_args;
+
   const String global_name =
     scope->genGlobalName(
          ":" + m_name + "@" + toString( loc->withoutFilename() )
@@ -52,8 +59,35 @@ bool NodeCreator::call_impl( const Location *loc, index_t /*recursion_depth*/, S
        );
   CountPtr< Node > node( m_create_Node( getGC(), global_name, getSO() ) );
 
+  if( call_args )
+  {
+    for( size_t i=0; i<call_args->size(); ++i )
+    {
+      const Arg &arg = call_args->at( i );
+      if( arg.identifier.empty() )
+      {
+        throw Exception( "only identifier arguments allowed when instantiating a Node" );
+      }
+
+      Param *const param = node->getParam( arg.identifier );
+
+      if( !param )
+      {
+        throw Exception( "Param not found." );
+      }
+
+      param->set( arg.value );
+    }
+  }
+
   ret = Value( node.get() );
   return true;
+}
+
+bool NodeCreator::call_impl( const Location *, index_t, Scope *, Value &, index_t, const Value * )
+{
+  throw Exception( "NodeCreator::call_impl() should newer be called" );
+  return false;
 }
 
 void NodeCreator::gc_clear( void )
@@ -240,7 +274,7 @@ Value *Frame::push_back( const String &identifier, const Value &value )
 void Frame::pop_back( void )
 {
   assert( m_values.size() == m_identifiers.size() );
-  if( m_values.empty() ) throw "Frame already empty";
+  if( m_values.empty() ) throw Exception( "Frame already empty" );
 
   const size_t new_size = m_values.size()-1;
   m_values.resize( new_size );
@@ -338,8 +372,7 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
       }
       else
       {
-        std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
-        throw "Opening so failed";
+        throw Exception() << "Opening shared object '" << so << "' failed: " << err;
       }
     }
   }
@@ -375,8 +408,7 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
       }
       else
       {
-        std::cerr << "Opening so file '" << so << "' failed: " << err << std::endl;
-        throw "Opening so failed";
+        throw Exception() << "Opening so file '" << so << "' failed: " << err;
       }
     }
   }
@@ -396,13 +428,19 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
       }
       catch( const char *e )
       {
-        throw e;
+        throw Exception()
+          << "Failed to parse '" << rpgml << "'"
+          << ": " << e
+          ;
       }
 
       Value *const ret = getVariable( identifier );
       if( !ret )
       {
-        throw "variable was not defined in rpgml file";
+        throw Exception()
+          << "Variable '" << identifier << "'"
+          << " was not defined in the rpgml file '" << rpgml << "'"
+          ;
       }
       return ret;
     }
@@ -421,14 +459,14 @@ void Frame::gc_clear( void )
 
 void Frame::gc_getChildren( Children &children ) const
 {
-  children.push_back( m_parent );
+  children.add( m_parent.get() );
 
   for( size_t i( 0 ), end( m_values.size() ); i<end; ++i )
   {
     const Value &value = m_values[ i ];
     if( value.isCollectable() )
     {
-      children.push_back( value.getCollectable() );
+      children.add( value.getCollectable() );
     }
   }
 }

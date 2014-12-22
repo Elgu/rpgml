@@ -5,6 +5,7 @@
 #include "String.h"
 #include "GarbageCollector.h"
 #include "types.h"
+#include "Exception.h"
 
 #include <map>
 #include <vector>
@@ -17,6 +18,9 @@ class SharedObject;
 class Frame : public Collectable
 {
 public:
+  typedef Collectable Base;
+  EXCEPTION_BASE( Exception );
+
   explicit
   Frame( GarbageCollector *gc, Frame *parent=0, const String &path = String() );
   virtual ~Frame( void );
@@ -64,7 +68,7 @@ public:
   // Load from the directory associated with this Frame
   Value *load( const String &identifier, const Scope *scope );
 
-  index_t size( void ) const { return index_t( m_values.size() ); }
+  index_t getSize( void ) const { return index_t( m_values.size() ); }
 
   typedef std::vector< Value > values_t;
   typedef std::vector< String > identifiers_t;
