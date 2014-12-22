@@ -8,10 +8,12 @@ namespace RPGML {
 class Print : public RPGML::Node
 {
 public:
+  EXCEPTION_BASE( Exception );
+
   Print( GarbageCollector *gc, const String &identifier, const SharedObject *so );
   virtual ~Print( void );
 
-  virtual const char *getName( void ) const { return "Print"; }
+  virtual const char *getName( void ) const;
 
   virtual bool tick( void );
 
@@ -28,6 +30,14 @@ private:
   {
     NUM_OUTPUTS
   };
+
+  enum Params
+  {
+    NUM_PARAMS
+  };
+
+  template< class T >
+  bool tick_scalar( const ArrayBase *in_base );
 };
 
 } // namespace RPGML
