@@ -390,18 +390,16 @@ bool InterpretingASTVisitor::visit( const AST::FrameAccessExpression            
   if( !node->left->invite( this ) ) return false;
   Value left; left.swap( return_value );
 
-  if( !left.isFrame() ) throw "left of '.' is not a Frame";
+  Value *value = 0;
 
-  Value *const value = left.getFrame()->getVariable( node->identifier );
-
-  if( value )
+  if( dot_access_impl( node->loc, left, node->identifier, value ) )
   {
     return_value = (*value);
     return true;
   }
   else
   {
-    throw "identifier not found in Frame.";
+    throw "identifier not found right of '.'.";
     return false;
   }
 }
@@ -596,6 +594,34 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
   return true;
 }
 
+bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value )
+{
+  value = 0;
+
+  if( left.isFrame() )
+  {
+    value = left.getFrame()->getVariable( identifier );
+  }
+  else if( left.isNode() )
+  {
+    value = left.getNode()->getVariable( identifier );
+  }
+  else
+  {
+    (void)loc;
+    throw "left of '.' is not accessible via '.'";
+  }
+
+  if( !value )
+  {
+    (void)loc;
+    throw "identifier not found right of '.'.";
+    return false;
+  }
+
+  return true;
+}
+
 bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, Value *lvalue )
 {
   if( !node->value->invite( this ) ) return false;
@@ -611,10 +637,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
 
       try
       {
-        if( !param->set( value ) )
-        {
-          throw "Setting Param failed";
-        }
+        param->set( value );
       }
       catch( const char *e )
       {
@@ -650,6 +673,29 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
   return true;
 }
 
+bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
+{
+  if( !node->output->invite( this ) ) return false;
+  Value output_v; output_v.swap( return_value );
+
+  CountPtr< Output > output( scope->toOutput( node->loc, getRecursionDepth(), output_v ) );
+  if( output.isNull() )
+  {
+    throw "left of '->' is not an Output";
+  }
+
+  if( !node->input->invite( this ) ) return false;
+  Value input; input.swap( return_value );
+
+  if( !input.isInput() )
+  {
+    throw "right of '->' is not an Input";
+  }
+
+  input.getInput()->connect( output );
+  return true;
+}
+
 bool InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *node )
 {
   const String &identifier = node->identifier;
@@ -668,15 +714,11 @@ bool InterpretingASTVisitor::visit( const AST::AssignDotStatement           *nod
   if( !node->left->invite( this ) ) return false;
   Value left; left.swap( return_value );
 
-  if( !left.isFrame() )
-  {
-    throw "left of '.' is not a Frame";
-  }
+  Value *lvalue = 0;
 
-  Value *const lvalue = left.getFrame()->getVariable( node->identifier );
-  if( !lvalue )
+  if( !dot_access_impl( node->loc, left, node->identifier, lvalue ) )
   {
-    throw "member not found in Frame";
+    return false;
   }
 
   return assign_impl( node, lvalue );

@@ -36,6 +36,7 @@ public:
 
   virtual bool visit( const AST::CompoundStatement            *node );
   virtual bool visit( const AST::FunctionDefinitionStatement  *node );
+  virtual bool visit( const AST::ConnectStatement             *node );
   virtual bool visit( const AST::AssignIdentifierStatement    *node );
   virtual bool visit( const AST::AssignDotStatement           *node );
   virtual bool visit( const AST::AssignBracketStatement       *node );
@@ -51,6 +52,7 @@ public:
   const Value &get_return_value( void ) const { return return_value; }
 
 private:
+  bool dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value );
   bool assign_impl( const AST::AssignmentStatement *node, Value *lvalue );
 
   class TypeDescr : public Refcounted
