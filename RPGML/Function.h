@@ -33,7 +33,7 @@ public:
   virtual size_t getFrameSize( void ) const;
 
   //! Sets up call and calls call_impl()
-  bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
+  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
 
   //! "Bare" Function call, use on own risk directly
   virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args ) = 0;

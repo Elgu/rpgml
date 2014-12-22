@@ -62,7 +62,7 @@ bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope,
   Scope::EnterLeaveGuard guard2( scope, args );
 
   fill_args( *args, *call_args );
-  const index_t n_args = index_t( args->size() );
+  const index_t n_args = index_t( args->getSize() );
   return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? args->getStack( 0 ) : 0 ) );
 }
 
@@ -168,7 +168,7 @@ void Function::gc_clear( void )
 
 void Function::gc_getChildren( Children &children ) const
 {
-  children.push_back( m_parent );
+  children.add( m_parent.get() );
 
   for( size_t i( 0 ), end( m_decl->size() ); i<end; ++i )
   {
@@ -176,7 +176,7 @@ void Function::gc_getChildren( Children &children ) const
 
     if( value.isCollectable() )
     {
-      children.push_back( value.getCollectable() );
+      children.add( value.getCollectable() );
     }
   }
 }
