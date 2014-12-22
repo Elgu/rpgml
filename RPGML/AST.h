@@ -39,6 +39,7 @@ typedef DimensionsExpression CoordinatesExpression;
 class Statement;
 class CompoundStatement;
 class FunctionDefinitionStatement;
+class ConnectStatement;
 class AssignmentStatement;
 class AssignIdentifierStatement;
 class AssignDotStatement;
@@ -103,6 +104,7 @@ public:
 
   virtual bool visit( const CompoundStatement            *node ) = 0;
   virtual bool visit( const FunctionDefinitionStatement  *node ) = 0;
+  virtual bool visit( const ConnectStatement             *node ) = 0;
   virtual bool visit( const AssignIdentifierStatement    *node ) = 0;
   virtual bool visit( const AssignDotStatement           *node ) = 0;
   virtual bool visit( const AssignBracketStatement       *node ) = 0;
@@ -539,6 +541,22 @@ public:
   const String identifier;
   const CountPtr< const ArgDeclList > args;
   const CountPtr< const CompoundStatement > body;
+};
+
+class ConnectStatement : public Statement
+{
+public:
+  ConnectStatement ( const Location *_loc, const Expression *_output, const Expression *_input )
+  : Statement( _loc )
+  , output( _output )
+  , input( _input )
+  {}
+  virtual ~ConnectStatement ( void ) {}
+
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+
+  const CountPtr< const Expression > output;
+  const CountPtr< const Expression > input;
 };
 
 class AssignmentStatement : public Statement

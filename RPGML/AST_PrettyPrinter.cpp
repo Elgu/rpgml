@@ -265,6 +265,15 @@ bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
   return true;
 }
 
+bool PrettyPrinter::visit( const ConnectStatement    *node )
+{
+  node->output->invite( this );
+  (*o) << " -> ";
+  node->input->invite( this );
+  (*o) << ";";
+  return true;
+}
+
 bool PrettyPrinter::visit( const AssignIdentifierStatement    *node )
 {
   // indent() must have been called, if neccessary

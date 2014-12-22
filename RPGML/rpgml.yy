@@ -162,6 +162,7 @@ namespace RPGML
 %type <expr> conditional_expression
 %type <expr> expression
 %type <stmt> assignment_statement
+%type <stmt> connect_statement
 %type <assign> assignment_operator
 %type <expr> array_dimension
 %type <dims> array_dimensions_expression
@@ -423,6 +424,13 @@ expression
   : conditional_expression { ($$) = ($1); }
   ;
 
+connect_statement
+  : expression ARROW expression ';'
+    {
+      ($$) = new ConnectStatement( RPGML_LOC(@$), ($1), ($3) );
+    }
+  ;
+
 assignment_statement
   : identifier assignment_operator expression ';'
     {
@@ -513,6 +521,7 @@ statement
   | function_definition_statement
   | function_call_statement
   | assignment_statement
+  | connect_statement
   | variable_creation_statement
   | return_statement
   | FLUSH { ($$) = new NOPStatement( RPGML_LOC(@$) ); }

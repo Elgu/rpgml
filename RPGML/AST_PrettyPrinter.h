@@ -36,9 +36,10 @@ public:
   virtual bool visit( const IfThenElseExpression         *node );
   virtual bool visit( const TypeExpression               *node );
   virtual bool visit( const DimensionsExpression         *node );
-  virtual bool visit( const CompoundStatement            *node );
 
+  virtual bool visit( const CompoundStatement            *node );
   virtual bool visit( const FunctionDefinitionStatement  *node );
+  virtual bool visit( const ConnectStatement             *node );
   virtual bool visit( const AssignIdentifierStatement    *node );
   virtual bool visit( const AssignDotStatement           *node );
   virtual bool visit( const AssignBracketStatement       *node );
