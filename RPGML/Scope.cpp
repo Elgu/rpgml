@@ -164,10 +164,10 @@ bool Scope::call(
 
   do
   {
-    if( !arg0.isInvalid() ) args[ 0 ] = Function::Arg( String(), arg0 ); else break;
-    if( !arg1.isInvalid() ) args[ 1 ] = Function::Arg( String(), arg1 ); else break;
-    if( !arg2.isInvalid() ) args[ 2 ] = Function::Arg( String(), arg2 ); else break;
-    if( !arg3.isInvalid() ) args[ 3 ] = Function::Arg( String(), arg3 ); else break;
+    if( !arg0.isInvalid() ) args.push_back( Function::Arg( String(), arg0 ) ); else break;
+    if( !arg1.isInvalid() ) args.push_back( Function::Arg( String(), arg1 ) ); else break;
+    if( !arg2.isInvalid() ) args.push_back( Function::Arg( String(), arg2 ) ); else break;
+    if( !arg3.isInvalid() ) args.push_back( Function::Arg( String(), arg3 ) ); else break;
   }
   while( false );
 
