@@ -31,11 +31,21 @@ OBJECTS=\
 	InterpretingFunction.o\
 	Scanner.o\
 	Thread.o\
+	Exception.o\
+	Mutex.o\
+	Semaphore.o\
+	JobQueue.o\
+	Graph.o\
 	rpgml.tab.o\
+	utest_Exception.o\
+	utest_Type.o\
 	utest_String.o\
 	utest_Array.o\
 	utest_GarbageCollector.o\
 	utest_Thread.o\
+	utest_JobQueue.o\
+	utest_Node.o\
+	utest_Graph.o\
 
 %.o: %.cpp .%.dep
 	g++ -c -o $@ $(CFLAGS) $<
@@ -45,19 +55,27 @@ OBJECTS=\
 
 .%.dep: %.cpp Makefile
 	@echo Generating dependency for $<
-	g++ -M -MP -MF $@ $(CFLAGS) $<
+	@g++ -M -MP -MF $@ $(CFLAGS) $<
 
 .%.dep: %.cc Makefile
 	@echo Generating dependency for $<
-	g++ -M -MP -MF $@ $(CFLAGS) $<
+	@g++ -M -MP -MF $@ $(CFLAGS) $<
 
 all: utest_main
 
 test: utest_main
 	./utest_main
 
+clean:
+	rm -f utest_main $(OBJECTS)
+
 utest_main: $(OBJECTS)
 	g++ -o $@ $(OBJECTS) $(LDFLAGS)
 
-include $(foreach S, $(basename $(OBJECTS) ), .$(S).dep)
+DEP_FILES=$(foreach S, $(basename $(OBJECTS) ), .$(S).dep)
+
+.depend: $(DEP_FILES)
+	@cat $(DEP_FILES) > .depend
+
+include .depend
 
