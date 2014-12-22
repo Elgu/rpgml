@@ -2,6 +2,7 @@
 #define RPGML_Refcounted_h
 
 #include "types.h"
+#include "Atomic.h"
 
 #include <cassert>
 #include <cstddef>
@@ -26,14 +27,12 @@ public:
 
   count_t ref( void ) const
   {
-    ++m_count;
-    return m_count;
+    return ++m_count;
   }
 
   count_t unref( void ) const
   {
-    --m_count;
-    return m_count;
+    return --m_count;
   }
 
   count_t count( void ) const
@@ -48,7 +47,7 @@ private:
     m_count = 0;
   }
 
-  mutable count_t m_count;
+  mutable Atomic< count_t > m_count;
 };
 
 template< class _RefcountedType >
