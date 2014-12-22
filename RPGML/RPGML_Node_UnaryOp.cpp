@@ -1,30 +1,35 @@
 #include "RPGML_Node_UnaryOp.h"
 
+#include <algorithm>
+
+using namespace std;
+
 namespace RPGML {
 
 UnaryOp::UnaryOp( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
-: Node( _gc, identifier, so )
+: Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
 , m_op( UOP_PLUS )
 {
-  setNumInputs( NUM_INPUTS );
-  getInput( INPUT_IN )->setIdentifier( String::Static( "in" ) );
-
-  setNumOutputs( NUM_OUTPUTS );
-  getOutput( OUTPUT_OUT )->setIdentifier( String::Static( "out" ) );
-
-  push_back( String::Static( "in"  ), Value( getInput( INPUT_IN ) ) );
-  push_back( String::Static( "out" ), Value( getOutput( OUTPUT_OUT ) ) );
-  push_back( String::Static( "op" ), Value( new NodeParam< UnaryOp >( getGC(), this, String::Static( "op" ), &UnaryOp::set_op ) ) );
+  DEFINE_INPUT ( INPUT_IN  , "in"  );
+  DEFINE_OUTPUT( OUTPUT_OUT, "out" );
+  DEFINE_PARAM ( PARAM_OP  , "op", UnaryOp::set_op );
 }
 
 UnaryOp::~UnaryOp( void )
 {}
 
-bool UnaryOp::set_op( const Value &value, index_t )
+const char *UnaryOp::getName( void ) const
+{
+  return "UnaryOp";
+}
+
+void UnaryOp::set_op( const Value &value, index_t )
 {
   if( value.getType() != Type::String() )
   {
-    throw "Param 'op' must be set with string.";
+    throw Exception()
+      << "Param 'op' must be set with string, is '" << value.getTypeName() << "'"
+      ;
   }
 
   try
@@ -33,7 +38,102 @@ bool UnaryOp::set_op( const Value &value, index_t )
   }
   catch( const char * )
   {
-    throw "Invalid op";
+    throw Exception() << "Invalid op '" << value << "'";
+  }
+}
+
+namespace UnaryOp_impl {
+
+template< class T, UOP OP > struct op_impl {};
+template< class T > struct op_impl< T, UOP_MINUS   > { typedef T    Ret; static Ret doit( const T &x ) { return  x; } };
+template< class T > struct op_impl< T, UOP_PLUS    > { typedef T    Ret; static Ret doit( const T &x ) { return -x; } };
+template< class T > struct op_impl< T, UOP_LOG_NOT > { typedef bool Ret; static Ret doit( const T &x ) { return !x; } };
+template< class T > struct op_impl< T, UOP_BIT_NOT > { typedef T    Ret; static Ret doit( const T &x ) { return ~x; } };
+
+template<> struct op_impl< float, UOP_BIT_NOT > { static float doit( const float & ) { throw UnaryOp::Exception( "binary not not supported for floating point types" ); return float(); } };
+
+template< class T, UOP OP >
+struct impl
+{
+  typedef op_impl< T, OP > Op;
+  typedef typename Op::Ret Ret;
+
+  static
+  bool doit( const ArrayElements< T > *in, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T >::const_iterator i_iter = in->begin();
+    const index_t n = in->size();
+    for( index_t i=0; i<n; ++i, ++i_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( (*i_iter) );
+    }
+
+    return true;
+  }
+
+};
+
+} // namespace UnaryOp_impl
+
+template< UOP OP, class T >
+bool UnaryOp::tick2( const ArrayBase *in_base )
+{
+  using namespace UnaryOp_impl;
+
+  typedef impl< T, OP > Impl;
+  typedef typename Impl::Ret Ret;
+
+  const ArrayElements< T > *in = 0;
+  if( !in_base->getAs( in ) ) throw GetAsFailed( getInput( INPUT_IN ), in );
+
+  const index_t dims = in->getDims();
+  const index_t *const size = in->getSize();
+
+  Output *output = getOutput( OUTPUT_OUT );
+  output->initData< Ret >( dims, size );
+
+  ArrayElements< Ret > *out = 0;
+  if( !output->getData()->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
+
+  return Impl::doit( in, out );
+}
+
+template< UOP OP >
+bool UnaryOp::tick1( void )
+{
+  const ArrayBase *const in_base = getInput( INPUT_IN )->getData();
+  if( !in_base ) throw NotConnected( getInput( INPUT_IN ) );
+
+  switch( in_base->getType() )
+  {
+    case Type::BOOL  : return tick2< OP, bool   >( in_base );
+    case Type::INT   : return tick2< OP, int    >( in_base );
+    case Type::FLOAT : return tick2< OP, float  >( in_base );
+    default:
+      throw Exception()
+        << "unsupported type '" << in_base->getType().getTypeName() << "'"
+        ;
+  }
+
+  return true;
+}
+
+template< UOP OP >
+bool UnaryOp::tick1_int( void )
+{
+  const ArrayBase *const in_base = getInput( INPUT_IN )->getData();
+  if( !in_base ) throw NotConnected( getInput( INPUT_IN ) );
+
+  switch( in_base->getType() )
+  {
+    case Type::BOOL  : return tick2< OP, bool   >( in_base );
+    case Type::INT   : return tick2< OP, int    >( in_base );
+    default:
+      throw Exception()
+        << "unsupported type '" << in_base->getType().getTypeName() << "'"
+        << ": Only integer types supported for op '" << getUOPStr( m_op ) << "'"
+        ;
   }
 
   return true;
@@ -41,7 +141,15 @@ bool UnaryOp::set_op( const Value &value, index_t )
 
 bool UnaryOp::tick( void )
 {
-
+  switch( m_op )
+  {
+    case UOP_MINUS  : return tick1    < UOP_MINUS   >();
+    case UOP_PLUS   : return tick1    < UOP_PLUS    >();
+    case UOP_LOG_NOT: return tick1    < UOP_LOG_NOT >();
+    case UOP_BIT_NOT: return tick1_int< UOP_BIT_NOT >();
+    default:
+      throw Exception() << "unhandled uop";
+  }
 
   return true;
 }
