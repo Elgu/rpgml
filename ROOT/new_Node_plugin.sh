@@ -7,6 +7,7 @@ fi
 
 PluginName=$1
 
-cat "RPGML_Node_TEMPLATE.h" | sed "s/TEMPLATE/$PluginName/g" > "RPGML_Node_$PluginName.h"
-cat "RPGML_Node_TEMPLATE.cpp" | sed "s/TEMPLATE/$PluginName/g" > "RPGML_Node_$PluginName.cpp"
+# TODO: Use a better path than ".."
+cat "../templates/RPGML_Node_TEMPLATE.h" | sed "s/TEMPLATE/$PluginName/g" > "RPGML_Node_$PluginName.h"
+cat "../templates/RPGML_Node_TEMPLATE.cpp" | sed "s/TEMPLATE/$PluginName/g" > "RPGML_Node_$PluginName.cpp"
 
