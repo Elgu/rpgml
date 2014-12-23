@@ -1,0 +1,12 @@
+
+.%.cpp.dep: %.cpp
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+.%.cc.dep: %.cc
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+
+libRPGML_%.so: RPGML_%.o
+	g++ -shared -o $@ $(LDFLAGS) -lRPGML $<
+

@@ -1,9 +1,9 @@
 #include "RPGML_Function_binaryOp.h"
 
-#include "String.h"
-#include "ParserEnums.h"
-#include "Scope.h"
-#include "Node.h"
+#include <RPGML/String.h>
+#include <RPGML/ParserEnums.h>
+#include <RPGML/Scope.h>
+#include <RPGML/Node.h>
 
 #include <sstream>
 

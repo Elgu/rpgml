@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Thread.h>
+#include <RPGML/Thread.h>
 
 #include <iostream>
 

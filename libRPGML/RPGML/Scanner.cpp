@@ -1,6 +1,6 @@
 #include "Scanner.h"
 
-#include "rpgml.tab.hh"
+#include <RPGML/rpgml.tab.hh>
 
 #include <ctype.h>
 #include <iostream>

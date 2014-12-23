@@ -1,8 +1,8 @@
 #include "RPGML_Function_unaryOp.h"
 
-#include "String.h"
-#include "Scope.h"
-#include "Node.h"
+#include <RPGML/String.h>
+#include <RPGML/Scope.h>
+#include <RPGML/Node.h>
 
 namespace RPGML {
 

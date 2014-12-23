@@ -1,7 +1,7 @@
 #ifndef RPGML_Node_Constant_h
 #define RPGML_Node_Constant_h
 
-#include "Node.h"
+#include <RPGML/Node.h>
 
 namespace RPGML {
 

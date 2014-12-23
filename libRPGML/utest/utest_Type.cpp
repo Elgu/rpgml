@@ -1,12 +1,12 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Type.h>
-#include <Refcounted.h>
-#include <Frame.h>
-#include <Function.h>
-#include <Node.h>
-#include <Sequence.h>
-#include <Array.h>
+#include <RPGML/Type.h>
+#include <RPGML/Refcounted.h>
+#include <RPGML/Frame.h>
+#include <RPGML/Function.h>
+#include <RPGML/Node.h>
+#include <RPGML/Sequence.h>
+#include <RPGML/Array.h>
 
 #include <iostream>
 

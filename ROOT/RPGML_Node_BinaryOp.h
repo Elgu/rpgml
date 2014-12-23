@@ -1,8 +1,8 @@
 #ifndef RPGML_Node_BinaryOp_h
 #define RPGML_Node_BinaryOp_h
 
-#include "Node.h"
-#include "ParserEnums.h"
+#include <RPGML/Node.h>
+#include <RPGML/ParserEnums.h>
 
 namespace RPGML {
 

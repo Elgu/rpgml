@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <GarbageCollector.h>
+#include <RPGML/GarbageCollector.h>
 
 #include <iostream>
 

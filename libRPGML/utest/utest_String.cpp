@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <String.h>
+#include <RPGML/String.h>
 
 #include <iostream>
 

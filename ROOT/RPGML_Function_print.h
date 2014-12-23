@@ -1,7 +1,7 @@
 #ifndef RPGML_Function_print_h
 #define RPGML_Function_print_h
 
-#include "Function.h"
+#include <RPGML/Function.h>
 
 namespace RPGML {
 

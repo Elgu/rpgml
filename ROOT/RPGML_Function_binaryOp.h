@@ -1,7 +1,7 @@
 #ifndef RPGML_Function_binaryOp_h
 #define RPGML_Function_binaryOp_h
 
-#include "Function.h"
+#include <RPGML/Function.h>
 
 namespace RPGML {
 

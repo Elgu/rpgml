@@ -1,0 +1,11 @@
+
+Function f( x=23 )
+{
+  return 2*x;
+}
+
+print( f( x=1 ) + "\n" );
+
+
+
+

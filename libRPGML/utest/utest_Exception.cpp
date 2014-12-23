@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Exception.h>
+#include <RPGML/Exception.h>
 
 #include <iostream>
 

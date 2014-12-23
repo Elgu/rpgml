@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Array.h>
+#include <RPGML/Array.h>
 
 #include <iostream>
 

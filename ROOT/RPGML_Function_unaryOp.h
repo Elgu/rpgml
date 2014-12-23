@@ -1,8 +1,8 @@
 #ifndef RPGML_Function_unaryOp_h
 #define RPGML_Function_unaryOp_h
 
-#include "Function.h"
-#include "ParserEnums.h"
+#include <RPGML/Function.h>
+#include <RPGML/ParserEnums.h>
 
 namespace RPGML {
 

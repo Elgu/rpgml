@@ -1,8 +1,8 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Graph.h>
-#include <Thread.h>
-#include <Array.h>
+#include <RPGML/Graph.h>
+#include <RPGML/Thread.h>
+#include <RPGML/Array.h>
 
 #include <iostream>
 

@@ -1,17 +1,17 @@
-#ifndef RPGML_Node_TEMPLATE_h
-#define RPGML_Node_TEMPLATE_h
+#ifndef RPGML_Node_Print_h
+#define RPGML_Node_Print_h
 
-#include "Node.h"
+#include <RPGML/Node.h>
 
 namespace RPGML {
 
-class TEMPLATE : public Node
+class Print : public RPGML::Node
 {
 public:
   EXCEPTION_BASE( Exception );
 
-  TEMPLATE( GarbageCollector *gc, const String &identifier, const SharedObject *so );
-  virtual ~TEMPLATE( void );
+  Print( GarbageCollector *gc, const String &identifier, const SharedObject *so );
+  virtual ~Print( void );
 
   virtual const char *getName( void ) const;
 
@@ -19,12 +19,7 @@ public:
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
-
-  void set_foo( const Value &value, index_t );
-
 private:
-  typedef NodeParam< TEMPLATE > NParam;
-
   enum Inputs
   {
     INPUT_IN,
@@ -33,17 +28,16 @@ private:
 
   enum Outputs
   {
-    OUTPUT_OUT,
     NUM_OUTPUTS
   };
 
   enum Params
   {
-    PARAM_FOO,
     NUM_PARAMS
   };
 
-  String m_foo;
+  template< class T >
+  bool tick_scalar( const ArrayBase *in_base );
 };
 
 } // namespace RPGML

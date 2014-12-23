@@ -1,7 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <JobQueue.h>
-#include <Thread.h>
+#include <RPGML/JobQueue.h>
+#include <RPGML/Thread.h>
 
 #include <iostream>
 

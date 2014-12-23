@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <Node.h>
+#include <RPGML/Node.h>
 
 #include <iostream>
 

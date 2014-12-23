@@ -11,8 +11,8 @@ LDFLAGS=\
 .PHONY: all test
 .SUFFIXES: .cpp .o .dep
 vpath %.cpp .
-vpath %.cpp ..
-vpath %.cc ..
+vpath %.cpp ../RPGML/
+vpath %.cc ../RPGML/
 
 OBJECTS=\
 	utest_main.o\
