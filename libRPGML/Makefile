@@ -68,6 +68,7 @@ undepend:
 	rm -f $(DEP_FILES) .depend
 
 clean:
+	$(MAKE) -C utest clean
 	rm -f $(DEP_FILES)
 	rm -f $(PARSER_FILES)
 	rm -f .parser_files
@@ -76,7 +77,6 @@ clean:
 	rm -f rpgml $(rpgml_OBJECTS)
 	rm -f libRPGML.so $(libRPGML_OBJECTS)
 	rm -f $(foreach so, $(SOs), RPGML_$(so).o libRPGML_$(so).so )
-	$(MAKE) -C utest clean
 
 check: rpgml.output
 	~/bin/gramdiag rpgml.output
