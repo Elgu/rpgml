@@ -1,23 +1,24 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
 #ifndef RPGML_Array_h
 #define RPGML_Array_h
 
+#include "Refcounted.h"
 #include "GarbageCollector.h"
 #include "Value.h"
 #include "Iterator.h"
@@ -26,6 +27,7 @@
 #include "Exception.h"
 
 #include <typeinfo>
+#include <ostream>
 
 namespace RPGML {
 
@@ -42,7 +44,58 @@ public:
   EXCEPTION_BASE( Exception );
 
   //! @brief Exception for when the specified dimensions do not match the Array's
-  EXCEPTION_DERIVED( DimensionsMismatch, Exception );
+  class DimensionsMismatch : public Exception
+  {
+  public:
+    typedef Exception Base;
+    DimensionsMismatch( int _specified, int _expected )
+    : specified( _specified )
+    , expected( _expected )
+    {
+      (*this)
+        << "Specified dims (" << specified << ")"
+        << " does not match Array Dims (" << expected << ")"
+        ;
+    }
+    EXCEPTION_BODY( DimensionsMismatch );
+    int specified;
+    int expected;
+  };
+
+  class Coordinates
+  {
+  public:
+    explicit
+    Coordinates( int dims, const index_t *coords )
+    : m_coords( coords )
+    , m_dims( dims )
+    {}
+
+    int            getDims  ( void ) const { return m_dims; }
+    const index_t *getCoords( void ) const { return m_coords; }
+
+    operator const index_t *( void ) const { return getCoords(); }
+    const index_t &operator[]( int d ) const { return getCoords()[ d ]; }
+
+    bool operator==( const Coordinates &other ) const
+    {
+      return
+           getDims() == other.getDims()
+        && std::equal( getCoords(), getCoords() + getDims(), other.getCoords() )
+        ;
+    }
+
+    bool operator!=( const Coordinates &other ) const
+    {
+      return !( (*this) == other );
+    }
+
+  private:
+    const index_t *const m_coords;
+    int m_dims;
+  };
+
+  typedef Coordinates Size;
 
   explicit
   ArrayBase( GarbageCollector *_gc )
@@ -75,21 +128,34 @@ public:
 
   virtual index_t        getDims( void ) const = 0;
   virtual Type           getType( void ) const = 0;
-  virtual const index_t *getSize( void ) const = 0;
+  virtual Size           getSize( void ) const = 0;
   virtual index_t        size   ( void ) const = 0;
 
-  virtual ArrayBase &resize( index_t dims, const index_t *new_size ) = 0;
+  virtual ArrayBase &resize_v( index_t dims, const index_t *new_size ) = 0;
   virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 ) = 0;
+  virtual ArrayBase &resize( const Size &size ) = 0;
 
   virtual CountPtr< ArrayBase > clone( void ) const = 0;
 
   typedef Iterator< Value > ValueIterator;
   virtual CountPtr< ValueIterator > getValueIterator( void ) const = 0;
+
+  typedef Iterator< Coordinates > CoordinatesIterator;
+  virtual CountPtr< CoordinatesIterator > getCoordinatesIterator( void ) const = 0;
+
   virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const = 0;
-  virtual Value getValue( index_t dims, const index_t *x ) const = 0;
+  virtual Value getValue_v( index_t dims, const index_t *x ) const = 0;
+  virtual Value getValue( const Coordinates &x ) const = 0;
   virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) = 0;
-  virtual void setValue( const Value &value, index_t dims, const index_t *x ) = 0;
+  virtual void setValue_v( const Value &value, index_t dims, const index_t *x ) = 0;
+  virtual void setValue( const Value &value, const Coordinates &x ) = 0;
+  virtual void fillValue( const Value &value ) = 0;
   virtual bool isValue( void ) const = 0;
+
+  const char *getTypeName( void ) const
+  {
+    return getType().getTypeName();
+  }
 };
 
 template< class _Element >
@@ -157,6 +223,9 @@ public:
   {
     std::fill( m_elements.begin(), m_elements.end(), x );
   }
+
+  virtual reference       at_v( index_t dims, const index_t *x ) = 0;
+  virtual const_reference at_v( index_t dims, const index_t *x ) const = 0;
 
   virtual bool isValue( void ) const { return _isValue( (const Element*)0 ); }
 
@@ -283,7 +352,10 @@ public:
   typedef typename Base::reference              reference;
   typedef typename Base::const_reference        const_reference;
   typedef typename Base::ValueIterator          ValueIterator;
+  typedef typename Base::CoordinatesIterator    CoordinatesIterator;
   typedef typename Base::Children               Children;
+  typedef typename Base::Coordinates            Coordinates;
+  typedef typename Base::Size                   Size;
 
   virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
 
@@ -300,16 +372,16 @@ public:
   Array( GarbageCollector *_gc, index_t x, index_t y=1, index_t z=1, index_t t=1 )
   : Base( _gc )
   {
-    resize( x, y, z, t );
     if( Dims == 0 ) Base::_resize( 1 );
+    else resize( x, y, z, t );
   }
 
   explicit
   Array( GarbageCollector *_gc, index_t _dims, const index_t *_size )
   : Base( _gc )
   {
-    resize( _dims, _size );
     if( Dims == 0 ) Base::_resize( 1 );
+    else if( _size ) resize_v( _dims, _size );
   }
 
   Array( const Array &other )
@@ -322,7 +394,7 @@ public:
   virtual ~Array( void )
   {}
 
-  virtual ArrayBase &clear( void )
+  virtual Array &clear( void )
   {
     Base::clear();
     if( Dims > 0 ) std::fill( m_size , m_size + Dims   , 0 );
@@ -340,14 +412,19 @@ public:
     return TypeOf< Element >::E;
   }
 
-  virtual const index_t *getSize( void ) const
+  virtual Size           getSize( void ) const
   {
-    return m_size;
+    return Size( Dims, m_size );
   }
 
-  virtual ArrayBase &resize( index_t dims, const index_t *new_size )
+  virtual Array &resize_v( index_t dims, const index_t *new_size )
   {
-    if( dims != Dims ) throw "dims does not match Dims";
+    if( dims != Dims )
+    {
+      throw ArrayBase::DimensionsMismatch( dims, Dims )
+        << ": Array resize failed"
+        ;
+    }
     if( Dims > 0 )
     {
       std::copy( new_size, new_size+Dims, m_size );
@@ -359,7 +436,12 @@ public:
     }
   }
 
-  virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 )
+  virtual Array &resize( const Size &s )
+  {
+    return resize_v( s.getDims(), s.getCoords() );
+  }
+
+  virtual Array &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 )
   {
     switch( Dims )
     {
@@ -387,7 +469,7 @@ public:
 
   bool inRange( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
   {
-    if( Dims >= 4 ) throw "If Dims is greater than 4, inRange( x, y, z, t ) must not be used.";
+    if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, inRange( x, y, z, t ) must not be used.";
     switch( Dims )
     {
       case 4: if( t >= m_size[ 3 ] ) return false; // fallthrough
@@ -399,9 +481,14 @@ public:
     return true;
   }
 
-  bool inRange( index_t dims, const index_t *x ) const
+  bool inRange_v( index_t dims, const index_t *x ) const
   {
-    if( dims != Dims ) throw "dims does not match Dims";
+    if( dims != Dims )
+    {
+      throw ArrayBase::DimensionsMismatch( dims, Dims )
+        << "Array range check failed"
+        ;
+    }
     for( index_t i=0; i<Dims; ++i )
     {
       if( x[ i ] >= m_size[ i ] ) return false;
@@ -414,18 +501,18 @@ public:
   #ifndef NDEBUG
     switch( Dims )
     {
-      case 0: if( x != 0 ) throw "If Dims is 0, x must be 0."; // fallthrough
-      case 1: if( y != 0 ) throw "If Dims less than 2, y must be 0."; // fallthrough
-      case 2: if( z != 0 ) throw "If Dims less than 3, z must be 0."; // fallthrough
-      case 3: if( t != 0 ) throw "If Dims less than 4, t must be 0."; // fallthrough
-      default: if( Dims >= 4 ) throw "If Dims is greater than 4, at( x, y, z, t ) must not be used.";
+      case 0: if( x != 0 ) throw Exception() << "If Dims is 0, x must be 0."; // fallthrough
+      case 1: if( y != 0 ) throw Exception() << "If Dims less than 2, y must be 0."; // fallthrough
+      case 2: if( z != 0 ) throw Exception() << "If Dims less than 3, z must be 0."; // fallthrough
+      case 3: if( t != 0 ) throw Exception() << "If Dims less than 4, t must be 0."; // fallthrough
+      default: if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, at( x, y, z, t ) must not be used.";
     }
     switch( Dims )
     {
-      case 4: if( t > m_size[ 3 ] ) throw "Coordinate t out of range";
-      case 3: if( z > m_size[ 2 ] ) throw "Coordinate z out of range";
-      case 2: if( y > m_size[ 1 ] ) throw "Coordinate y out of range";
-      case 1: if( x > m_size[ 0 ] ) throw "Coordinate x out of range";
+      case 4: if( t > m_size[ 3 ] ) throw Exception() << "Coordinate t out of range: max " << m_size[ 3 ] << ", is " << t;
+      case 3: if( z > m_size[ 2 ] ) throw Exception() << "Coordinate z out of range: max " << m_size[ 2 ] << ", is " << z;
+      case 2: if( y > m_size[ 1 ] ) throw Exception() << "Coordinate y out of range: max " << m_size[ 1 ] << ", is " << y;
+      case 1: if( x > m_size[ 0 ] ) throw Exception() << "Coordinate x out of range: max " << m_size[ 0 ] << ", is " << x;
       default: {}
     }
   #endif
@@ -442,15 +529,23 @@ public:
     return pos;
   }
 
-  index_t getPos( index_t dims, const index_t *x ) const
+  index_t getPos_v( index_t dims, const index_t *x ) const
   {
   #ifndef NDEBUG
-    if( Dims != dims ) throw "getPos(): dims does not match Dims";
+    if( Dims != dims )
+    {
+      throw ArrayBase::DimensionsMismatch( dims, Dims )
+        << ": Getting Array element position failed"
+        ;
+    }
     for( index_t i=0; i<Dims; ++i )
     {
       if( x[ i ] >= m_size[ i ] )
       {
-        throw "Array::getPos(): Coordiante out of range";
+        throw Exception()
+          << "Coordiante " << i << " out of range"
+          << ": Getting Array element position failed"
+          ;
       }
     }
   #endif
@@ -467,9 +562,9 @@ public:
     return Base::elements_at( getPos( x, y, z, t ) );
   }
 
-  reference at( index_t dims, const index_t *x )
+  virtual reference at_v( index_t dims, const index_t *x )
   {
-    return Base::elements_at( getPos( dims, x ) );
+    return Base::elements_at( getPos_v( dims, x ) );
   }
 
   const_reference at( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
@@ -477,9 +572,9 @@ public:
     return Base::elements_at( getPos( x, y, z, t ) );
   }
 
-  const_reference at( index_t dims, const index_t *x ) const
+  virtual const_reference at_v( index_t dims, const index_t *x ) const
   {
-    return Base::elements_at( getPos( dims, x ) );
+    return Base::elements_at( getPos_v( dims, x ) );
   }
 
   reference operator[]( index_t x )
@@ -541,6 +636,11 @@ public:
     return new _ValueIterator( this );
   }
 
+  virtual CountPtr< CoordinatesIterator > getCoordinatesIterator( void ) const
+  {
+    return new _CoordinatesIterator( this );
+  }
+
   virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const
   {
     if( inRange( x, y, z, t ) )
@@ -553,16 +653,21 @@ public:
     }
   }
 
-  virtual Value getValue( index_t dims, const index_t *x ) const
+  virtual Value getValue_v( index_t dims, const index_t *x ) const
   {
-    if( inRange( dims, x ) )
+    if( inRange_v( dims, x ) )
     {
-      return Value( at( dims, x ) );
+      return Value( at_v( dims, x ) );
     }
     else
     {
       throw "Array::getValue(): Out of range.";
     }
+  }
+
+  virtual Value getValue( const Coordinates &x ) const
+  {
+    return getValue_v( x.getDims(), x );
   }
 
   virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 )
@@ -579,18 +684,30 @@ public:
     }
   }
 
-  virtual void setValue( const Value &value, index_t dims, const index_t *x )
+  virtual void setValue_v( const Value &value, index_t dims, const index_t *x )
   {
-    if( inRange( dims, x ) )
+    if( inRange_v( dims, x ) )
     {
       Element e;
       value.get( e );
-      at( dims, x ) = e;
+      at_v( dims, x ) = e;
     }
     else
     {
       throw "Array::setValue(): Out of range.";
     }
+  }
+
+  virtual void setValue( const Value &value, const Coordinates &x )
+  {
+    setValue_v( value, x.getDims(), x );
+  }
+
+  virtual void fillValue( const Value &value )
+  {
+    Element e;
+    value.get( e );
+    Base::fill( e );
   }
 
   typedef Iterator< Element& > Elements;
@@ -651,6 +768,7 @@ private:
   class _ValueIterator : public ValueIterator
   {
   public:
+    explicit
     _ValueIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
     virtual ~_ValueIterator( void ) {}
 
@@ -662,6 +780,50 @@ private:
   private:
     CountPtr< const Array > m_array;
     index_t m_i;
+  };
+
+  class _CoordinatesIterator : public CoordinatesIterator
+  {
+  public:
+    explicit
+    _CoordinatesIterator( const Array *array )
+    : m_array( array )
+    , m_size( array->getSize() )
+    , m_coord( array->getDims()+1 )
+    {}
+    virtual ~_CoordinatesIterator( void ) {}
+
+    virtual bool done( void )
+    {
+      const int dims = m_size.getDims();
+      return ( m_coord[ dims ] > 0 );
+    }
+
+    virtual void next( void )
+    {
+      const int dims = m_size.getDims();
+      for( int d = 0; d < dims; ++d )
+      {
+        ++m_coord[ d ];
+        if( m_coord[ d ] < m_size[ d ] )
+        {
+          return;
+        }
+        else
+        {
+          m_coord[ d ] = 0;
+        }
+      }
+      ++m_coord[ dims ];
+    }
+
+    virtual Coordinates get( void ) { return Coordinates( m_size.getDims(), &m_coord[ 0 ] ); }
+    virtual CountPtr< CoordinatesIterator > clone( void ) const { return new _CoordinatesIterator( *this ); }
+
+  private:
+    CountPtr< const Array > m_array;
+    const Size m_size;
+    std::vector< index_t > m_coord;
   };
 
   Array &calc_size2_resize( void )
@@ -686,6 +848,51 @@ private:
   index_t m_size2[ ( Dims > 0 ? Dims-1 : 0 ) ];
 };
 
+template< class Element, int Dims >
+CountPtr< Array< Element, Dims > > new_Array( GarbageCollector *gc, const Element *fill_value=0 )
+{
+  CountPtr< Array< Element, Dims > > ret = new Array< Element, Dims >( gc );
+
+  if( fill_value ) ret->fill( *fill_value );
+
+  return ret;
+}
+
+template< class Element >
+CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 )
+{
+  switch( dims )
+  {
+    case 0: return new_Array< Element, 0 >( gc, fill_value );
+    case 1: return new_Array< Element, 1 >( gc, fill_value );
+    case 2: return new_Array< Element, 2 >( gc, fill_value );
+    case 3: return new_Array< Element, 3 >( gc, fill_value );
+    case 4: return new_Array< Element, 4 >( gc, fill_value );
+    default:
+      throw ArrayBase::Exception()
+        << "Only dimensions for 0 to 4 supported for now, tried " << dims
+        ;
+  }
+}
+
+template< class Element >
+CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value )
+{
+  const Type element_type( TypeOf< Element >::E );
+  if( element_type.isOther() )
+  {
+    throw ArrayBase::Exception() << "Cannot create an Array of 'other' custom type";
+  }
+
+  if( !fill_value.isNil() )
+  {
+    const Value fill_value_cast = fill_value.save_cast( element_type );
+    const Element fill_element = fill_value_cast.get< Element >();
+    return new_Array< Element >( gc, dims, &fill_element );
+  }
+  return new_Array< Element >( gc, dims );
+}
+
 } // namespace RPGML
 
 namespace std {
@@ -695,6 +902,20 @@ inline
 void swap( RPGML::Array< Element, Dims > &x1, RPGML::Array< Element, Dims > &x2 )
 {
   x1.swap( x2 );
+}
+
+inline
+std::ostream &operator<<( std::ostream &o, const RPGML::ArrayBase::Coordinates &x )
+{
+  const int dims = x.getDims();
+  o << "[ ";
+  for( int i=0; i<dims; ++i )
+  {
+    if( i > 0 ) o << ", ";
+    o << x[ i ];
+  }
+  o << " ]";
+  return o;
 }
 
 } // namespace std
