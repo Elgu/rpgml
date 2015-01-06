@@ -43,8 +43,8 @@ namespace RPGML
 %union
 {
   bool         bval;
-  int          ival;
-  float        fval;
+  int64_t      ival;
+  double       fval;
   Type::Enum   type_enum;
   BOP          binop;
   UOP          uop;
@@ -90,6 +90,7 @@ namespace RPGML
 %token  <ival>    I_CONSTANT   "integer constant";
 %token  <fval>    F_CONSTANT   "floating point constant";
 %token  <str>     S_CONSTANT   "string constant";
+%token            NIL          "nil";
 %token            ARROW        "->";
 %token            INC_OP       "++";
 %token            DEC_OP       "--";
@@ -113,8 +114,17 @@ namespace RPGML
 %token  <assign>  XOR_ASSIGN   "^=";
 %token  <assign>  OR_ASSIGN    "|=";
 %token  <type_enum>    BOOL         "bool";
-%token  <type_enum>    INT          "int";
-%token  <type_enum>    FLOAT        "float";
+%token  <type_enum>    INT          "int"   ;
+%token  <type_enum>    UINT8        "uint8" ;
+%token  <type_enum>    INT8         "int8"  ;
+%token  <type_enum>    UINT16       "uint16";
+%token  <type_enum>    INT16        "int16" ;
+%token  <type_enum>    UINT32       "uint32";
+%token  <type_enum>    INT32        "int32" ;
+%token  <type_enum>    UINT64       "uint64";
+%token  <type_enum>    INT64        "int64" ;
+%token  <type_enum>    FLOAT        "float" ;
+%token  <type_enum>    DOUBLE       "double";
 %token  <type_enum>    STRING       "string";
 %token  <type_enum>    ARRAY        "Array";
 %token  <type_enum>    FRAME        "Frame";
@@ -212,11 +222,12 @@ primary_expression
   ;
 
 constant
-  : I_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), ($1) ); }
-  | F_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), ($1) ); }
-  | S_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), ($1) ); }
-  | TRUE       { ($$) = new ConstantExpression( RPGML_LOC(@$), true ); }
-  | FALSE      { ($$) = new ConstantExpression( RPGML_LOC(@$), false ); }
+  : I_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
+  | F_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
+  | S_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
+  | TRUE       { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value( true ) ); }
+  | FALSE      { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value( false ) ); }
+  | NIL        { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value() ); }
   | THIS       { ($$) = new ThisExpression( RPGML_LOC(@$) ); }
   | array_constant 
   | frame_constant
@@ -463,7 +474,16 @@ assignment_operator
 primitive_type_expression
   : BOOL
   | INT
-  | FLOAT
+  | UINT8 
+  | INT8  
+  | UINT16
+  | INT16 
+  | UINT32
+  | INT32 
+  | UINT64
+  | INT64 
+  | FLOAT 
+  | DOUBLE
   | STRING
 //  | ARRAY
   | FRAME
@@ -680,7 +700,7 @@ variable_creation_statement
       ($$) =
         new VariableCreationStatement(
             RPGML_LOC(@$)
-          , new TypeExpression( RPGML_LOC(@$), Type::Invalid() )
+          , new TypeExpression( RPGML_LOC(@$), Type::Nil() )
           , ($2)
           , new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() )
           );
@@ -690,7 +710,7 @@ variable_creation_statement
       ($$) =
         new VariableCreationStatement(
             RPGML_LOC(@$)
-          , new TypeExpression( RPGML_LOC(@$), Type::Invalid() )
+          , new TypeExpression( RPGML_LOC(@$), Type::Nil() )
           , ($2)
           , new FunctionCallExpression( RPGML_LOC(@$), ($1), ($4) )
           );
