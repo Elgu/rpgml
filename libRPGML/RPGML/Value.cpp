@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -29,7 +29,7 @@
 
 namespace RPGML {
 
-Value::CastException::CastException( Type _from, Type _to )
+Value::CastFailed::CastFailed( Type _from, Type _to )
 : from( _from )
 , to( _to )
 {
@@ -38,6 +38,18 @@ Value::CastException::CastException( Type _from, Type _to )
     << " to " << to
     ;
 }
+
+Value::GetFailed::GetFailed( Type _is, Type _tried )
+: is( _is )
+, tried( _tried )
+{
+  (*this)
+    << "Could not get Value as " << tried
+    << ", is " << is
+    ;
+}
+
+EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( Value, DivisionByZero, "division by zero" );
 
 Value::Value( void )
 : p( 0 )
@@ -54,7 +66,7 @@ Value::Value( const Value &other )
 {
   switch( m_type.getEnum() )
   {
-    case Type::INVALID : break;
+    case Type::NIL     : break;
     case Type::BOOL    : break;
     case Type::UINT8   : break;
     case Type::INT8    : break;
@@ -79,10 +91,17 @@ Value::Value( const Value &other )
   }
 }
 
-Value::Value( bool      _b    ) : m_type( Type::BOOL     ) { b    = _b   ; }
-Value::Value( int       _i    ) : m_type( Type::INT      ) { i    = _i   ; }
-Value::Value( index_t   _i    ) : m_type( Type::INT      ) { i    = int( _i ); }
-Value::Value( float     _f    ) : m_type( Type::FLOAT    ) { f    = _f   ; }
+Value::Value( bool     _x ) : m_type( Type::BOOL   ) { b    = _x; }
+Value::Value( uint8_t  _x ) : m_type( Type::UINT8  ) { ui8  = _x; }
+Value::Value( int8_t   _x ) : m_type( Type::INT8   ) {  i8  = _x; }
+Value::Value( uint16_t _x ) : m_type( Type::UINT16 ) { ui16 = _x; }
+Value::Value( int16_t  _x ) : m_type( Type::INT16  ) {  i16 = _x; }
+Value::Value( uint32_t _x ) : m_type( Type::UINT32 ) { ui32 = _x; }
+Value::Value( int32_t  _x ) : m_type( Type::INT32  ) {  i32 = _x; }
+Value::Value( uint64_t _x ) : m_type( Type::UINT64 ) { ui64 = _x; }
+Value::Value( int64_t  _x ) : m_type( Type::INT64  ) {  i64 = _x; }
+Value::Value( float    _x ) : m_type( Type::FLOAT  ) { f    = _x; }
+Value::Value( double   _x ) : m_type( Type::DOUBLE ) { d    = _x; }
 Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { str  = _str.getData(); str->ref(); }
@@ -96,10 +115,17 @@ Value::Value( Input          *_in    ) : m_type( Type::INPUT    ) { in    = _in 
 Value::Value( Param          *_param ) : m_type( Type::PARAM    ) { param = _param; param->ref(); }
 Value::Value( Sequence const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; seq  ->ref(); }
 
-Value &Value::set( bool               _b    ) { return (*this) = Value( _b    ); }
-Value &Value::set( int                _i    ) { return (*this) = Value( _i    ); }
-Value &Value::set( index_t            _i    ) { return (*this) = Value( _i    ); }
-Value &Value::set( float              _f    ) { return (*this) = Value( _f    ); }
+Value &Value::set( bool               _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( uint8_t            _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( int8_t             _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( uint16_t           _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( int16_t            _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( uint32_t           _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( int32_t            _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( uint64_t           _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( int64_t            _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( float              _x    ) { return (*this) = Value( _x ); }
+Value &Value::set( double             _x    ) { return (*this) = Value( _x ); }
 Value &Value::set( std::string const &_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( char        const *_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( String      const &_str  ) { return (*this) = Value( _str  ); }
@@ -114,25 +140,34 @@ Value &Value::set( Param             *_param) { return (*this) = Value( _param);
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 Value &Value::set( const Value       &v     ) { return (*this) = v;              }
 
-bool Value::get( bool            &x ) const { if( isBool    () ) { x = getBool    (); return true; } else return false; }
-bool Value::get( int             &x ) const { if( isInt     () ) { x = getInt     (); return true; } else return false; }
-bool Value::get( float           &x ) const { if( isFloat   () ) { x = getFloat   (); return true; } else return false; }
-bool Value::get( String          &x ) const { if( isString  () ) { x = getString  (); return true; } else return false; }
-bool Value::get( ArrayBase      *&x ) const { if( isArray   () ) { x = getArray   (); return true; } else return false; }
-bool Value::get( Frame          *&x ) const { if( isFrame   () ) { x = getFrame   (); return true; } else return false; }
-bool Value::get( Function       *&x ) const { if( isFunction() ) { x = getFunction(); return true; } else return false; }
-bool Value::get( Node           *&x ) const { if( isNode    () ) { x = getNode    (); return true; } else return false; }
-bool Value::get( Output         *&x ) const { if( isOutput  () ) { x = getOutput  (); return true; } else return false; }
-bool Value::get( Input          *&x ) const { if( isInput   () ) { x = getInput   (); return true; } else return false; }
-bool Value::get( Param          *&x ) const { if( isParam   () ) { x = getParam   (); return true; } else return false; }
-bool Value::get( Sequence const *&x ) const { if( isSequence() ) { x = getSequence(); return true; } else return false; }
-bool Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) { x = getArray   (); return true; } else return false; }
-bool Value::get( CountPtr< Frame     > &x ) const { if( isFrame   () ) { x = getFrame   (); return true; } else return false; }
-bool Value::get( CountPtr< Function  > &x ) const { if( isFunction() ) { x = getFunction(); return true; } else return false; }
-bool Value::get( CountPtr< Node      > &x ) const { if( isNode    () ) { x = getNode    (); return true; } else return false; }
-bool Value::get( CountPtr< Output    > &x ) const { if( isOutput  () ) { x = getOutput  (); return true; } else return false; }
-bool Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) { x = getInput   (); return true; } else return false; }
-bool Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) { x = getSequence(); return true; } else return false; }
+void Value::get( bool            &x ) const { if( isBool  () ) x = getBool  (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( uint8_t         &x ) const { if( isUInt8 () ) x = getUInt8 (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( int8_t          &x ) const { if( isInt8  () ) x = getInt8  (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( uint16_t        &x ) const { if( isUInt16() ) x = getUInt16(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( int16_t         &x ) const { if( isInt16 () ) x = getInt16 (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( uint32_t        &x ) const { if( isUInt32() ) x = getUInt32(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( int32_t         &x ) const { if( isInt32 () ) x = getInt32 (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( uint64_t        &x ) const { if( isUInt64() ) x = getUInt64(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( int64_t         &x ) const { if( isInt64 () ) x = getInt64 (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( float           &x ) const { if( isFloat () ) x = getFloat (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( double          &x ) const { if( isDouble() ) x = getDouble(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( String          &x ) const { if( isString  () ) x = getString  (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( ArrayBase      *&x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Frame          *&x ) const { if( isFrame   () ) x = getFrame   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Function       *&x ) const { if( isFunction() ) x = getFunction(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Node           *&x ) const { if( isNode    () ) x = getNode    (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Output         *&x ) const { if( isOutput  () ) x = getOutput  (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Input          *&x ) const { if( isInput   () ) x = getInput   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Param          *&x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Sequence const *&x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Frame     > &x ) const { if( isFrame   () ) x = getFrame   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Function  > &x ) const { if( isFunction() ) x = getFunction(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Node      > &x ) const { if( isNode    () ) x = getNode    (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Output    > &x ) const { if( isOutput  () ) x = getOutput  (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) x = getInput   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Param     > &x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
 
 Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
 Value::operator CountPtr< Frame          >( void ) const { return getFrame   (); }
@@ -154,7 +189,7 @@ void Value::clear( void )
 {
   switch( m_type.getEnum() )
   {
-    case Type::INVALID : break;
+    case Type::NIL     : break;
     case Type::BOOL    : break;
     case Type::UINT8   : break;
     case Type::INT8    : break;
@@ -178,7 +213,7 @@ void Value::clear( void )
     case Type::OTHER   : break;
   }
   p = 0;
-  m_type = Type::INVALID;
+  m_type = Type::NIL;
 }
 
 void Value::swap( Value &other )
@@ -189,51 +224,23 @@ void Value::swap( Value &other )
 
 bool Value::isCollectable( void ) const
 {
-  static const int flags =
-      ( 0 << Type::INVALID  )
-    | ( 0 << Type::BOOL     )
-    | ( 0 << Type::INT      )
-    | ( 0 << Type::FLOAT    )
-    | ( 0 << Type::STRING   )
-    | ( 1 << Type::ARRAY    )
-    | ( 1 << Type::FRAME    )
-    | ( 1 << Type::FUNCTION )
-    | ( 1 << Type::NODE     )
-    | ( 1 << Type::OUTPUT   )
-    | ( 1 << Type::INPUT    )
-    | ( 1 << Type::PARAM    )
-    | ( 1 << Type::SEQUENCE )
+  static const uint64_t _1 = uint64_t( 1 );
+  static const uint64_t flags =
+      ( _1 << Type::FRAME    )
+    | ( _1 << Type::FUNCTION )
+    | ( _1 << Type::NODE     )
+    | ( _1 << Type::OUTPUT   )
+    | ( _1 << Type::INPUT    )
+    | ( _1 << Type::PARAM    )
+    | ( _1 << Type::SEQUENCE )
+    | ( _1 << Type::ARRAY    )
     ;
-  return flags & ( 1 << m_type.getEnum() );
+  return flags & ( _1 << m_type.getEnum() );
 }
 
 const Collectable *Value::getCollectable( void ) const
 {
-  switch( m_type.getEnum() )
-  {
-    case Type::INVALID : return 0;
-    case Type::BOOL    : return 0;
-    case Type::UINT8   : return 0;
-    case Type::INT8    : return 0;
-    case Type::UINT16  : return 0;
-    case Type::INT16   : return 0;
-    case Type::UINT32  : return 0;
-    case Type::INT32   : return 0;
-    case Type::UINT64  : return 0;
-    case Type::INT64   : return 0;
-    case Type::FLOAT   : return 0;
-    case Type::DOUBLE  : return 0;
-    case Type::STRING  : return 0;
-    case Type::ARRAY   : return arr ;
-    case Type::FRAME   : return frame ;
-    case Type::FUNCTION: return func;
-    case Type::NODE    : return node;
-    case Type::OUTPUT  : return out ;
-    case Type::INPUT   : return in  ;
-    case Type::PARAM   : return param;
-    case Type::SEQUENCE: return seq ;
-    case Type::OTHER   : return 0;
-  }
+  if( isCollectable() ) return col;
   return 0;
 }
 
@@ -248,31 +255,209 @@ Value Value::to( Type type ) const
     case Type::BOOL  :
       switch( x.getEnum() )
       {
-        case Type::INT   : return Value( bool( getInt  () ) );
-        case Type::FLOAT : return Value( bool( getFloat() ) );
-        case Type::STRING: throw CastException( x.getType(), type );
+        case Type::BOOL   : return Value( bool( getBool  () ) );
+        case Type::UINT8  : return Value( bool( getUInt8 () ) );
+        case Type::INT8   : return Value( bool( getInt8  () ) );
+        case Type::UINT16 : return Value( bool( getUInt16() ) );
+        case Type::INT16  : return Value( bool( getInt16 () ) );
+        case Type::UINT32 : return Value( bool( getUInt32() ) );
+        case Type::INT32  : return Value( bool( getInt32 () ) );
+        case Type::UINT64 : return Value( bool( getUInt64() ) );
+        case Type::INT64  : return Value( bool( getInt64 () ) );
+        case Type::FLOAT  : return Value( bool( getFloat () ) );
+        case Type::DOUBLE : return Value( bool( getDouble() ) );
         default:
-          throw CastException( x.getType(), type );
+          throw CastFailed( x.getType(), type );
       }
 
-    case Type::INT   :
+    case Type::UINT8   :
       switch( x.getEnum() )
       {
-        case Type::BOOL  : return Value( int( getBool()  ) );
-        case Type::FLOAT : return Value( int( getFloat() ) );
-        case Type::STRING: return Value( atoi( getString().c_str() ) );
+        case Type::BOOL   : return Value( uint8_t( getBool  () ) );
+        case Type::UINT8  : return Value( uint8_t( getUInt8 () ) );
+        case Type::INT8   : return Value( uint8_t( getInt8  () ) );
+        case Type::UINT16 : return Value( uint8_t( getUInt16() ) );
+        case Type::INT16  : return Value( uint8_t( getInt16 () ) );
+        case Type::UINT32 : return Value( uint8_t( getUInt32() ) );
+        case Type::INT32  : return Value( uint8_t( getInt32 () ) );
+        case Type::UINT64 : return Value( uint8_t( getUInt64() ) );
+        case Type::INT64  : return Value( uint8_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( uint8_t( getFloat () ) );
+        case Type::DOUBLE : return Value( uint8_t( getDouble() ) );
+        case Type::STRING: return Value( uint8_t( atoi( getString().c_str() ) ) );
         default:
-          throw CastException( x.getType(), type );
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::INT8   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( int8_t( getBool  () ) );
+        case Type::UINT8  : return Value( int8_t( getUInt8 () ) );
+        case Type::INT8   : return Value( int8_t( getInt8  () ) );
+        case Type::UINT16 : return Value( int8_t( getUInt16() ) );
+        case Type::INT16  : return Value( int8_t( getInt16 () ) );
+        case Type::UINT32 : return Value( int8_t( getUInt32() ) );
+        case Type::INT32  : return Value( int8_t( getInt32 () ) );
+        case Type::UINT64 : return Value( int8_t( getUInt64() ) );
+        case Type::INT64  : return Value( int8_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( int8_t( getFloat () ) );
+        case Type::DOUBLE : return Value( int8_t( getDouble() ) );
+        case Type::STRING: return Value( int8_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::UINT16   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( uint16_t( getBool  () ) );
+        case Type::UINT8  : return Value( uint16_t( getUInt8 () ) );
+        case Type::INT8   : return Value( uint16_t( getInt8  () ) );
+        case Type::UINT16 : return Value( uint16_t( getUInt16() ) );
+        case Type::INT16  : return Value( uint16_t( getInt16 () ) );
+        case Type::UINT32 : return Value( uint16_t( getUInt32() ) );
+        case Type::INT32  : return Value( uint16_t( getInt32 () ) );
+        case Type::UINT64 : return Value( uint16_t( getUInt64() ) );
+        case Type::INT64  : return Value( uint16_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( uint16_t( getFloat () ) );
+        case Type::DOUBLE : return Value( uint16_t( getDouble() ) );
+        case Type::STRING: return Value( uint16_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::INT16   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( int16_t( getBool  () ) );
+        case Type::UINT8  : return Value( int16_t( getUInt8 () ) );
+        case Type::INT8   : return Value( int16_t( getInt8  () ) );
+        case Type::UINT16 : return Value( int16_t( getUInt16() ) );
+        case Type::INT16  : return Value( int16_t( getInt16 () ) );
+        case Type::UINT32 : return Value( int16_t( getUInt32() ) );
+        case Type::INT32  : return Value( int16_t( getInt32 () ) );
+        case Type::UINT64 : return Value( int16_t( getUInt64() ) );
+        case Type::INT64  : return Value( int16_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( int16_t( getFloat () ) );
+        case Type::DOUBLE : return Value( int16_t( getDouble() ) );
+        case Type::STRING: return Value( int16_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::UINT32   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( uint32_t( getBool  () ) );
+        case Type::UINT8  : return Value( uint32_t( getUInt8 () ) );
+        case Type::INT8   : return Value( uint32_t( getInt8  () ) );
+        case Type::UINT16 : return Value( uint32_t( getUInt16() ) );
+        case Type::INT16  : return Value( uint32_t( getInt16 () ) );
+        case Type::UINT32 : return Value( uint32_t( getUInt32() ) );
+        case Type::INT32  : return Value( uint32_t( getInt32 () ) );
+        case Type::UINT64 : return Value( uint32_t( getUInt64() ) );
+        case Type::INT64  : return Value( uint32_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( uint32_t( getFloat () ) );
+        case Type::DOUBLE : return Value( uint32_t( getDouble() ) );
+        case Type::STRING: return Value( uint32_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::INT32   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( int32_t( getBool  () ) );
+        case Type::UINT8  : return Value( int32_t( getUInt8 () ) );
+        case Type::INT8   : return Value( int32_t( getInt8  () ) );
+        case Type::UINT16 : return Value( int32_t( getUInt16() ) );
+        case Type::INT16  : return Value( int32_t( getInt16 () ) );
+        case Type::UINT32 : return Value( int32_t( getUInt32() ) );
+        case Type::INT32  : return Value( int32_t( getInt32 () ) );
+        case Type::UINT64 : return Value( int32_t( getUInt64() ) );
+        case Type::INT64  : return Value( int32_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( int32_t( getFloat () ) );
+        case Type::DOUBLE : return Value( int32_t( getDouble() ) );
+        case Type::STRING: return Value( int32_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::UINT64   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( uint64_t( getBool  () ) );
+        case Type::UINT8  : return Value( uint64_t( getUInt8 () ) );
+        case Type::INT8   : return Value( uint64_t( getInt8  () ) );
+        case Type::UINT16 : return Value( uint64_t( getUInt16() ) );
+        case Type::INT16  : return Value( uint64_t( getInt16 () ) );
+        case Type::UINT32 : return Value( uint64_t( getUInt32() ) );
+        case Type::INT32  : return Value( uint64_t( getInt32 () ) );
+        case Type::UINT64 : return Value( uint64_t( getUInt64() ) );
+        case Type::INT64  : return Value( uint64_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( uint64_t( getFloat () ) );
+        case Type::DOUBLE : return Value( uint64_t( getDouble() ) );
+        case Type::STRING: return Value( uint64_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::INT64   :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL   : return Value( int64_t( getBool  () ) );
+        case Type::UINT8  : return Value( int64_t( getUInt8 () ) );
+        case Type::INT8   : return Value( int64_t( getInt8  () ) );
+        case Type::UINT16 : return Value( int64_t( getUInt16() ) );
+        case Type::INT16  : return Value( int64_t( getInt16 () ) );
+        case Type::UINT32 : return Value( int64_t( getUInt32() ) );
+        case Type::INT32  : return Value( int64_t( getInt32 () ) );
+        case Type::UINT64 : return Value( int64_t( getUInt64() ) );
+        case Type::INT64  : return Value( int64_t( getInt64 () ) );
+        case Type::FLOAT  : return Value( int64_t( getFloat () ) );
+        case Type::DOUBLE : return Value( int64_t( getDouble() ) );
+        case Type::STRING: return Value( int64_t( atoi( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
       }
 
     case Type::FLOAT :
       switch( x.getEnum() )
       {
         case Type::BOOL  : return Value( float( getBool() ) );
-        case Type::INT   : return Value( float( getInt()  ) );
+        case Type::UINT8 : return Value( float( getUInt8 () ) );
+        case Type::INT8  : return Value( float( getInt8  () ) );
+        case Type::UINT16: return Value( float( getUInt16() ) );
+        case Type::INT16 : return Value( float( getInt16 () ) );
+        case Type::UINT32: return Value( float( getUInt32() ) );
+        case Type::INT32 : return Value( float( getInt32 () ) );
+        case Type::UINT64: return Value( float( getUInt64() ) );
+        case Type::INT64 : return Value( float( getInt64 () ) );
+        case Type::FLOAT : return Value( float( getFloat () ) );
+        case Type::DOUBLE: return Value( float( getDouble() ) );
         case Type::STRING: return Value( float( atof( getString().c_str() ) ) );
         default:
-          throw CastException( x.getType(), type );
+          throw CastFailed( x.getType(), type );
+      }
+
+    case Type::DOUBLE :
+      switch( x.getEnum() )
+      {
+        case Type::BOOL  : return Value( double( getBool() ) );
+        case Type::UINT8 : return Value( double( getUInt8 () ) );
+        case Type::INT8  : return Value( double( getInt8  () ) );
+        case Type::UINT16: return Value( double( getUInt16() ) );
+        case Type::INT16 : return Value( double( getInt16 () ) );
+        case Type::UINT32: return Value( double( getUInt32() ) );
+        case Type::INT32 : return Value( double( getInt32 () ) );
+        case Type::UINT64: return Value( double( getUInt64() ) );
+        case Type::INT64 : return Value( double( getInt64 () ) );
+        case Type::FLOAT : return Value( double( getFloat () ) );
+        case Type::DOUBLE: return Value( double( getDouble() ) );
+        case Type::STRING: return Value( double( atof( getString().c_str() ) ) );
+        default:
+          throw CastFailed( x.getType(), type );
       }
 
     case Type::STRING:
@@ -281,19 +466,54 @@ Value Value::to( Type type ) const
 
         switch( x.getEnum() )
         {
-          case Type::BOOL  : s << getBool(); break;
-          case Type::INT   : s << getInt(); break;
-          case Type::FLOAT : s << getFloat(); break;
+          case Type::BOOL   : s << getBool  (); break;
+          case Type::UINT8  : s << getUInt8 (); break;
+          case Type::INT8   : s << getInt8  (); break;
+          case Type::UINT16 : s << getUInt16(); break;
+          case Type::INT16  : s << getInt16 (); break;
+          case Type::UINT32 : s << getUInt32(); break;
+          case Type::INT32  : s << getInt32 (); break;
+          case Type::UINT64 : s << getUInt64(); break;
+          case Type::INT64  : s << getInt64 (); break;
+          case Type::FLOAT  : s << getFloat (); break;
+          case Type::DOUBLE : s << getDouble(); break;
           default:
-            throw CastException( x.getType(), type );
+            throw CastFailed( x.getType(), type );
         }
 
         return Value( String( s.str() ) );
       }
 
     default:
-      throw CastException( x.getType(), type );
+      throw CastFailed( x.getType(), type );
   }
+}
+
+Value Value::save_cast( Type type ) const
+{
+  const Value &x = (*this);
+
+  if( x.getType() == type ) return x;
+  if( type.isNil() ) return x;
+
+  if( x.getType().isInteger() )
+  {
+    if( type.isScalar() )
+    {
+      return x.to( type );
+    }
+  }
+  else if( x.getType().isFloatingPoint() )
+  {
+    if( type.isFloatingPoint() )
+    {
+      return x.to( type );
+    }
+  }
+
+  throw Value::CastFailed( x.getType(), type )
+    << ": Cannot be cast savely directly, probably needs an explicit cast"
+    ;
 }
 
 bool Value::operator< ( const Value &right ) const
@@ -301,16 +521,24 @@ bool Value::operator< ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  < r.getBool() );
-      case Type::INT  : return ( l.getInt ()  < r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() < r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () < r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () < r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () < r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() < r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () < r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() < r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () < r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() < r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () < r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () < r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() < r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -338,16 +566,24 @@ bool Value::operator<=( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  <= r.getBool() );
-      case Type::INT  : return ( l.getInt ()  <= r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() <= r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () <= r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () <= r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () <= r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() <= r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () <= r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() <= r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () <= r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() <= r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () <= r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () <= r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() <= r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -375,16 +611,24 @@ bool Value::operator> ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  > r.getBool() );
-      case Type::INT  : return ( l.getInt ()  > r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() > r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () > r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () > r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () > r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() > r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () > r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() > r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () > r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() > r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () > r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () > r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() > r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -412,16 +656,24 @@ bool Value::operator>=( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  >= r.getBool() );
-      case Type::INT  : return ( l.getInt ()  >= r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() >= r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () >= r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () >= r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () >= r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() >= r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () >= r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() >= r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () >= r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() >= r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () >= r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () >= r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() >= r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -449,16 +701,24 @@ bool Value::operator==( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  == r.getBool() );
-      case Type::INT  : return ( l.getInt ()  == r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() == r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () == r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () == r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () == r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() == r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () == r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() == r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () == r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() == r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () == r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () == r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() == r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -486,16 +746,24 @@ bool Value::operator!=( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return ( l.getBool()  != r.getBool() );
-      case Type::INT  : return ( l.getInt ()  != r.getInt() );
-      case Type::FLOAT: return ( l.getFloat() != r.getFloat() );
+      case Type::BOOL  : return ( l.getBool  () != r.getBool  () );
+      case Type::UINT8 : return ( l.getUInt8 () != r.getUInt8 () );
+      case Type::INT8  : return ( l.getInt8  () != r.getInt8  () );
+      case Type::UINT16: return ( l.getUInt16() != r.getUInt16() );
+      case Type::INT16 : return ( l.getInt16 () != r.getInt16 () );
+      case Type::UINT32: return ( l.getUInt32() != r.getUInt32() );
+      case Type::INT32 : return ( l.getInt32 () != r.getInt32 () );
+      case Type::UINT64: return ( l.getUInt64() != r.getUInt64() );
+      case Type::INT64 : return ( l.getInt64 () != r.getInt64 () );
+      case Type::FLOAT : return ( l.getFloat () != r.getFloat () );
+      case Type::DOUBLE: return ( l.getDouble() != r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -593,10 +861,22 @@ Value Value::operator<<( const Value &right ) const
   if( !left.isInteger() ) throw Exception( "left must be integer" );
   if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
 
-  return Value( l.getInt() << r.getInt() );
+  switch( left.getType().getEnum() )
+  {
+    case Type::BOOL  : return Value( left.getBool  () << r.getInt() );
+    case Type::UINT8 : return Value( left.getUInt8 () << r.getInt() );
+    case Type::INT8  : return Value( left.getInt8  () << r.getInt() );
+    case Type::UINT16: return Value( left.getUInt16() << r.getInt() );
+    case Type::INT16 : return Value( left.getInt16 () << r.getInt() );
+    case Type::UINT32: return Value( left.getUInt32() << r.getInt() );
+    case Type::INT32 : return Value( left.getInt32 () << r.getInt() );
+    case Type::UINT64: return Value( left.getUInt64() << r.getInt() );
+    case Type::INT64 : return Value( left.getInt64 () << r.getInt() );
+    default:
+      throw Exception( "Internal: Unhandled case" );
+  }
 }
 
 Value Value::operator>>( const Value &right ) const
@@ -605,10 +885,22 @@ Value Value::operator>>( const Value &right ) const
   if( !left.isInteger() ) throw Exception( "left must be integer" );
   if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value l = left .to( Type::INT );
   const Value r = right.to( Type::INT );
 
-  return Value( l.getInt() >> r.getInt() );
+  switch( left.getType().getEnum() )
+  {
+    case Type::BOOL  : return Value( left.getBool  () >> r.getInt() );
+    case Type::UINT8 : return Value( left.getUInt8 () >> r.getInt() );
+    case Type::INT8  : return Value( left.getInt8  () >> r.getInt() );
+    case Type::UINT16: return Value( left.getUInt16() >> r.getInt() );
+    case Type::INT16 : return Value( left.getInt16 () >> r.getInt() );
+    case Type::UINT32: return Value( left.getUInt32() >> r.getInt() );
+    case Type::INT32 : return Value( left.getInt32 () >> r.getInt() );
+    case Type::UINT64: return Value( left.getUInt64() >> r.getInt() );
+    case Type::INT64 : return Value( left.getInt64 () >> r.getInt() );
+    default:
+      throw Exception( "Internal: Unhandled case" );
+  }
 }
 
 Value Value::operator& ( const Value &right ) const
@@ -617,10 +909,25 @@ Value Value::operator& ( const Value &right ) const
   if( !left.isInteger() ) throw Exception( "left must be integer" );
   if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value l = left .to( Type::INT );
-  const Value r = right.to( Type::INT );
+  const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
-  return Value( l.getInt() & r.getInt() );
+  const Value r = right.to( ret_type );
+  const Value l = left .to( ret_type );
+
+  switch( ret_type.getEnum() )
+  {
+    case Type::BOOL  : return Value( l.getBool  () & r.getBool  () );
+    case Type::UINT8 : return Value( l.getUInt8 () & r.getUInt8 () );
+    case Type::INT8  : return Value( l.getInt8  () & r.getInt8  () );
+    case Type::UINT16: return Value( l.getUInt16() & r.getUInt16() );
+    case Type::INT16 : return Value( l.getInt16 () & r.getInt16 () );
+    case Type::UINT32: return Value( l.getUInt32() & r.getUInt32() );
+    case Type::INT32 : return Value( l.getInt32 () & r.getInt32 () );
+    case Type::UINT64: return Value( l.getUInt64() & r.getUInt64() );
+    case Type::INT64 : return Value( l.getInt64 () & r.getInt64 () );
+    default:
+      throw Exception( "Internal: Unhandled case" );
+  }
 }
 
 Value Value::operator| ( const Value &right ) const
@@ -629,10 +936,25 @@ Value Value::operator| ( const Value &right ) const
   if( !left.isInteger() ) throw Exception( "left must be integer" );
   if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value l = left .to( Type::INT );
-  const Value r = right.to( Type::INT );
+  const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
-  return Value( l.getInt() | r.getInt() );
+  const Value r = right.to( ret_type );
+  const Value l = left .to( ret_type );
+
+  switch( ret_type.getEnum() )
+  {
+    case Type::BOOL  : return Value( l.getBool  () | r.getBool  () );
+    case Type::UINT8 : return Value( l.getUInt8 () | r.getUInt8 () );
+    case Type::INT8  : return Value( l.getInt8  () | r.getInt8  () );
+    case Type::UINT16: return Value( l.getUInt16() | r.getUInt16() );
+    case Type::INT16 : return Value( l.getInt16 () | r.getInt16 () );
+    case Type::UINT32: return Value( l.getUInt32() | r.getUInt32() );
+    case Type::INT32 : return Value( l.getInt32 () | r.getInt32 () );
+    case Type::UINT64: return Value( l.getUInt64() | r.getUInt64() );
+    case Type::INT64 : return Value( l.getInt64 () | r.getInt64 () );
+    default:
+      throw Exception( "Internal: Unhandled case" );
+  }
 }
 
 Value Value::operator^ ( const Value &right ) const
@@ -641,10 +963,25 @@ Value Value::operator^ ( const Value &right ) const
   if( !left.isInteger() ) throw Exception( "left must be integer" );
   if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value l = left .to( Type::INT );
-  const Value r = right.to( Type::INT );
+  const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
-  return Value( l.getInt() ^ r.getInt() );
+  const Value r = right.to( ret_type );
+  const Value l = left .to( ret_type );
+
+  switch( ret_type.getEnum() )
+  {
+    case Type::BOOL  : return Value( l.getBool  () ^ r.getBool  () );
+    case Type::UINT8 : return Value( l.getUInt8 () ^ r.getUInt8 () );
+    case Type::INT8  : return Value( l.getInt8  () ^ r.getInt8  () );
+    case Type::UINT16: return Value( l.getUInt16() ^ r.getUInt16() );
+    case Type::INT16 : return Value( l.getInt16 () ^ r.getInt16 () );
+    case Type::UINT32: return Value( l.getUInt32() ^ r.getUInt32() );
+    case Type::INT32 : return Value( l.getInt32 () ^ r.getInt32 () );
+    case Type::UINT64: return Value( l.getUInt64() ^ r.getUInt64() );
+    case Type::INT64 : return Value( l.getInt64 () ^ r.getInt64 () );
+    default:
+      throw Exception( "Internal: Unhandled case" );
+  }
 }
 
 Value Value::operator* ( const Value &right ) const
@@ -652,16 +989,24 @@ Value Value::operator* ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return Value( l.getBool()  * r.getBool() );
-      case Type::INT  : return Value( l.getInt ()  * r.getInt() );
-      case Type::FLOAT: return Value( l.getFloat() * r.getFloat() );
+      case Type::BOOL   : return Value( l.getBool  () * r.getBool  () );
+      case Type::UINT8  : return Value( l.getUInt8 () * r.getUInt8 () );
+      case Type::INT8   : return Value( l.getInt8  () * r.getInt8  () );
+      case Type::UINT16 : return Value( l.getUInt16() * r.getUInt16() );
+      case Type::INT16  : return Value( l.getInt16 () * r.getInt16 () );
+      case Type::UINT32 : return Value( l.getUInt32() * r.getUInt32() );
+      case Type::INT32  : return Value( l.getInt32 () * r.getInt32 () );
+      case Type::UINT64 : return Value( l.getUInt64() * r.getUInt64() );
+      case Type::INT64  : return Value( l.getInt64 () * r.getInt64 () );
+      case Type::FLOAT  : return Value( l.getFloat () * r.getFloat () );
+      case Type::DOUBLE : return Value( l.getDouble() * r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -677,31 +1022,24 @@ Value Value::operator/ ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL :
-        if( r.getBool()  )
-          return Value( l.getBool()  / r.getBool() );
-        else
-          throw Exception( "Division by zero" );
-
-      case Type::INT  :
-        if( r.getInt()   )
-          return Value( l.getInt ()  / r.getInt() );
-        else
-          throw Exception( "Division by zero" );
-
-      case Type::FLOAT:
-        if( r.getFloat() )
-          return Value( l.getFloat() / r.getFloat() );
-        else
-          throw Exception( "Division by zero" );
-
+      case Type::BOOL   : if( r.getBool  ()  ) return Value( l.getBool  ()  / r.getBool  () ); else throw DivisionByZero();
+      case Type::UINT8  : if( r.getUInt8 ()  ) return Value( l.getUInt8 ()  / r.getUInt8 () ); else throw DivisionByZero();
+      case Type::INT8   : if( r.getInt8  ()  ) return Value( l.getInt8  ()  / r.getInt8  () ); else throw DivisionByZero();
+      case Type::UINT16 : if( r.getUInt16()  ) return Value( l.getUInt16()  / r.getUInt16() ); else throw DivisionByZero();
+      case Type::INT16  : if( r.getInt16 ()  ) return Value( l.getInt16 ()  / r.getInt16 () ); else throw DivisionByZero();
+      case Type::UINT32 : if( r.getUInt32()  ) return Value( l.getUInt32()  / r.getUInt32() ); else throw DivisionByZero();
+      case Type::INT32  : if( r.getInt32 ()  ) return Value( l.getInt32 ()  / r.getInt32 () ); else throw DivisionByZero();
+      case Type::UINT64 : if( r.getUInt64()  ) return Value( l.getUInt64()  / r.getUInt64() ); else throw DivisionByZero();
+      case Type::INT64  : if( r.getInt64 ()  ) return Value( l.getInt64 ()  / r.getInt64 () ); else throw DivisionByZero();
+      case Type::FLOAT  : if( r.getFloat ()  ) return Value( l.getFloat ()  / r.getFloat () ); else throw DivisionByZero();
+      case Type::DOUBLE : if( r.getDouble()  ) return Value( l.getDouble()  / r.getDouble() ); else throw DivisionByZero();
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -717,33 +1055,35 @@ Value Value::operator+ ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( Type::Int(), std::max( left.getType(), right.getType() ) );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return Value( l.getBool()  + r.getBool() );
-      case Type::INT  : return Value( l.getInt ()  + r.getInt() );
-      case Type::FLOAT: return Value( l.getFloat() + r.getFloat() );
+      case Type::BOOL   : return Value( l.getBool  () + r.getBool  () );
+      case Type::UINT8  : return Value( l.getUInt8 () + r.getUInt8 () );
+      case Type::INT8   : return Value( l.getInt8  () + r.getInt8  () );
+      case Type::UINT16 : return Value( l.getUInt16() + r.getUInt16() );
+      case Type::INT16  : return Value( l.getInt16 () + r.getInt16 () );
+      case Type::UINT32 : return Value( l.getUInt32() + r.getUInt32() );
+      case Type::INT32  : return Value( l.getInt32 () + r.getInt32 () );
+      case Type::UINT64 : return Value( l.getUInt64() + r.getUInt64() );
+      case Type::INT64  : return Value( l.getInt64 () + r.getInt64 () );
+      case Type::FLOAT  : return Value( l.getFloat () + r.getFloat () );
+      case Type::DOUBLE : return Value( l.getDouble() + r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
   }
-  else if( left.isString() && right.isString() )
-  {
-    const Value &l = left;
-    const Value &r = right;
-    return Value( l.getString() + r.getString() );
-  }
-  else if( left.isString() && right.isScalar() )
+  else if( left.isString() && right.isPrimitive() )
   {
     const Value &l = left;
     const Value  r = right.to( Type::String() );
     return Value( l.getString() + r.getString() );
   }
-  else if( left.isScalar() && right.isString() )
+  else if( left.isPrimitive() && right.isString() )
   {
     const Value  l = left.to( Type::String() );
     const Value &r = right;
@@ -760,16 +1100,24 @@ Value Value::operator- ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Type ret_type = std::max( left.getType(), right.getType() );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
     const Value l = left .to( ret_type );
     const Value r = right.to( ret_type );
 
     switch( ret_type.getEnum() )
     {
-      case Type::BOOL : return Value( l.getBool()  - r.getBool() );
-      case Type::INT  : return Value( l.getInt ()  - r.getInt() );
-      case Type::FLOAT: return Value( l.getFloat() - r.getFloat() );
+      case Type::BOOL   : return Value( l.getBool  () - r.getBool  () );
+      case Type::UINT8  : return Value( l.getUInt8 () - r.getUInt8 () );
+      case Type::INT8   : return Value( l.getInt8  () - r.getInt8  () );
+      case Type::UINT16 : return Value( l.getUInt16() - r.getUInt16() );
+      case Type::INT16  : return Value( l.getInt16 () - r.getInt16 () );
+      case Type::UINT32 : return Value( l.getUInt32() - r.getUInt32() );
+      case Type::INT32  : return Value( l.getInt32 () - r.getInt32 () );
+      case Type::UINT64 : return Value( l.getUInt64() - r.getUInt64() );
+      case Type::INT64  : return Value( l.getInt64 () - r.getInt64 () );
+      case Type::FLOAT  : return Value( l.getFloat () - r.getFloat () );
+      case Type::DOUBLE : return Value( l.getDouble() - r.getDouble() );
       default:
         throw Exception( "Internal error: unhandled scalar" );
     }
@@ -780,81 +1128,84 @@ Value Value::operator- ( const Value &right ) const
   }
 }
 
+namespace Value_impl {
+
+  static inline float  floor_t( float  x ) { return floorf( x ); }
+  static inline double floor_t( double x ) { return floor ( x ); }
+
+  template< class F >
+  static inline
+  F modulo( F l, F r )
+  {
+    if( r )
+      return Value( l - floor_t( l / r ) * r );
+    else
+      throw Value::DivisionByZero() << ": At modulo";
+  }
+
+} // namespace Value_impl
+
 Value Value::operator% ( const Value &right ) const
 {
   const Value &left = (*this);
-  switch( left.getEnum() )
+
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL : return Value( false );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
 
-    case Type::INT  :
-      switch( right.getEnum() )
-      {
-        case Type::BOOL : return Value( false );
-        case Type::INT  : return Value( left.getInt() % right.getInt() );
-        case Type::FLOAT:
-          {
-            const float l = float( left .getInt() );
-            const float r = float( right.getFloat() );
-            if( r )
-              return Value( l - floorf( l / r ) * r );
-            else
-              throw Exception( "Modulo by zero" );
-          }
-        default:
-          throw Exception( "left and right must be scalar" );
-      }
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
 
-    case Type::FLOAT:
-      {
-        float l;
-        float r;
-
-        switch( right.getEnum() )
-        {
-          case Type::BOOL : return Value( false );
-
-          case Type::INT  :
-            l = float( left .getFloat() );
-            r = float( right.getInt() );
-            break;
-
-          case Type::FLOAT:
-            l = float( left .getFloat() );
-            r = float( right.getFloat() );
-            break;
-
-          default:
-            throw Exception( "left and right must be scalar" );
-        }
-
-        if( r )
-          return Value( l - floorf( l / r ) * r );
-        else
-          throw Exception( "Modulo by zero" );
-      }
-
-    default:
-      throw Exception( "left and right must be scalar" );
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL   : return Value( l.getBool  () % r.getBool  () );
+      case Type::UINT8  : return Value( l.getUInt8 () % r.getUInt8 () );
+      case Type::INT8   : return Value( l.getInt8  () % r.getInt8  () );
+      case Type::UINT16 : return Value( l.getUInt16() % r.getUInt16() );
+      case Type::INT16  : return Value( l.getInt16 () % r.getInt16 () );
+      case Type::UINT32 : return Value( l.getUInt32() % r.getUInt32() );
+      case Type::INT32  : return Value( l.getInt32 () % r.getInt32 () );
+      case Type::UINT64 : return Value( l.getUInt64() % r.getUInt64() );
+      case Type::INT64  : return Value( l.getInt64 () % r.getInt64 () );
+      default:
+        throw Exception( "Internal error: unhandled scalar" );
+    }
   }
+  else if( left.isScalar() && right.isScalar() )
+  {
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
+
+    const Value l = left .to( ret_type );
+    const Value r = right.to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::FLOAT  : return Value( Value_impl::modulo( l.getFloat (), r.getFloat () ) );
+      case Type::DOUBLE : return Value( Value_impl::modulo( l.getDouble(), r.getDouble() ) );
+      default:
+        throw Exception( "Internal error: unhandled scalar" );
+    }
+  }
+
+  throw Exception( "left and right must be scalar" );
 }
 
 std::ostream &Value::print( std::ostream &o ) const
 {
   switch( getType().getEnum() )
   {
-    case Type::INVALID : o << "nil"; break;
+    case Type::NIL     : o << "nil"; break;
     case Type::BOOL    : o << ( getBool() ? "true" : "false" ); break;
-//    case Type::UINT8   : o << getUInt8 (); break;
-//    case Type::INT8    : o << getInt8  (); break;
-//    case Type::UINT16  : o << getUInt16(); break;
-//    case Type::INT16   : o << getInt16 (); break;
-//    case Type::UINT32  : o << getUInt32(); break;
+    case Type::UINT8   : o << getUInt8 (); break;
+    case Type::INT8    : o << getInt8  (); break;
+    case Type::UINT16  : o << getUInt16(); break;
+    case Type::INT16   : o << getInt16 (); break;
+    case Type::UINT32  : o << getUInt32(); break;
     case Type::INT32   : o << getInt32 (); break;
-//    case Type::UINT64  : o << getUInt64(); break;
-//    case Type::INT64   : o << getInt64 (); break;
+    case Type::UINT64  : o << getUInt64(); break;
+    case Type::INT64   : o << getInt64 (); break;
     case Type::FLOAT   : o << getFloat (); break;
-//    case Type::DOUBLE  : o << getDouble(); break;
+    case Type::DOUBLE  : o << getDouble(); break;
     case Type::STRING  : o << "\"" << getString() << "\""; break;
 
     case Type::ARRAY   :
@@ -926,6 +1277,37 @@ std::ostream &Value::print( std::ostream &o ) const
   }
 
   return o;
+}
+
+CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, const Value &fill_value )
+{
+  switch( type.getEnum() )
+  {
+    case Type::NIL     : throw ArrayBase::Exception() << "Cannot create an Array of type 'nil'";
+    case Type::BOOL    : return new_Array<           bool             >( gc, dims, fill_value );
+    case Type::UINT8   : return new_Array<           uint8_t          >( gc, dims, fill_value );
+    case Type::INT8    : return new_Array<           int8_t           >( gc, dims, fill_value );
+    case Type::UINT16  : return new_Array<           uint16_t         >( gc, dims, fill_value );
+    case Type::INT16   : return new_Array<           int16_t          >( gc, dims, fill_value );
+    case Type::UINT32  : return new_Array<           uint32_t         >( gc, dims, fill_value );
+    case Type::INT32   : return new_Array<           int32_t          >( gc, dims, fill_value );
+    case Type::UINT64  : return new_Array<           uint64_t         >( gc, dims, fill_value );
+    case Type::INT64   : return new_Array<           int64_t          >( gc, dims, fill_value );
+    case Type::FLOAT   : return new_Array<           float            >( gc, dims, fill_value );
+    case Type::DOUBLE  : return new_Array<           double           >( gc, dims, fill_value );
+    case Type::STRING  : return new_Array<           String           >( gc, dims, fill_value );
+    case Type::FRAME   : return new_Array< CountPtr< Frame          > >( gc, dims, fill_value );
+    case Type::FUNCTION: return new_Array< CountPtr< Function       > >( gc, dims, fill_value );
+    case Type::NODE    : return new_Array< CountPtr< Node           > >( gc, dims, fill_value );
+    case Type::OUTPUT  : return new_Array< CountPtr< Output         > >( gc, dims, fill_value );
+    case Type::INPUT   : return new_Array< CountPtr< Input          > >( gc, dims, fill_value );
+    case Type::PARAM   : return new_Array< CountPtr< Param          > >( gc, dims, fill_value );
+    case Type::SEQUENCE: return new_Array< CountPtr< Sequence const > >( gc, dims, fill_value );
+    case Type::ARRAY   : return new_Array< CountPtr< ArrayBase      > >( gc, dims, fill_value );
+    case Type::OTHER   : throw ArrayBase::Exception() << "Cannot create an Array of 'other' custom type";
+    // no default
+  }
+  throw ArrayBase::Exception() << "Internal: Unhandled Type::Enum";
 }
 
 
