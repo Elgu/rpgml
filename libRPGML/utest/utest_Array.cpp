@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -31,6 +31,7 @@ class utest_Array : public CppUnit::TestFixture
   CPPUNIT_TEST( test_isCollectable );
   CPPUNIT_TEST( test_properties );
   CPPUNIT_TEST( test_resize );
+  CPPUNIT_TEST( test_CoordinatesIterator );
   CPPUNIT_TEST( test_gc );
 
   CPPUNIT_TEST_SUITE_END();
@@ -64,6 +65,50 @@ public:
     CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
   }
 
+  void test_CoordinatesIterator( void )
+  {
+    CountPtr< Array< int, 2 > > a = new Array< int, 2 >( 0, 2, 3 );
+
+    CountPtr< ArrayBase::CoordinatesIterator > coord( a->getCoordinatesIterator() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+
+    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), coord->get()[ 1 ] );
+
+    CPPUNIT_ASSERT_NO_THROW( coord->next() );
+    CPPUNIT_ASSERT_EQUAL( true, coord->done() );
+  }
+
   void test_resize( void )
   {
     cerr << "test_resize" << endl;
@@ -79,10 +124,16 @@ public:
     CPPUNIT_ASSERT_EQUAL( index_t( 6 ), i2.size() );
 
     const index_t size[] = { 5, 7 };
-    i2.resize( 2, size );
+    i2.resize_v( 2, size );
     CPPUNIT_ASSERT_EQUAL( index_t( 5 ), i2.getSize()[ 0 ] );
     CPPUNIT_ASSERT_EQUAL( index_t( 7 ), i2.getSize()[ 1 ] );
     CPPUNIT_ASSERT_EQUAL( index_t( 35 ), i2.size() );
+
+    const index_t size2[] = { 23, 42 };
+    i2.resize( ArrayBase::Size( 2, size2 ) );
+    CPPUNIT_ASSERT_EQUAL( index_t( 23 ), i2.getSize()[ 0 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 42 ), i2.getSize()[ 1 ] );
+    CPPUNIT_ASSERT_EQUAL( index_t( 23*42 ), i2.size() );
   }
 
   class Marker : public Collectable
