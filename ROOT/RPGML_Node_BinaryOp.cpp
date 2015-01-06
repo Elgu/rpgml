@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -21,12 +21,11 @@ namespace RPGML {
 
 BinaryOp::BinaryOp( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
 : Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
+, m_op( BOP_UNDEFINED )
 {
   DEFINE_INPUT( INPUT_IN1, "in1" );
   DEFINE_INPUT( INPUT_IN2, "in2" );
-
   DEFINE_OUTPUT( OUTPUT_OUT, "out" );
-
   DEFINE_PARAM ( PARAM_OP, "op", BinaryOp::set_op );
 }
 
@@ -57,28 +56,9 @@ void BinaryOp::set_op( const Value &value, index_t )
 
 namespace BinaryOp_impl {
 
-template< class T0, class T1, int SELECT > struct SelectType {};
-template< class T0, class T1 > struct SelectType< T0, T1, 0 > { typedef T0 T; };
-template< class T0, class T1 > struct SelectType< T0, T1, 1 > { typedef T1 T; };
-
-template< class X, class Y >
-struct GreaterType
-{
-  static const Type::Enum X_Enum = TypeOf< X >::E;
-  static const Type::Enum Y_Enum = TypeOf< Y >::E;
-  static const int SELECT = ( X_Enum < Y_Enum );
-  typedef typename SelectType< X, Y, SELECT >::T T;
-};
-
-template< class X, class Y >
-struct RetType
-{
-  typedef typename GreaterType< X, Y >::T T;
-};
-
 template< class X, class Y, BOP OP > struct op_impl {};
-template< class X, class Y > struct op_impl< X, Y, BOP_LEFT    > { typedef X                           Ret; static Ret doit( const X &x, const Y &y ) { return x << y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_RIGHT   > { typedef X                           Ret; static Ret doit( const X &x, const Y &y ) { return x >> y; } };
+template< class X, class Y > struct op_impl< X, Y, BOP_LEFT    > { typedef X                           Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x << y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_RIGHT   > { typedef X                           Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x >> y ); } };
 template< class X, class Y > struct op_impl< X, Y, BOP_LT      > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return x <  y; } };
 template< class X, class Y > struct op_impl< X, Y, BOP_LE      > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return x <= y; } };
 template< class X, class Y > struct op_impl< X, Y, BOP_GT      > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return x >  y; } };
@@ -88,14 +68,14 @@ template< class X, class Y > struct op_impl< X, Y, BOP_NE      > { typedef bool 
 template< class X, class Y > struct op_impl< X, Y, BOP_LOG_AND > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return x && y; } };
 template< class X, class Y > struct op_impl< X, Y, BOP_LOG_OR  > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return x || y; } };
 template< class X, class Y > struct op_impl< X, Y, BOP_LOG_XOR > { typedef bool                        Ret; static Ret doit( const X &x, const Y &y ) { return bool( x ) ^ bool( y ); } };
-template< class X, class Y > struct op_impl< X, Y, BOP_BIT_AND > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x & y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_BIT_OR  > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x | y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_BIT_XOR > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x ^ y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_MUL     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x * y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_DIV     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x / y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_ADD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x + y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_SUB     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x - y; } };
-template< class X, class Y > struct op_impl< X, Y, BOP_MOD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return x % y; } };
+template< class X, class Y > struct op_impl< X, Y, BOP_BIT_AND > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x & y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_BIT_OR  > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x | y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_BIT_XOR > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x ^ y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_MUL     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x * y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_DIV     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x / y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_ADD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x + y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_SUB     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x - y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_MOD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x % y ); } };
 
 template< class T1, class T2, BOP OP >
 struct impl
@@ -113,6 +93,34 @@ struct impl
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
       (*o_iter) = Op::doit( (*i1_iter), (*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    const index_t n = in2->size();
+    for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( in1, (*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    const index_t n = in1->size();
+    for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( (*i1_iter), in2 );
     }
 
     return true;
@@ -141,6 +149,34 @@ struct impl< String, String, OP >
 
     return true;
   }
+
+  static
+  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    const index_t n = in2->size();
+    for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( in1, (*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    const index_t n = in1->size();
+    for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( (*i1_iter), in2 );
+    }
+
+    return true;
+  }
 };
 
 template< class T1, BOP OP >
@@ -160,6 +196,35 @@ struct impl< T1, String, OP >
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
       (*o_iter) = Op::doit( toString(*i1_iter), (*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    const String in1_str = toString( in1 );
+    const index_t n = in2->size();
+    for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( in1_str, (*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    const index_t n = in1->size();
+    for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( toString(*i1_iter), in2 );
     }
 
     return true;
@@ -187,6 +252,35 @@ struct impl< String, T2, OP >
 
     return true;
   }
+
+  static
+  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    const index_t n = in2->size();
+    for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( in1, toString(*i2_iter) );
+    }
+
+    return true;
+  }
+
+  static
+  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  {
+    typename ArrayElements< Ret >::iterator o_iter = out->begin();
+    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    const String in2_str = toString( in2 );
+    const index_t n = in1->size();
+    for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
+    {
+      (*o_iter) = Op::doit( (*i1_iter), in2_str );
+    }
+
+    return true;
+  }
 };
 
 } // namespace BinaryOp_impl
@@ -197,22 +291,51 @@ bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base 
 {
   using namespace BinaryOp_impl;
 
+  typedef impl< T1, T2, OP > Impl;
+  typedef typename Impl::Ret Out;
+
   const ArrayElements< T2 > *in2 = 0;
   if( !in2_base->getAs( in2 ) ) throw GetAsFailed( getInput( INPUT_IN2 ), in2 );
 
-  const index_t        dims = in1->getDims();
-  const index_t *const size = in1->getSize();
+  const ArrayBase::Size in1_size = in1->getSize();
+  const ArrayBase::Size in2_size = in2->getSize();
 
-  typedef impl< T1, T2, OP > Impl;
+  if( in1->getDims() == 0 )
+  {
+    getOutput( OUTPUT_OUT )->initData< Out >( in2_size );
 
-  typedef typename Impl::Ret Out;
+    ArrayElements< Out > *out = 0;
+    if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
 
-  getOutput( OUTPUT_OUT )->initData< Out >( dims, size );
+    return Impl::doit_scalar1( *in1->begin(), in2, out );
+  }
 
-  ArrayElements< Out > *out = 0;
-  if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
+  if( in2->getDims() == 0 )
+  {
+    getOutput( OUTPUT_OUT )->initData< Out >( in1_size );
 
-  return Impl::doit( in1, in2, out );
+    ArrayElements< Out > *out = 0;
+    if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
+
+    return Impl::doit_scalar2( in1, *in2->begin(), out );
+  }
+
+  if( in1_size == in2_size )
+  {
+    getOutput( OUTPUT_OUT )->initData< Out >( in1_size );
+
+    ArrayElements< Out > *out = 0;
+    if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
+
+    return Impl::doit( in1, in2, out );
+  }
+
+  throw Exception()
+    << "If none of the operands for '" << getBOPStr( OP ) << "'"
+    << " are scalar (0d), the sizes and dimensions must match"
+    << ": in1 (left) is " << in1_size
+    << ", in2 (right) is " << in2_size
+    ;
 }
 
 
@@ -227,10 +350,18 @@ bool BinaryOp::tick2( const ArrayBase *in1_base )
 
   switch( in2_base->getType() )
   {
-    case Type::BOOL  : return tick3< OP, T1, bool   >( in1, in2_base );
-    case Type::INT32 : return tick3< OP, T1, int    >( in1, in2_base );
-    case Type::FLOAT : return tick3< OP, T1, float  >( in1, in2_base );
-    case Type::STRING: return tick3< OP, T1, String >( in1, in2_base );
+    case Type::BOOL  : return tick3< OP, T1, bool     >( in1, in2_base );
+    case Type::UINT8 : return tick3< OP, T1, uint8_t  >( in1, in2_base );
+    case Type::INT8  : return tick3< OP, T1, int8_t   >( in1, in2_base );
+    case Type::UINT16: return tick3< OP, T1, uint16_t >( in1, in2_base );
+    case Type::INT16 : return tick3< OP, T1, int16_t  >( in1, in2_base );
+    case Type::UINT32: return tick3< OP, T1, uint32_t >( in1, in2_base );
+    case Type::INT32 : return tick3< OP, T1, int32_t  >( in1, in2_base );
+    case Type::UINT64: return tick3< OP, T1, uint64_t >( in1, in2_base );
+    case Type::INT64 : return tick3< OP, T1, int64_t  >( in1, in2_base );
+    case Type::FLOAT : return tick3< OP, T1, float    >( in1, in2_base );
+    case Type::DOUBLE: return tick3< OP, T1, double   >( in1, in2_base );
+    case Type::STRING: return tick3< OP, T1, String   >( in1, in2_base );
     default:
       throw Exception()
         << "unsupported type '" << in2_base->getType().getTypeName() << "' for 'in2'"
@@ -251,12 +382,19 @@ bool BinaryOp::tick2_int( const ArrayBase *in1_base )
 
   switch( in2_base->getType() )
   {
-    case Type::BOOL  : return tick3< OP, T1, bool   >( in1, in2_base );
-    case Type::INT32 : return tick3< OP, T1, int    >( in1, in2_base );
+    case Type::BOOL  : return tick3< OP, T1, bool     >( in1, in2_base );
+    case Type::UINT8 : return tick3< OP, T1, uint8_t  >( in1, in2_base );
+    case Type::INT8  : return tick3< OP, T1, int8_t   >( in1, in2_base );
+    case Type::UINT16: return tick3< OP, T1, uint16_t >( in1, in2_base );
+    case Type::INT16 : return tick3< OP, T1, int16_t  >( in1, in2_base );
+    case Type::UINT32: return tick3< OP, T1, uint32_t >( in1, in2_base );
+    case Type::INT32 : return tick3< OP, T1, int32_t  >( in1, in2_base );
+    case Type::UINT64: return tick3< OP, T1, uint64_t >( in1, in2_base );
+    case Type::INT64 : return tick3< OP, T1, int64_t  >( in1, in2_base );
     default:
       throw Exception()
         << "unsupported type '" << in2_base->getType().getTypeName() << "' for 'in2'"
-        << ": Only integer types supported for op"
+        << ": Only integer types supported for op '" << getBOPStr( m_op ) << "'"
         ;
   }
 
@@ -274,13 +412,21 @@ bool BinaryOp::tick2_no_string( const ArrayBase *in1_base )
 
   switch( in2_base->getType() )
   {
-    case Type::BOOL  : return tick3< OP, T1, bool   >( in1, in2_base );
-    case Type::INT32 : return tick3< OP, T1, int    >( in1, in2_base );
-    case Type::FLOAT : return tick3< OP, T1, float  >( in1, in2_base );
+    case Type::BOOL  : return tick3< OP, T1, bool     >( in1, in2_base );
+    case Type::UINT8 : return tick3< OP, T1, uint8_t  >( in1, in2_base );
+    case Type::INT8  : return tick3< OP, T1, int8_t   >( in1, in2_base );
+    case Type::UINT16: return tick3< OP, T1, uint16_t >( in1, in2_base );
+    case Type::INT16 : return tick3< OP, T1, int16_t  >( in1, in2_base );
+    case Type::UINT32: return tick3< OP, T1, uint32_t >( in1, in2_base );
+    case Type::INT32 : return tick3< OP, T1, int32_t  >( in1, in2_base );
+    case Type::UINT64: return tick3< OP, T1, uint64_t >( in1, in2_base );
+    case Type::INT64 : return tick3< OP, T1, int64_t  >( in1, in2_base );
+    case Type::FLOAT : return tick3< OP, T1, float    >( in1, in2_base );
+    case Type::DOUBLE: return tick3< OP, T1, double   >( in1, in2_base );
     default:
       throw Exception()
         << "unsupported type '" << in2_base->getType().getTypeName() << "' for 'in2'"
-        << ": All but string type supported for op"
+        << ": All but string type supported for op '" << getBOPStr( m_op ) << "'"
         ;
   }
 
@@ -295,10 +441,18 @@ bool BinaryOp::tick1( void )
 
   switch( in1_base->getType() )
   {
-    case Type::BOOL  : return tick2< OP, bool   >( in1_base );
-    case Type::INT32 : return tick2< OP, int    >( in1_base );
-    case Type::FLOAT : return tick2< OP, float  >( in1_base );
-    case Type::STRING: return tick2< OP, String >( in1_base );
+    case Type::BOOL  : return tick2< OP, bool     >( in1_base );
+    case Type::UINT8 : return tick2< OP, uint8_t  >( in1_base );
+    case Type::INT8  : return tick2< OP, int8_t   >( in1_base );
+    case Type::UINT16: return tick2< OP, uint16_t >( in1_base );
+    case Type::INT16 : return tick2< OP, int16_t  >( in1_base );
+    case Type::UINT32: return tick2< OP, uint32_t >( in1_base );
+    case Type::INT32 : return tick2< OP, int32_t  >( in1_base );
+    case Type::UINT64: return tick2< OP, uint64_t >( in1_base );
+    case Type::INT64 : return tick2< OP, int64_t  >( in1_base );
+    case Type::FLOAT : return tick2< OP, float    >( in1_base );
+    case Type::DOUBLE: return tick2< OP, double   >( in1_base );
+    case Type::STRING: return tick2< OP, String   >( in1_base );
     default:
       throw Exception()
         << "unsupported type '" << in1_base->getType().getTypeName() << "' for 'in1'"
@@ -316,12 +470,19 @@ bool BinaryOp::tick1_int( void )
 
   switch( in1_base->getType() )
   {
-    case Type::BOOL  : return tick2_int< OP, bool   >( in1_base );
-    case Type::INT32 : return tick2_int< OP, int    >( in1_base );
+    case Type::BOOL  : return tick2_int< OP, bool     >( in1_base );
+    case Type::UINT8 : return tick2_int< OP, uint8_t  >( in1_base );
+    case Type::INT8  : return tick2_int< OP, int8_t   >( in1_base );
+    case Type::UINT16: return tick2_int< OP, uint16_t >( in1_base );
+    case Type::INT16 : return tick2_int< OP, int16_t  >( in1_base );
+    case Type::UINT32: return tick2_int< OP, uint32_t >( in1_base );
+    case Type::INT32 : return tick2_int< OP, int32_t  >( in1_base );
+    case Type::UINT64: return tick2_int< OP, uint64_t >( in1_base );
+    case Type::INT64 : return tick2_int< OP, int64_t  >( in1_base );
     default:
       throw Exception()
         << "unsupported type '" << in1_base->getType().getTypeName() << "' for 'in1'"
-        << ": Only integer types supported for op"
+        << ": Only integer types supported for op '" << getBOPStr( m_op ) << "'"
         ;
   }
 
@@ -336,13 +497,21 @@ bool BinaryOp::tick1_no_string( void )
 
   switch( in1_base->getType() )
   {
-    case Type::BOOL  : return tick2_no_string< OP, bool   >( in1_base );
-    case Type::INT32 : return tick2_no_string< OP, int    >( in1_base );
-    case Type::FLOAT : return tick2_no_string< OP, float  >( in1_base );
+    case Type::BOOL  : return tick2_no_string< OP, bool     >( in1_base );
+    case Type::UINT8 : return tick2_no_string< OP, uint8_t  >( in1_base );
+    case Type::INT8  : return tick2_no_string< OP, int8_t   >( in1_base );
+    case Type::UINT16: return tick2_no_string< OP, uint16_t >( in1_base );
+    case Type::INT16 : return tick2_no_string< OP, int16_t  >( in1_base );
+    case Type::UINT32: return tick2_no_string< OP, uint32_t >( in1_base );
+    case Type::INT32 : return tick2_no_string< OP, int32_t  >( in1_base );
+    case Type::UINT64: return tick2_no_string< OP, uint64_t >( in1_base );
+    case Type::INT64 : return tick2_no_string< OP, int64_t  >( in1_base );
+    case Type::FLOAT : return tick2_no_string< OP, float    >( in1_base );
+    case Type::DOUBLE: return tick2_no_string< OP, double   >( in1_base );
     default:
       throw Exception()
         << "unsupported type '" << in1_base->getType().getTypeName() << "' for 'in1'"
-        << ": All but string type supported for op"
+        << ": All but string type supported for op '" << getBOPStr( m_op ) << "'"
         ;
   }
 
@@ -351,6 +520,9 @@ bool BinaryOp::tick1_no_string( void )
 
 bool BinaryOp::tick( void )
 {
+  if( !hasAnyInputChanged() ) return true;
+  setAllOutputChanged();
+
   switch( m_op )
   {
     case BOP_LEFT   : return tick1_int      < BOP_LEFT    >();
@@ -372,6 +544,8 @@ bool BinaryOp::tick( void )
     case BOP_ADD    : return tick1          < BOP_ADD     >();
     case BOP_SUB    : return tick1_no_string< BOP_SUB     >();
     case BOP_MOD    : return tick1_int      < BOP_MOD     >();
+    case BOP_UNDEFINED:
+      throw Exception() << "Param 'op' was not set";
   }
 
   throw Exception() << "Broken 'op'";
@@ -390,5 +564,5 @@ void BinaryOp::gc_getChildren( Children &children ) const
 
 } // namespace RPGML
 
-RPGML_CREATE_NODE( BinaryOp )
+RPGML_CREATE_NODE( BinaryOp,  )
 
