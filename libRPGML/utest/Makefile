@@ -17,6 +17,7 @@ vpath %.cc ../RPGML/
 OBJECTS=\
 	utest_main.o\
 	GarbageCollector.o\
+	Location.o\
 	Value.o\
 	String.o\
 	Node.o\
@@ -36,6 +37,7 @@ OBJECTS=\
 	Semaphore.o\
 	JobQueue.o\
 	Graph.o\
+	ParseException.o\
 	rpgml.tab.o\
 	utest_Exception.o\
 	utest_Type.o\
@@ -68,6 +70,8 @@ test: utest_main
 
 clean:
 	rm -f utest_main $(OBJECTS)
+	rm -f *.o.CXXFLAGS
+	rm -f *.o.LDFLAGS
 
 utest_main: $(OBJECTS)
 	g++ -o $@ $(OBJECTS) $(LDFLAGS)
