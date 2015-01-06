@@ -1,12 +1,34 @@
 
-.%.cpp.dep: %.cpp
-	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+%.o.LDFLAGS: %.cc
+	@echo Getting RPGML_LDFLAGS from $<
+	@grep RPGML_LDFLAGS $< | sed "s/.*RPGML_LDFLAGS.*=//g" > $@
 
-.%.cc.dep: %.cc
-	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $<
+%.o.LDFLAGS: %.cpp
+	@echo Getting RPGML_LDFLAGS from $<
+	@grep RPGML_LDFLAGS $< | sed "s/.*RPGML_LDFLAGS.*=//g" > $@
 
-libRPGML_%.so: RPGML_%.o
-	g++ -shared -o $@ $(LDFLAGS) -lRPGML $<
+%.o.CXXFLAGS: %.cc
+	@echo Getting RPGML_CXXFLAGS from $<
+	@grep RPGML_CXXFLAGS $< | sed "s/.*RPGML_CXXFLAGS.*=//g" > $@
+
+%.o.CXXFLAGS: %.cpp
+	@echo Getting RPGML_CXXFLAGS from $<
+	@grep RPGML_CXXFLAGS $< | sed "s/.*RPGML_CXXFLAGS.*=//g" > $@
+
+.%.cpp.dep: %.cpp %.o.CXXFLAGS
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
+
+.%.cc.dep: %.cc %.o.CXXFLAGS
+	@echo Generating dependencies for $<
+	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
+
+%.o: %.cpp %.o.CXXFLAGS
+	g++ -c -o $@ $(CXXFLAGS) $(shell cat $(basename $@).o.CXXFLAGS) $<
+
+%.o: %.cc %.o.CXXFLAGS
+	g++ -c -o $@ $(CXXFLAGS) $(shell cat $(basename $@).o.CXXFLAGS) $<
+
+libRPGML_%.so: RPGML_%.o RPGML_%.o.LDFLAGS RPGML_%.o.CXXFLAGS
+	g++ -shared $< $(LDFLAGS) $(shell cat $<.LDFLAGS) $(CXXFLAGS) $(shell cat $<.CXXFLAGS) -lRPGML -o $@
 
