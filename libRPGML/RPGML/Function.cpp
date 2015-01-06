@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -115,10 +115,10 @@ void Function::fill_args( Frame &args, const Args &call_args )
   // positional arguments, no identifier
   for( ; pos < call_args.size(); ++pos )
   {
-    const String &call_identifier = call_args[ pos ].identifier;
+    const String &call_identifier = call_args[ pos ].getIdentifier();
     if( call_identifier.empty() )
     {
-      args.push_back( decl_args[ pos ].identifier, call_args[ pos ].value );
+      args.push_back( decl_args[ pos ].getIdentifier(), call_args[ pos ].getValue() );
       used[ pos ] = true;
     }
     else
@@ -132,18 +132,18 @@ void Function::fill_args( Frame &args, const Args &call_args )
   // identifier arguments
   for( ; pos < decl_args.size(); ++pos )
   {
-    const String &decl_identifier = decl_args[ pos ].identifier;
+    const String &decl_identifier = decl_args[ pos ].getIdentifier();
     bool found = false;
     for( index_t i=first_init; i < n_call_args; ++i )
     {
-      const String &call_identifier = call_args[ i ].identifier;
+      const String &call_identifier = call_args[ i ].getIdentifier();
       if( !call_identifier.empty() )
       {
         if( !used[ i ] && decl_identifier == call_identifier )
         {
           found = true;
           // Was not yet initialized (even with invalid Value)
-          args.push_back( call_identifier, call_args[ i ].value );
+          args.push_back( call_identifier, call_args[ i ].getValue() );
           used[ i ] = true;
         }
       }
@@ -156,9 +156,9 @@ void Function::fill_args( Frame &args, const Args &call_args )
     // No identifier argument specified, try default value
     if( !found )
     {
-      const Value &default_value = decl_args[ pos ].value;
-      if( !default_value.isInvalid() )
+      if( decl_args[ pos ].hasValue() )
       {
+        const Value &default_value = decl_args[ pos ].getValue();
         args.push_back( decl_identifier, default_value );
       }
       else
@@ -187,15 +187,61 @@ void Function::gc_getChildren( Children &children ) const
 {
   children.add( m_parent.get() );
 
-  for( size_t i( 0 ), end( m_decl->size() ); i<end; ++i )
+  if( !m_decl.isNull() )
   {
-    const Value &value = m_decl->at( i ).value;
-
-    if( value.isCollectable() )
+    for( size_t i( 0 ), end( m_decl->size() ); i<end; ++i )
     {
-      children.add( value.getCollectable() );
+      const Value &value = m_decl->at( i ).getValue();
+
+      if( value.isCollectable() )
+      {
+        children.add( value.getCollectable() );
+      }
     }
   }
+}
+
+Function::Arg::Arg( void )
+: m_hasValue( false )
+{}
+
+Function::Arg::Arg( const String &identifier )
+: m_identifier( identifier )
+, m_hasValue( false )
+{}
+
+Function::Arg::Arg( const String &identifier, const Value &value )
+: m_identifier( identifier )
+, m_value( value )
+, m_hasValue( true )
+{}
+
+Function::Arg &Function::Arg::setIdentfier( const String &identifier )
+{
+  m_identifier = identifier;
+  return (*this);
+}
+
+Function::Arg &Function::Arg::setValue( const Value &value )
+{
+  m_value = value;
+  m_hasValue = true;
+  return (*this);
+}
+
+const String &Function::Arg::getIdentifier( void ) const
+{
+  return m_identifier;
+}
+
+const Value  &Function::Arg::getValue    ( void ) const
+{
+  return m_value;
+}
+
+bool Function::Arg::hasValue( void ) const
+{
+  return m_hasValue;
 }
 
 } // namespace RPGML
