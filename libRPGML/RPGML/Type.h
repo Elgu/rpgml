@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -41,7 +41,7 @@ class Type
 public:
   enum Enum
   {
-      INVALID  // no type specified
+      NIL      // no type specified
     , BOOL     // bool
     , UINT8    // uint8_t
     , INT8     // int8_t
@@ -54,20 +54,20 @@ public:
     , FLOAT    // float
     , DOUBLE   // double
     , STRING   // String
-    , FRAME    // Frame
-    , FUNCTION // Function
-    , NODE     // Node
-    , OUTPUT   // Output
-    , INPUT    // Input
-    , PARAM    // Param
-    , SEQUENCE // Sequence
-    , ARRAY    // ArrayBase
+    , FRAME    // CountPtr< Frame          >
+    , FUNCTION // CountPtr< Function       >
+    , NODE     // CountPtr< Node           >
+    , OUTPUT   // CountPtr< Output         >
+    , INPUT    // CountPtr< Input          >
+    , PARAM    // CountPtr< Param          >
+    , SEQUENCE // CountPtr< const Sequence >
+    , ARRAY    // CountPtr< ArrayBase      >
     , OTHER    // anything else
 
     , INT = INT32
   };
 
-  Type( Enum e=INVALID ) : m_e( e ) {}
+  Type( Enum e=NIL ) : m_e( e ) {}
   Type &operator=( Enum e ) { m_e = e; return (*this); }
 
   const char *getTypeName( void ) const
@@ -75,7 +75,7 @@ public:
     static
     const char *const names[] =
     {
-        "invalid"
+        "nil"
       , "bool"
       , "uint8"
       , "int8"
@@ -102,6 +102,50 @@ public:
     return names[ m_e ];
   }
 
+  static
+  Enum getTypeEnum( const char *typeName )
+  {
+    switch( typeName[ 0 ] )
+    {
+      case 'A': return ARRAY;
+      case 'F':
+        if( typeName[ 1 ] == 'r' ) return FRAME;
+        if( typeName[ 1 ] == 'u' ) return FUNCTION;
+        return OTHER;
+      case 'I': return INPUT;
+      case 'N': return NODE;
+      case 'O': return OUTPUT;
+      case 'P': return PARAM;
+      case 'S': return SEQUENCE;
+      case 'b': return BOOL;
+      case 'd': return DOUBLE;
+      case 'f': return FLOAT;
+      case 'i':
+        if( typeName[ 3 ] == '8' ) return INT8;
+        if( typeName[ 3 ] == '1' ) return INT16;
+        if( typeName[ 3 ] == '3' ) return INT32;
+        if( typeName[ 3 ] == '6' ) return INT64;
+        if( typeName[ 3 ] == '\0' ) return INT;
+        return OTHER;
+      case 'n': return NIL;
+      case 'o': return OTHER;
+      case 's': return STRING;
+      case 'u':
+        if( typeName[ 4 ] == '8' ) return UINT8;
+        if( typeName[ 4 ] == '1' ) return UINT16;
+        if( typeName[ 4 ] == '3' ) return UINT32;
+        if( typeName[ 4 ] == '6' ) return UINT64;
+        return OTHER;
+      default:
+        return OTHER;
+    }
+  }
+
+  explicit
+  Type( const char *typeName )
+  : m_e( getTypeEnum( typeName ) )
+  {}
+
   bool operator==( Enum e ) const { return m_e == e; }
   bool operator!=( Enum e ) const { return m_e != e; }
   bool operator< ( Enum e ) const { return m_e <  e; }
@@ -112,11 +156,87 @@ public:
   Enum getEnum( void ) const { return m_e; }
   operator Enum( void ) const { return getEnum(); }
 
-  bool isScalar( void ) const { return m_e >= BOOL && m_e <= DOUBLE; }
-  bool isInteger( void ) const { return m_e >= BOOL && m_e <= INT64; }
-  bool isPrimitive( void ) const { return m_e >= BOOL && m_e <= STRING; }
+  bool isScalar( void ) const
+  {
+    static const uint64_t _1 = uint64_t( 1 );
+    static const uint64_t flags =
+        ( _1 << Type::BOOL   )
+      | ( _1 << Type::UINT8  )
+      | ( _1 << Type::INT8   )
+      | ( _1 << Type::UINT16 )
+      | ( _1 << Type::INT16  )
+      | ( _1 << Type::UINT32 )
+      | ( _1 << Type::INT32  )
+      | ( _1 << Type::UINT64 )
+      | ( _1 << Type::INT64  )
+      | ( _1 << Type::FLOAT  )
+      | ( _1 << Type::DOUBLE )
+      ;
+    return flags & ( _1 << m_e );
+  }
 
-  static Type Invalid  ( void ) { return Type( Type::INVALID  ); }
+  bool isInteger( void ) const
+  {
+    static const uint64_t _1 = uint64_t( 1 );
+    static const uint64_t flags =
+        ( _1 << Type::BOOL   )
+      | ( _1 << Type::UINT8  )
+      | ( _1 << Type::INT8   )
+      | ( _1 << Type::UINT16 )
+      | ( _1 << Type::INT16  )
+      | ( _1 << Type::UINT32 )
+      | ( _1 << Type::INT32  )
+      | ( _1 << Type::UINT64 )
+      | ( _1 << Type::INT64  )
+      ;
+    return flags & ( _1 << m_e );
+  }
+
+  bool isFloatingPoint( void ) const
+  {
+    static const uint64_t _1 = uint64_t( 1 );
+    static const uint64_t flags =
+        ( _1 << Type::FLOAT  )
+      | ( _1 << Type::DOUBLE )
+      ;
+    return flags & ( _1 << m_e );
+  }
+
+  bool isPrimitive( void ) const
+  {
+    static const uint64_t _1 = uint64_t( 1 );
+    static const uint64_t flags =
+        ( _1 << Type::BOOL   )
+      | ( _1 << Type::UINT8  )
+      | ( _1 << Type::INT8   )
+      | ( _1 << Type::UINT16 )
+      | ( _1 << Type::INT16  )
+      | ( _1 << Type::UINT32 )
+      | ( _1 << Type::INT32  )
+      | ( _1 << Type::UINT64 )
+      | ( _1 << Type::INT64  )
+      | ( _1 << Type::FLOAT  )
+      | ( _1 << Type::DOUBLE )
+      | ( _1 << Type::STRING )
+      ;
+    return flags & ( _1 << m_e );
+  }
+
+  bool hasSign( void ) const
+  {
+    static const uint64_t _1 = uint64_t( 1 );
+    static const uint64_t flags =
+        ( _1 << Type::INT8   )
+      | ( _1 << Type::INT16  )
+      | ( _1 << Type::INT32  )
+      | ( _1 << Type::INT64  )
+      | ( _1 << Type::FLOAT  )
+      | ( _1 << Type::DOUBLE )
+      ;
+    return flags & ( _1 << m_e );
+  }
+
+  static Type Nil      ( void ) { return Type( Type::NIL      ); }
   static Type Bool     ( void ) { return Type( Type::BOOL     ); }
   static Type UInt8    ( void ) { return Type( Type::UINT8    ); }
   static Type Int8     ( void ) { return Type( Type::INT8     ); }
@@ -162,7 +282,7 @@ public:
   explicit Type( const RPGML::Sequence    & ) : m_e( Type::SEQUENCE ) {}
   explicit Type( const RPGML::ArrayBase   & ) : m_e( Type::ARRAY    ) {}
 
-  bool isInvalid ( void ) const { return ( m_e == Type::INVALID  ); }
+  bool isNil     ( void ) const { return ( m_e == Type::NIL      ); }
   bool isBool    ( void ) const { return ( m_e == Type::BOOL     ); }
   bool isUInt8   ( void ) const { return ( m_e == Type::UINT8    ); }
   bool isInt8    ( void ) const { return ( m_e == Type::INT8     ); }
@@ -186,24 +306,92 @@ public:
   bool isOther   ( void ) const { return ( m_e == Type::OTHER    ); }
 
   bool isInt      ( void ) const { return isInt32(); }
+
+  static
+  Type WithSign( Type type )
+  {
+    static const Enum ret[] =
+    {
+        NIL      // NIL
+      , BOOL     // BOOL
+      , INT8     // UINT8
+      , INT8     // INT8
+      , INT16    // UINT16
+      , INT16    // INT16
+      , INT32    // UINT32
+      , INT32    // INT32
+      , INT64    // UINT64
+      , INT64    // INT64
+      , FLOAT    // FLOAT
+      , DOUBLE   // DOUBLE
+      , NIL      // STRING
+      , NIL      // FRAME
+      , NIL      // FUNCTION
+      , NIL      // NODE
+      , NIL      // OUTPUT
+      , NIL      // INPUT
+      , NIL      // PARAM
+      , NIL      // SEQUENCE
+      , NIL      // ARRAY
+      , NIL      // OTHER
+    };
+
+    if( type <= Type::Other() )
+    {
+      return Type( ret[ type ] );
+    }
+    else
+    {
+      return Nil();
+    }
+  }
+
+  static
+  Type Ret( Type left, Type right )
+  {
+    if( left.isScalar() && right.isScalar() )
+    {
+      if( left.hasSign() || right.hasSign() )
+      {
+        return WithSign( std::max( left, right ) );
+      }
+      else
+      {
+        return std::max( left, right );
+      }
+    }
+    else if( left.isString() && right.isPrimitive() )
+    {
+      return String();
+    }
+    else if( left.isPrimitive() && right.isString() )
+    {
+      return String();
+    }
+    else
+    {
+      return Nil();
+    }
+  }
+
 private:
   Enum m_e;
 };
 
-template< typename T > struct TypeOf  { static const Type::Enum E = Type::OTHER; };
+template< typename T > struct TypeOf              { static const Type::Enum E = Type::OTHER; };
 
-template<> struct TypeOf< bool      > { static const Type::Enum E = Type::BOOL    ; };
-template<> struct TypeOf< uint8_t   > { static const Type::Enum E = Type::UINT8   ; };
-template<> struct TypeOf< int8_t    > { static const Type::Enum E = Type::INT8    ; };
-template<> struct TypeOf< uint16_t  > { static const Type::Enum E = Type::UINT16  ; };
-template<> struct TypeOf< int16_t   > { static const Type::Enum E = Type::INT16   ; };
-template<> struct TypeOf< uint32_t  > { static const Type::Enum E = Type::UINT32  ; };
-template<> struct TypeOf< int32_t   > { static const Type::Enum E = Type::INT32   ; };
-template<> struct TypeOf< uint64_t  > { static const Type::Enum E = Type::UINT64  ; };
-template<> struct TypeOf< int64_t   > { static const Type::Enum E = Type::INT64   ; };
-template<> struct TypeOf< float     > { static const Type::Enum E = Type::FLOAT   ; };
-template<> struct TypeOf< double    > { static const Type::Enum E = Type::DOUBLE  ; };
-template<> struct TypeOf< String    > { static const Type::Enum E = Type::STRING  ; };
+template<> struct TypeOf< bool                  > { static const Type::Enum E = Type::BOOL    ; };
+template<> struct TypeOf< uint8_t               > { static const Type::Enum E = Type::UINT8   ; };
+template<> struct TypeOf< int8_t                > { static const Type::Enum E = Type::INT8    ; };
+template<> struct TypeOf< uint16_t              > { static const Type::Enum E = Type::UINT16  ; };
+template<> struct TypeOf< int16_t               > { static const Type::Enum E = Type::INT16   ; };
+template<> struct TypeOf< uint32_t              > { static const Type::Enum E = Type::UINT32  ; };
+template<> struct TypeOf< int32_t               > { static const Type::Enum E = Type::INT32   ; };
+template<> struct TypeOf< uint64_t              > { static const Type::Enum E = Type::UINT64  ; };
+template<> struct TypeOf< int64_t               > { static const Type::Enum E = Type::INT64   ; };
+template<> struct TypeOf< float                 > { static const Type::Enum E = Type::FLOAT   ; };
+template<> struct TypeOf< double                > { static const Type::Enum E = Type::DOUBLE  ; };
+template<> struct TypeOf< String                > { static const Type::Enum E = Type::STRING  ; };
 template<> struct TypeOf< CountPtr< Frame     > > { static const Type::Enum E = Type::FRAME   ; };
 template<> struct TypeOf< CountPtr< Function  > > { static const Type::Enum E = Type::FUNCTION; };
 template<> struct TypeOf< CountPtr< Node      > > { static const Type::Enum E = Type::NODE    ; };
@@ -212,6 +400,103 @@ template<> struct TypeOf< CountPtr< Input     > > { static const Type::Enum E = 
 template<> struct TypeOf< CountPtr< Param     > > { static const Type::Enum E = Type::PARAM   ; };
 template<> struct TypeOf< CountPtr< Sequence  > > { static const Type::Enum E = Type::SEQUENCE; };
 template<> struct TypeOf< CountPtr< ArrayBase > > { static const Type::Enum E = Type::ARRAY   ; };
+
+template< Type::Enum E > struct EnumType {};
+
+template<> struct EnumType< Type::BOOL     >{ typedef bool                  T; };
+template<> struct EnumType< Type::UINT8    >{ typedef uint8_t               T; };
+template<> struct EnumType< Type::INT8     >{ typedef int8_t                T; };
+template<> struct EnumType< Type::UINT16   >{ typedef uint16_t              T; };
+template<> struct EnumType< Type::INT16    >{ typedef int16_t               T; };
+template<> struct EnumType< Type::UINT32   >{ typedef uint32_t              T; };
+template<> struct EnumType< Type::INT32    >{ typedef int32_t               T; };
+template<> struct EnumType< Type::UINT64   >{ typedef uint64_t              T; };
+template<> struct EnumType< Type::INT64    >{ typedef int64_t               T; };
+template<> struct EnumType< Type::FLOAT    >{ typedef float                 T; };
+template<> struct EnumType< Type::DOUBLE   >{ typedef double                T; };
+template<> struct EnumType< Type::STRING   >{ typedef String                T; };
+template<> struct EnumType< Type::FRAME    >{ typedef CountPtr< Frame     > T; };
+template<> struct EnumType< Type::FUNCTION >{ typedef CountPtr< Function  > T; };
+template<> struct EnumType< Type::NODE     >{ typedef CountPtr< Node      > T; };
+template<> struct EnumType< Type::OUTPUT   >{ typedef CountPtr< Output    > T; };
+template<> struct EnumType< Type::INPUT    >{ typedef CountPtr< Input     > T; };
+template<> struct EnumType< Type::PARAM    >{ typedef CountPtr< Param     > T; };
+template<> struct EnumType< Type::SEQUENCE >{ typedef CountPtr< Sequence  > T; };
+template<> struct EnumType< Type::ARRAY    >{ typedef CountPtr< ArrayBase > T; };
+
+template< typename T > struct IsSigned { static const bool B = false; };
+
+template<> struct IsSigned< int8_t  > { static const bool B = true; };
+template<> struct IsSigned< int16_t > { static const bool B = true; };
+template<> struct IsSigned< int32_t > { static const bool B = true; };
+template<> struct IsSigned< int64_t > { static const bool B = true; };
+template<> struct IsSigned< float   > { static const bool B = true; };
+template<> struct IsSigned< double  > { static const bool B = true; };
+
+template< typename T > struct IsScalar
+{
+  static const Type::Enum _E = TypeOf< T >::E;
+  static const bool B = ( _E >= Type::BOOL && _E <= Type::DOUBLE );
+};
+
+template< typename T > struct IsPrimitive
+{
+  static const Type::Enum _E = TypeOf< T >::E;
+  static const bool B = ( _E >= Type::BOOL && _E <= Type::STRING );
+};
+
+template< typename T > struct MakeSigned { static const Type::Enum E = Type::NIL; static const bool B = false; };
+
+template<> struct MakeSigned< uint8_t  >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
+template<> struct MakeSigned< int8_t   >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
+template<> struct MakeSigned< uint16_t >{ typedef int16_t T; static const Type::Enum E = Type::INT16 ; static const bool B = true; };
+template<> struct MakeSigned< int16_t  >{ typedef int16_t T; static const Type::Enum E = Type::INT16 ; static const bool B = true; };
+template<> struct MakeSigned< uint32_t >{ typedef int32_t T; static const Type::Enum E = Type::INT32 ; static const bool B = true; };
+template<> struct MakeSigned< int32_t  >{ typedef int32_t T; static const Type::Enum E = Type::INT32 ; static const bool B = true; };
+template<> struct MakeSigned< uint64_t >{ typedef int64_t T; static const Type::Enum E = Type::INT64 ; static const bool B = true; };
+template<> struct MakeSigned< int64_t  >{ typedef int64_t T; static const Type::Enum E = Type::INT64 ; static const bool B = true; };
+template<> struct MakeSigned< float    >{ typedef float   T; static const Type::Enum E = Type::FLOAT ; static const bool B = true; };
+template<> struct MakeSigned< double   >{ typedef double  T; static const Type::Enum E = Type::DOUBLE; static const bool B = true; };
+
+template< int SELECT, typename T0, typename T1, typename T2=void, typename T3=void > struct SelectType {};
+template< typename T0, typename T1, typename T2, typename T3 > struct SelectType< 0, T0, T1, T2, T3 > { typedef T0 T; };
+template< typename T0, typename T1, typename T2, typename T3 > struct SelectType< 1, T0, T1, T2, T3 > { typedef T1 T; };
+template< typename T0, typename T1, typename T2, typename T3 > struct SelectType< 2, T0, T1, T2, T3 > { typedef T2 T; };
+template< typename T0, typename T1, typename T2, typename T3 > struct SelectType< 3, T0, T1, T2, T3 > { typedef T3 T; };
+
+template< class X, class Y >
+struct MaxType
+{
+  static const Type::Enum _EX = TypeOf< X >::E;
+  static const Type::Enum _EY = TypeOf< Y >::E;
+  static const Type::Enum E = ( _EX > _EY ? _EX : _EY );
+  typedef typename EnumType< E >::T T;
+};
+
+template< class X, class Y >
+struct RetType
+{
+  static const Type::Enum EX = TypeOf< X >::E;
+  static const Type::Enum EY = TypeOf< Y >::E;
+
+  // See Type::Ret()
+  static const Type::Enum E =
+    ( IsScalar< X >::B && IsScalar< X >::B
+    ? ( IsSigned< X >::B || IsSigned< X >::B
+      ? MakeSigned< typename MaxType< X, Y >::T >::E
+      : MaxType< X, Y >::E
+      )
+    : ( EX == Type::STRING && IsPrimitive< Y >::B
+      ? Type::STRING
+      : ( IsPrimitive< X >::B && EY == Type::STRING
+        ? Type::STRING
+        : Type::NIL
+        )
+      )
+    );
+
+  typedef typename EnumType< E >::T T;
+};
 
 template< class T >
 static inline
