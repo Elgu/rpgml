@@ -2,6 +2,9 @@
 .SUFFIXES: .o .cpp .cc .hh .yy .dep
 
 CFLAGS=\
+	-std=c++11\
+	-fnon-call-exceptions\
+	-rdynamic\
 	-Wall\
 	-Wextra\
 	-Wformat\
@@ -9,7 +12,6 @@ CFLAGS=\
 	-Wuninitialized\
 	-Wsuggest-attribute=pure\
 	-Wsuggest-attribute=const\
-	-Wsuggest-attribute=noreturn\
 	-Wshadow\
 	-Wwrite-strings\
 	-Wconversion\
@@ -20,9 +22,12 @@ CFLAGS=\
 	-g -O0\
 	-DDEBUG\
 
+#	-Wsuggest-attribute=noreturn\
+
 CXXFLAGS=$(CFLAGS)
 
 LDFLAGS=\
+	-rdynamic\
 	-lpthread\
 	-L$(RPGML_SRC_ROOT)/libRPGML\
 
