@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -40,9 +40,6 @@ public:
   virtual CountPtr< Iter > getIter( void ) const = 0;
 private:
 };
-
-CountPtr< Sequence > genSequenceFromToStep( GarbageCollector *gc, int from, int to, int step );
-CountPtr< Sequence > genSequenceFromToStep( GarbageCollector *gc, float from, float to, float step );
 
 class SequenceValueArray : public Sequence
 {
@@ -75,6 +72,8 @@ private:
 
   CountPtr< const ArrayBase > m_array;
 };
+
+CountPtr< Sequence > genSequenceFromToStep( GarbageCollector *gc, const Value &from, const Value &to, const Value &step );
 
 } // namespace RPGML
 
