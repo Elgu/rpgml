@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -49,8 +49,9 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
         CountPtr< Node > node( scope->create_Node( loc, recursion_depth+1, String::Static( "Print" ) ) );
 
         scope->toOutput( loc, recursion_depth+1, in )->connect( node->getInput( "in" ) );
+        scope->call( loc, recursion_depth+1, String::Static( "needing" ), ret, Value( node.get() ) );
 
-        ret = Value( String::Static() );
+        ret = Value( true );
         return true;
       }
       break;
@@ -73,4 +74,4 @@ CountPtr< Function::Args > Function_print::genDeclArgs( void )
 
 } // namespace RPGML
 
-RPGML_CREATE_FUNCTION( print )
+RPGML_CREATE_FUNCTION( print,  )
