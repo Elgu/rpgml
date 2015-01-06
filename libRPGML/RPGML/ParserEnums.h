@@ -1,22 +1,24 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
 #ifndef RPGML_ParserEnums_h
 #define RPGML_ParserEnums_h
+
+#include "Exception.h"
 
 namespace RPGML {
 
@@ -41,6 +43,7 @@ enum BOP
   , BOP_ADD
   , BOP_SUB
   , BOP_MOD
+  , BOP_UNDEFINED
 };
 
 static inline
@@ -57,6 +60,7 @@ const char *getBOPStr( BOP bop )
     , "&", "|", "^"
     , "*", "/", "+", "-"
     , "%"
+    , "undefined"
   };
   return op[ bop ];
 }
@@ -162,7 +166,7 @@ BOP getBOP( const char *const bop )
   }
 
 fail:
-  throw "Invalid bop";
+  throw Exception() << "undefined binary op";
 }
 
 enum UOP
@@ -171,6 +175,7 @@ enum UOP
   , UOP_PLUS
   , UOP_LOG_NOT
   , UOP_BIT_NOT
+  , UOP_UNDEFINED
 };
 
 static inline
@@ -178,7 +183,7 @@ const char *getUOPStr( UOP uop )
 {
   static
   const char *const op[] =
-  { "-", "+", "!", "~" };
+  { "-", "+", "!", "~", "undefined" };
   return op[ uop ];
 }
 
@@ -197,7 +202,7 @@ UOP getUOP( const char *uop )
   }
 
 fail:
-  throw "Invalid uop";
+  throw Exception() << "undefined unary op";
 }
 
 enum ASSIGN
