@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -22,6 +22,7 @@
 #include "Frame.h"
 #include "Array.h"
 #include "Exception.h"
+#include "JobQueue.h"
 
 #include <vector>
 
@@ -41,6 +42,96 @@
   setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method ) ); \
   push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
+#define DEFINE_PARAM_INDEX( PARAM_ENUM, identifier, method, index ) \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index ) ); \
+  push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
+
+#define GET_INPUT_MANDATORY( INPUT_ENUM, var_identifier, type, dims ) \
+  const Array< type, dims > *var_identifier = 0; \
+  if( !getInput( INPUT_ENUM )->isConnected() ) \
+  { \
+    throw NotConnected( getInput( INPUT_ENUM ) ); \
+  } \
+  if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+  { \
+    throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+  } \
+
+#define GET_INPUT_ELEMENTS( INPUT_ENUM, var_identifier, type ) \
+  const ArrayElements< type > *var_identifier = 0; \
+  if( !getInput( INPUT_ENUM )->isConnected() ) \
+  { \
+    throw NotConnected( getInput( INPUT_ENUM ) ); \
+  } \
+  if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+  { \
+    throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+  } \
+
+#define GET_INPUT_IF_CONNECTED( INPUT_ENUM, var_identifier, type, dims ) \
+  const Array< type, dims > *var_identifier = 0; \
+  if( getInput( INPUT_ENUM )->isConnected() ) \
+  { \
+    if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+    } \
+  } \
+
+#define GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_ENUM, var_identifier, type ) \
+  const ArrayElements< type > *var_identifier = 0; \
+  if( getInput( INPUT_ENUM )->isConnected() ) \
+  { \
+    if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+    } \
+  } \
+
+#define GET_OUTPUT_AS( OUTPUT_ENUM, var_identifier, type, dims ) \
+  Array< type, dims > *var_identifier = 0; \
+  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+  { \
+    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+  } \
+
+#define GET_OUTPUT_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
+  getOutput( OUTPUT_ENUM )->initData< type >( dims, size ); \
+  Array< type, dims > *var_identifier = 0; \
+  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+  { \
+    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+  } \
+
+#define GET_OUTPUT_ELEMENTS_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
+  getOutput( OUTPUT_ENUM )->initData< type >( dims, size ); \
+  ArrayElements< type > *var_identifier = 0; \
+  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+  { \
+    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+  } \
+  if( size ) var_identifier->resize( dims, size );\
+
+#define GET_OUTPUT_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type, dims ) \
+  Array< type, dims > *var_identifier = 0; \
+  { \
+    Output *const output = getOutput( OUTPUT_ENUM ); \
+    if( output->isConnected() && !output->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+    } \
+  } \
+
+#define GET_OUTPUT_ELEMENTS_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type ) \
+  ArrayElements< type > *var_identifier = 0; \
+  { \
+    Output *const output = getOutput( OUTPUT_ENUM ); \
+    if( output->isConnected() && !output->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+    } \
+  } \
+
 namespace RPGML {
 
 class Port;
@@ -51,6 +142,7 @@ class Node;
 class Port : public Collectable
 {
 public:
+  typedef Collectable Base;
   Port( GarbageCollector *gc, Node *parent );
   virtual ~Port( void );
 
@@ -69,6 +161,7 @@ private:
 class Input : public Port
 {
 public:
+  typedef Port Base;
   Input( GarbageCollector *gc, Node *parent );
   virtual ~Input( void );
 
@@ -81,6 +174,7 @@ public:
   void connect( Output *output );
 
   bool isConnected( void ) const;
+  bool hasChanged( void ) const;
 
   const Output *getOutput( void ) const;
   const ArrayBase *getData( void ) const;
@@ -92,6 +186,7 @@ private:
 class Output : public Port
 {
 public:
+  typedef Port Base;
   Output( GarbageCollector *gc, Node *parent );
   virtual ~Output( void );
 
@@ -104,6 +199,9 @@ public:
   void connect( Input *input );
 
   bool isConnected( void ) const;
+  bool hasChanged( void ) const;
+
+  void setChanged( bool changed=true );
 
   void setData( ArrayBase *data );
   ArrayBase *getData( void );
@@ -111,6 +209,9 @@ public:
 
   template< class T >
   void initData( int dims, const index_t *size );
+
+  template< class T >
+  void initData( const ArrayBase::Size &size ) { initData< T >( size.getDims(), size.getCoords() ); }
 
   template< class DataType >
   DataType *getAs( DataType* &as )
@@ -131,8 +232,9 @@ public:
 
 private:
   typedef Array< CountPtr< Input >, 1 > inputs_t;
-  inputs_t m_inputs;
+  CountPtr< inputs_t  > m_inputs;
   CountPtr< ArrayBase > m_data;
+  bool m_hasChanged;
 };
 
 class Param : public Collectable
@@ -161,8 +263,18 @@ private:
 class Node : public Frame
 {
 public:
-  EXCEPTION_BASE( Exception );
   typedef Frame Base;
+  EXCEPTION_BASE( Exception );
+
+  EXCEPTION_DERIVED( ExitRequest   , Exception );
+  EXCEPTION_DERIVED( NotFound      , Exception );
+  EXCEPTION_DERIVED( InputNotFound , NotFound  );
+  EXCEPTION_DERIVED( OutputNotFound, NotFound  );
+  EXCEPTION_DERIVED( ParamNotFound , NotFound  );
+
+  class NotConnected;
+  class IncompatibleOutput;
+  class GetAsFailed;
 
   class NotConnected : public Exception
   {
@@ -170,6 +282,15 @@ public:
     typedef Exception Base;
     explicit NotConnected( const Input *_input );
     EXCEPTION_BODY( NotConnected )
+    CountPtr< const Input > input;
+  };
+
+  class IncompatibleOutput : public Exception
+  {
+  public:
+    typedef Exception Base;
+    explicit IncompatibleOutput( const Input *_input );
+    EXCEPTION_BODY( IncompatibleOutput )
     CountPtr< const Input > input;
   };
 
@@ -221,6 +342,7 @@ public:
   const String &getIdentifier( void ) const;
   const SharedObject *getSO( void ) const;
 
+  virtual bool tick( CountPtr< JobQueue > main_thread );
   virtual bool tick( void );
 
   virtual void gc_clear( void );
@@ -236,7 +358,7 @@ public:
   Param *getParam( int     i ) const;
   Param *getParam( const char *identifier ) const;
 
-  Param *setParam( index_t i, Param *param );
+  Param *setParam( index_t i, CountPtr< Param > param );
 
   void setNumInputs( index_t n );
   void setNumOutputs( index_t n );
@@ -245,6 +367,10 @@ public:
   index_t getNumInputs( void ) const;
   index_t getNumOutputs( void ) const;
   index_t getNumParams( void ) const;
+
+  void clearHasChanged( void ) const;
+  bool hasAnyInputChanged( void ) const;
+  void setAllOutputChanged( bool changed = true );
 
 protected:
   template< class ParentNode >
@@ -294,9 +420,9 @@ private:
   typedef Array< CountPtr< Input  >, 1 > inputs_t;
   typedef Array< CountPtr< Output >, 1 > outputs_t;
   typedef Array< CountPtr< Param  >, 1 > params_t;
-  inputs_t  m_inputs;
-  outputs_t m_outputs;
-  params_t  m_params;
+  CountPtr< inputs_t  > m_inputs;
+  CountPtr< outputs_t > m_outputs;
+  CountPtr< params_t  > m_params;
   const String m_identifier;
   CountPtr< const SharedObject > m_so;
 };
@@ -322,7 +448,7 @@ void Output::init( const String &identifier, const index_t *size )
   }
   else
   {
-    if( size ) out->resize( DIMS, size );
+    if( size ) out->resize_v( DIMS, size );
   }
 }
 
@@ -353,23 +479,23 @@ void Output::initData( int dims, const index_t *size )
     setData( out );
   }
 
-  out->resize( dims, size );
+  out->resize_v( dims, size );
 }
 
 } // namespace RPGML
 
-#define RPGML_CREATE_FUNCTION( NAME ) \
+#define RPGML_CREATE_FUNCTION( NAME, EXTRA_NAMESPACES ) \
   extern "C"\
   RPGML::CountPtr< RPGML::Function > NAME ## _create_Function( RPGML::GarbageCollector *gc, RPGML::Frame *parent, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::Function_ ## NAME( gc, parent, so );\
+    return new RPGML:: EXTRA_NAMESPACES Function_ ## NAME( gc, parent, so );\
   }\
 
-#define RPGML_CREATE_NODE( NAME ) \
+#define RPGML_CREATE_NODE( NAME, EXTRA_NAMESPACES ) \
   extern "C"\
   RPGML::CountPtr< RPGML::Node > NAME ## _create_Node( RPGML::GarbageCollector *gc, const RPGML::String &identifier, const RPGML::SharedObject *so )\
   {\
-    return new RPGML::NAME( gc, identifier, so );\
+    return new RPGML:: EXTRA_NAMESPACES NAME( gc, identifier, so );\
   }\
 
 #endif

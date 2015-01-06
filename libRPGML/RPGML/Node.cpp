@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -19,6 +19,8 @@
 
 #include "String.h"
 #include "SharedObject.h"
+
+using namespace std;
 
 namespace RPGML {
 
@@ -53,7 +55,7 @@ void Port::gc_clear( void )
 
 void Port::gc_getChildren( Children &children ) const
 {
-  children.add( m_parent.get() );
+  children.add( m_parent );
 }
 
 Input::Input( GarbageCollector *_gc, Node *parent )
@@ -68,12 +70,6 @@ Input::~Input( void )
 void Input::init( const String &identifier )
 {
   setIdentifier( identifier );
-}
-
-void Input::gc_clear( void )
-{
-  Port::gc_clear();
-  disconnect();
 }
 
 const Output *Input::getOutput( void ) const
@@ -93,14 +89,16 @@ const ArrayBase *Input::getData( void ) const
   }
 }
 
+void Input::gc_clear( void )
+{
+  Port::gc_clear();
+  m_output.reset();
+}
+
 void Input::gc_getChildren( Children &children ) const
 {
-  Port::gc_getChildren( children );
-
-  if( isConnected() )
-  {
-    children.add( m_output.get() );
-  }
+  Base::gc_getChildren( children );
+  children.add( m_output );
 }
 
 void Input::disconnect( void )
@@ -128,9 +126,15 @@ bool Input::isConnected( void ) const
   return m_output.get() != 0;
 }
 
+bool Input::hasChanged( void ) const
+{
+  return isConnected() && getOutput()->hasChanged();
+}
+
 Output::Output( GarbageCollector *_gc, Node *parent )
 : Port( _gc, parent )
-, m_inputs( 0 )
+, m_inputs( new inputs_t( _gc ) )
+, m_hasChanged( false )
 {}
 
 Output::~Output( void )
@@ -155,30 +159,34 @@ const ArrayBase *Output::getData( void ) const
 
 void Output::gc_clear( void )
 {
-  Port::gc_clear();
-  disconnect();
+  Base::gc_clear();
+  m_inputs.reset();
+  m_data.reset();
 }
 
 void Output::gc_getChildren( Children &children ) const
 {
-  Port::gc_getChildren( children );
-  m_inputs.gc_getChildren( children );
+  Base::gc_getChildren( children );
+  children.add( m_inputs );
+  children.add( m_data );
 }
 
 void Output::disconnect( void )
 {
-  inputs_t tmp( m_inputs.getGC() );
-  tmp.swap( m_inputs );
+  if( m_inputs.isNull() ) return;
 
-  for( inputs_t::const_iterator i( tmp.begin() ), end( tmp.end() ); i != end; ++i )
+  CountPtr< inputs_t > tmp = new inputs_t( m_inputs->getGC() );
+  std::swap( (**tmp), (**m_inputs) );
+
+  for( inputs_t::const_iterator i( tmp->begin() ), end( tmp->end() ); i != end; ++i )
   {
-    if( (*i).get() ) (*i)->disconnect();
+    if( !(*i).isNull() ) (*i)->disconnect();
   }
 }
 
 void Output::disconnect( Input *input )
 {
-  for( inputs_t::iterator i( m_inputs.begin() ), end( m_inputs.end() ); i != end; ++i )
+  for( inputs_t::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i).get() == input )
     {
@@ -192,7 +200,7 @@ void Output::disconnect( Input *input )
 void Output::connect( Input *input )
 {
   CountPtr< Input > *free_pos = 0;
-  for( inputs_t::reverse_iterator i( m_inputs.rbegin() ), end( m_inputs.rend() ); i != end; ++i )
+  for( inputs_t::reverse_iterator i( m_inputs->rbegin() ), end( m_inputs->rend() ); i != end; ++i )
   {
     Input *const input_i = (*i).get();
     if( input_i == input )
@@ -214,7 +222,7 @@ void Output::connect( Input *input )
   }
   else
   {
-    m_inputs.push_back( CountPtr< Input >( input ) );
+    m_inputs->push_back( CountPtr< Input >( input ) );
   }
 
   input->connect( this );
@@ -222,11 +230,21 @@ void Output::connect( Input *input )
 
 bool Output::isConnected( void ) const
 {
-  for( inputs_t::const_iterator i( m_inputs.begin() ), end( m_inputs.end() ); i != end; ++i )
+  for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i).get() ) return true;
   }
   return false;
+}
+
+bool Output::hasChanged( void ) const
+{
+  return m_hasChanged;
+}
+
+void Output::setChanged( bool changed )
+{
+  m_hasChanged = changed;
 }
 
 Node::Node(
@@ -238,9 +256,9 @@ Node::Node(
   , index_t num_params
   )
 : Frame( _gc, 0 )
-, m_inputs( _gc )
-, m_outputs( _gc )
-, m_params( _gc )
+, m_inputs( new inputs_t( _gc ) )
+, m_outputs( new outputs_t( _gc ) )
+, m_params( new params_t( _gc ) )
 , m_identifier( identifier )
 , m_so( so )
 {
@@ -266,30 +284,37 @@ const SharedObject *Node::getSO( void ) const
 
 bool Node::tick( void )
 {
-  return true;
+  throw Exception() << "tick() not implemented";
+}
+
+bool Node::tick( CountPtr< JobQueue > )
+{
+  return tick();
 }
 
 void Node::gc_clear( void )
 {
-  Frame::gc_clear();
-  m_inputs.gc_clear();
-  m_outputs.gc_clear();
+  Base::gc_clear();
+  m_inputs.reset();
+  m_outputs.reset();
+  m_params.reset();
 }
 
 void Node::gc_getChildren( Children &children ) const
 {
-  Frame::gc_getChildren( children );
-  m_inputs.gc_getChildren( children );
-  m_outputs.gc_getChildren( children );
+  Base::gc_getChildren( children );
+  children.add( m_inputs  );
+  children.add( m_outputs );
+  children.add( m_params  );
 }
 
 Input *Node::getInput( index_t i ) const
 {
-  if( i < m_inputs.size() )
+  if( i < m_inputs->size() )
   {
-    return m_inputs[ i ];
+    return (*m_inputs)[ i ];
   }
-  throw "Node::getInput( i ): Index out of bounds";
+  throw InputNotFound() << "Input index " << i << " out of bounds";
 }
 
 Input *Node::getInput( int i ) const
@@ -299,20 +324,20 @@ Input *Node::getInput( int i ) const
 
 Input *Node::getInput( const char *identifier ) const
 {
-  for( inputs_t::const_iterator i( m_inputs.begin() ), end( m_inputs.end() ); i != end; ++i )
+  for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
   }
-  throw "Node::getInput(): Identifier not found";
+  throw InputNotFound() << "Input '" << identifier << "' not found";
 }
 
 Output *Node::getOutput( index_t i ) const
 {
-  if( i < m_outputs.size() )
+  if( i < m_outputs->size() )
   {
-    return m_outputs[ i ];
+    return (*m_outputs)[ i ];
   }
-  throw "Node::getOutput( i ): Index out of bounds";
+  throw OutputNotFound() << "Output index " << i << " out of bounds";
 }
 
 Output *Node::getOutput( int i ) const
@@ -322,20 +347,20 @@ Output *Node::getOutput( int i ) const
 
 Output *Node::getOutput( const char *identifier ) const
 {
-  for( outputs_t::const_iterator i( m_outputs.begin() ), end( m_outputs.end() ); i != end; ++i )
+  for( outputs_t::const_iterator i( m_outputs->begin() ), end( m_outputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
   }
-  throw "Node::getOutput(): Identifier not found";
+  throw OutputNotFound() << "Output '" << identifier << "' not found";
 }
 
 Param *Node::getParam( index_t i ) const
 {
-  if( i < m_params.size() )
+  if( i < m_params->size() )
   {
-    return m_params[ i ];
+    return (*m_params)[ i ];
   }
-  throw "Node::getParam( i ): Index out of bounds";
+  throw ParamNotFound() << "Param index " << i << " out of bounds";
 }
 
 Param *Node::getParam( int i ) const
@@ -345,65 +370,81 @@ Param *Node::getParam( int i ) const
 
 Param *Node::getParam( const char *identifier ) const
 {
-  for( params_t::const_iterator i( m_params.begin() ), end( m_params.end() ); i != end; ++i )
+  for( params_t::const_iterator i( m_params->begin() ), end( m_params->end() ); i != end; ++i )
   {
     if( !(*i).isNull() && (*i)->getIdentifier() == identifier ) return (*i);
   }
-  throw "Node::getParam(): Identifier not found";
+  throw ParamNotFound() << "Param '" << identifier << "' not found";
 }
 
-Param *Node::setParam( index_t i, Param *param )
+Param *Node::setParam( index_t i, CountPtr< Param > param )
 {
-  if( i < m_params.size() )
+  if( i < m_params->size() )
   {
-    return ( m_params[ i ] = param );
+    return ( (*m_params)[ i ] = param );
   }
-  else
-  {
-    return 0;
-  }
+  throw ParamNotFound() << "Param index " << i << " out of bounds";
 }
 
 void Node::setNumInputs( index_t n )
 {
-  index_t old_n = m_inputs.size();
+  index_t old_n = m_inputs->size();
 
-  m_inputs.resize( n );
+  m_inputs->resize( n );
   for( index_t i = old_n; i < n; ++i )
   {
-    m_inputs[ i ] = new Input( getGC(), this );
+    (*m_inputs)[ i ] = new Input( getGC(), this );
   }
 }
 
 void Node::setNumOutputs( index_t n )
 {
-  index_t old_n = m_outputs.size();
+  index_t old_n = m_outputs->size();
 
-  m_outputs.resize( n );
+  m_outputs->resize( n );
   for( index_t i = old_n; i < n; ++i )
   {
-    m_outputs[ i ] = new Output( getGC(), this );
+    (*m_outputs)[ i ] = new Output( getGC(), this );
   }
 }
 
 void Node::setNumParams( index_t n )
 {
-  m_params.resize( n );
+  m_params->resize( n );
 }
 
 index_t Node::getNumInputs( void ) const
 {
-  return m_inputs.size();
+  return m_inputs->size();
 }
 
 index_t Node::getNumOutputs( void ) const
 {
-  return m_outputs.size();
+  return m_outputs->size();
 }
 
 index_t Node::getNumParams( void ) const
 {
-  return m_params.size();
+  return m_params->size();
+}
+
+void Node::setAllOutputChanged( bool changed )
+{
+  for( index_t i( 0 ), end( m_outputs->size() ); i < end; ++i )
+  {
+    Output *const output = (*m_outputs)[ i ];
+    if( output ) output->setChanged( changed );
+  }
+}
+
+bool Node::hasAnyInputChanged( void ) const
+{
+  for( index_t i( 0 ), end( m_inputs->size() ); i < end; ++i )
+  {
+    Input *const input = (*m_inputs)[ i ];
+    if( input && input->hasChanged() ) return true;
+  }
+  return false;
 }
 
 Node::NotConnected::NotConnected( const Input *_input )
@@ -412,6 +453,23 @@ Node::NotConnected::NotConnected( const Input *_input )
   (*this)
     << "Input '" << input->getIdentifier() << "' is not connected."
     ;
+}
+
+Node::IncompatibleOutput::IncompatibleOutput( const Input *_input )
+: input( _input )
+{
+  (*this)
+    << "Input '" << input->getIdentifier() << "'"
+    << " is connected to incompatibe Output"
+    ;
+  if( input->isConnected() )
+  {
+    const Output *const output = input->getOutput();
+    (*this)
+      << " '" << output->getIdentifier() << "." << output->getParent()->getIdentifier() << "'"
+      << " of < " << output->getData()->getTypeName() << ", " << output->getData()->getDims() << " >"
+      ;
+  }
 }
 
 Node::InitFailed::InitFailed( const Output *_output )
