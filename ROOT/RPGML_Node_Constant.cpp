@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -61,23 +61,28 @@ bool Constant::tick( void )
     switch( m_value.getType().getEnum() )
     {
       case Type::BOOL  : out.reset( new Array< bool    , 0 >( getGC() ) ); break;
-//      case Type::UINT8 : out.reset( new Array< uint8_t , 0 >( getGC() ) ); break;
-//      case Type::INT8  : out.reset( new Array< int8_t  , 0 >( getGC() ) ); break;
-//      case Type::UINT16: out.reset( new Array< uint16_t, 0 >( getGC() ) ); break;
-//      case Type::INT16 : out.reset( new Array< int16_t , 0 >( getGC() ) ); break;
-//      case Type::UINT32: out.reset( new Array< uint32_t, 0 >( getGC() ) ); break;
+      case Type::UINT8 : out.reset( new Array< uint8_t , 0 >( getGC() ) ); break;
+      case Type::INT8  : out.reset( new Array< int8_t  , 0 >( getGC() ) ); break;
+      case Type::UINT16: out.reset( new Array< uint16_t, 0 >( getGC() ) ); break;
+      case Type::INT16 : out.reset( new Array< int16_t , 0 >( getGC() ) ); break;
+      case Type::UINT32: out.reset( new Array< uint32_t, 0 >( getGC() ) ); break;
       case Type::INT32 : out.reset( new Array< int32_t , 0 >( getGC() ) ); break;
-//      case Type::UINT64: out.reset( new Array< uint64_t, 0 >( getGC() ) ); break;
-//      case Type::INT64 : out.reset( new Array< int64_t , 0 >( getGC() ) ); break;
+      case Type::UINT64: out.reset( new Array< uint64_t, 0 >( getGC() ) ); break;
+      case Type::INT64 : out.reset( new Array< int64_t , 0 >( getGC() ) ); break;
       case Type::FLOAT : out.reset( new Array< float   , 0 >( getGC() ) ); break;
-//      case Type::DOUBLE: out.reset( new Array< double  , 0 >( getGC() ) ); break;
+      case Type::DOUBLE: out.reset( new Array< double  , 0 >( getGC() ) ); break;
       case Type::STRING: out.reset( new Array< String  , 0 >( getGC() ) ); break;
+
+      // TODO: use ConstantArray or something
+      case Type::ARRAY : out.reset( m_value.getArray() ); break;
+
       default:
         throw Exception() << "Parameter 'value' was not set or set to a non-primitive type.";
     }
 
     out->setValue( m_value );
     getOutput( OUTPUT_OUT )->setData( out );
+    getOutput( OUTPUT_OUT )->setChanged();
     m_first = false;
   }
   return true;
@@ -95,5 +100,5 @@ void Constant::gc_getChildren( Children &children ) const
 
 } // namespace RPGML
 
-RPGML_CREATE_NODE( Constant )
+RPGML_CREATE_NODE( Constant,  )
 
