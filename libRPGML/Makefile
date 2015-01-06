@@ -10,6 +10,7 @@ all: libRPGML.so
 
 libRPGML_SOURCE=\
 	rpgml.tab.cc\
+	Location.cpp\
 	Scanner.cpp\
 	GarbageCollector.cpp\
 	Value.cpp\
@@ -32,6 +33,7 @@ libRPGML_SOURCE=\
 	JobQueue.cpp\
 	Graph.cpp\
 	ThreadPool.cpp\
+	ParseException.cpp\
 
 libRPGML_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(libRPGML_SOURCE)))
 
@@ -74,6 +76,8 @@ clean:
 	rm -f .parser_files
 	rm -f .depend
 	rm -f *.o
+	rm -f *.o.CXXFLAGS
+	rm -f *.o.LDFLAGS
 	rm -f rpgml $(rpgml_OBJECTS)
 	rm -f libRPGML.so $(libRPGML_OBJECTS)
 	rm -f $(foreach so, $(SOs), RPGML_$(so).o libRPGML_$(so).so )
