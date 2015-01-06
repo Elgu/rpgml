@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -36,6 +36,7 @@ class utest_Type : public CppUnit::TestFixture
 
   CPPUNIT_TEST( test_ctor );
   CPPUNIT_TEST( test_getTypeName );
+  CPPUNIT_TEST( test_getTypeEnum );
   CPPUNIT_TEST( test_cmp );
   CPPUNIT_TEST( test_isScalar );
   CPPUNIT_TEST( test_isInteger );
@@ -51,7 +52,7 @@ public:
 
   void test_ctor( void )
   {
-    CPPUNIT_ASSERT( Type( Type::INVALID  ).getEnum() == Type::INVALID  );
+    CPPUNIT_ASSERT( Type( Type::NIL  ).getEnum() == Type::NIL  );
     CPPUNIT_ASSERT( Type( Type::BOOL     ).getEnum() == Type::BOOL     );
     CPPUNIT_ASSERT( Type( Type::UINT8    ).getEnum() == Type::UINT8    );
     CPPUNIT_ASSERT( Type( Type::INT8     ).getEnum() == Type::INT8     );
@@ -75,14 +76,14 @@ public:
     CPPUNIT_ASSERT( Type( Type::OTHER    ).getEnum() == Type::OTHER    );
 
     Type t;
-    CPPUNIT_ASSERT( t == Type::Invalid() );
+    CPPUNIT_ASSERT( t == Type::Nil() );
     t = Type::DOUBLE;
     CPPUNIT_ASSERT( t == Type::Double() );
   }
 
   void test_getTypeName( void )
   {
-    CPPUNIT_ASSERT( std::string( "invalid"  ) == Type( Type::INVALID  ).getTypeName() );
+    CPPUNIT_ASSERT( std::string( "nil"      ) == Type( Type::NIL      ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "bool"     ) == Type( Type::BOOL     ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "uint8"    ) == Type( Type::UINT8    ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "int8"     ) == Type( Type::INT8     ).getTypeName() );
@@ -106,6 +107,32 @@ public:
     CPPUNIT_ASSERT( std::string( "other"    ) == Type( Type::OTHER    ).getTypeName() );
   }
 
+  void test_getTypeEnum( void )
+  {
+    CPPUNIT_ASSERT_EQUAL( Type::Nil     (), Type( "nil"      ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Bool    (), Type( "bool"     ) );
+    CPPUNIT_ASSERT_EQUAL( Type::UInt8   (), Type( "uint8"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Int8    (), Type( "int8"     ) );
+    CPPUNIT_ASSERT_EQUAL( Type::UInt16  (), Type( "uint16"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Int16   (), Type( "int16"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::UInt32  (), Type( "uint32"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Int32   (), Type( "int32"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::UInt64  (), Type( "uint64"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Int64   (), Type( "int64"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Float   (), Type( "float"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Double  (), Type( "double"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::String  (), Type( "string"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Frame   (), Type( "Frame"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Function(), Type( "Function" ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Node    (), Type( "Node"     ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Output  (), Type( "Output"   ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Input   (), Type( "Input"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Param   (), Type( "Param"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Sequence(), Type( "Sequence" ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Array   (), Type( "Array"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Other   (), Type( "other"    ) );
+  }
+
   void test_cmp( void )
   {
     CPPUNIT_ASSERT( Type::Int8() == Type( Type::INT8 ) );
@@ -126,7 +153,7 @@ public:
 
   void test_isScalar( void )
   {
-    CPPUNIT_ASSERT( !Type::Invalid().isScalar() );
+    CPPUNIT_ASSERT( !Type::Nil().isScalar() );
     CPPUNIT_ASSERT( Type::Bool    ().isScalar() );
     CPPUNIT_ASSERT( Type::UInt8   ().isScalar() );
     CPPUNIT_ASSERT( Type::Int8    ().isScalar() );
@@ -152,7 +179,7 @@ public:
 
   void test_isInteger( void )
   {
-    CPPUNIT_ASSERT( !Type::Invalid().isInteger() );
+    CPPUNIT_ASSERT( !Type::Nil().isInteger() );
     CPPUNIT_ASSERT( Type::Bool    ().isInteger() );
     CPPUNIT_ASSERT( Type::UInt8   ().isInteger() );
     CPPUNIT_ASSERT( Type::Int8    ().isInteger() );
@@ -178,7 +205,7 @@ public:
 
   void test_isPrimitive( void )
   {
-    CPPUNIT_ASSERT( !Type::Invalid().isPrimitive() );
+    CPPUNIT_ASSERT( !Type::Nil().isPrimitive() );
     CPPUNIT_ASSERT( Type::Bool    ().isPrimitive() );
     CPPUNIT_ASSERT( Type::UInt8   ().isPrimitive() );
     CPPUNIT_ASSERT( Type::Int8    ().isPrimitive() );
@@ -204,7 +231,7 @@ public:
 
   void test_isFoo( void )
   {
-    CPPUNIT_ASSERT( Type::Invalid ().isInvalid () );
+    CPPUNIT_ASSERT( Type::Nil ().isNil () );
     CPPUNIT_ASSERT( Type::Bool    ().isBool    () );
     CPPUNIT_ASSERT( Type::UInt8   ().isUInt8   () );
     CPPUNIT_ASSERT( Type::Int8    ().isInt8    () );
