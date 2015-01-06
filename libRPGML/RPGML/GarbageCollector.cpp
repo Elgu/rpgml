@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -19,12 +19,14 @@
 
 #include <cassert>
 #include <memory>
+#include <iostream>
+
+using namespace std;
 
 namespace RPGML {
 
 GarbageCollector::GarbageCollector( void )
 : m_lock( Mutex::Recursive() )
-, m_root( 0 )
 {}
 
 GarbageCollector::~GarbageCollector( void )
@@ -44,7 +46,6 @@ void GarbageCollector::add( const Collectable *c )
     c->gc = this;
     c->gc_index = index_t( m_cs.size() );
     m_cs.push_back( c );
-	  if( 0 == m_root ) m_root = c;
   } // m_lock
 
 #ifdef GC_DEBUG
@@ -58,8 +59,6 @@ void GarbageCollector::remove( const Collectable *c )
   assert( c->gc == this );
 
   { Mutex::ScopedLock lock( &m_lock );
-
-    if( c == m_root ) m_root = 0;
 
     const index_t index = c->gc_index;
     if( index < m_cs.size() )
@@ -78,15 +77,34 @@ void GarbageCollector::remove( const Collectable *c )
   } // m_lock
 }
 
-void GarbageCollector::setRoot( const Collectable *c )
-{
-	add( c );
-	m_root = c;
-}
-
 void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
 {
-  if( !m_root ) return;
+  const size_t n = m_cs.size();
+  Collectable::Children children;
+  children.reserve( 512 );
+
+  // Find all root objects:
+  // Those who are reference from outside will have a different refcount than calculated here
+  vector< index_t > refcount( n );
+  for( size_t i=0; i<n; ++i )
+  {
+    const Collectable *const obj = m_cs[ i ];
+    if( !obj ) continue;
+
+    // Get the objects referenced by this object
+    children.clear();
+    obj->gc_getChildren( children );
+
+    for( size_t j = 0; j < children.size(); ++j )
+    {
+      const Collectable *const child = children[ j ];
+      if( !child ) continue;
+
+      if( child->gc != this ) continue;
+
+      ++refcount[ child->gc_index ];
+    }
+  }
 
   std::vector< const Collectable* > stack;
   stack.reserve( 512 );
@@ -95,16 +113,27 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
   //       but there would be the risk of having a very large schedule stack
   //       with dupplicate entries
 
-  // Remove from old storage, add to new
-  m_cs[ m_root->gc_index ] = 0;
-  m_root->gc_index = index_t( cs_new.size() );
-  cs_new.push_back( m_root );
+  // push root objects
+  for( size_t i=0; i<n; ++i )
+  {
+    const Collectable *const obj = m_cs[ i ];
+    if( !obj ) continue;
 
-  // Schedule root
-  stack.push_back( m_root );
+    // Only root objects are referenced from outside
+    if( refcount[ obj->gc_index ] == obj->count() ) continue;
 
-  Collectable::Children children;
-  children.reserve( 512 );
+#ifdef GC_DEBUG
+    std::cerr << "Root object " << obj << std::endl;
+#endif // GC_DEBUG
+
+    // Remove from old storage, add to new
+    m_cs[ obj->gc_index ] = 0;
+    obj->gc_index = index_t( cs_new.size() );
+    cs_new.push_back( obj );
+
+    // Schedule root
+    stack.push_back( obj );
+  }
 
   // Process children of scheduled (already moved) Collectables
   while( !stack.empty() )
@@ -141,6 +170,7 @@ void GarbageCollector::sweep( std::vector< const Collectable* > &garbage )
   {
     const Collectable *const chunk = garbage[ i ];
     if( chunk ) chunk->deactivate_deletion();
+//    if( chunk ) std::cerr << "Sweeping " << chunk << std::endl;
   }
 
   for( index_t i=0; i<garbage.size(); ++i )
@@ -159,7 +189,6 @@ void GarbageCollector::sweep( std::vector< const Collectable* > &garbage )
 void GarbageCollector::run( void )
 {
   if( m_cs.empty() ) return;
-  if( 0 == m_root ) return;
 
   { Mutex::ScopedLock lock( &m_lock );
 
