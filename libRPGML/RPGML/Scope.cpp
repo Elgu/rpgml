@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -24,6 +24,7 @@
 #include "StringUnifier.h"
 #include "Refcounted.h"
 #include "Node.h"
+#include "ParseException.h"
 
 #include <iostream>
 using namespace std;
@@ -34,6 +35,30 @@ Scope::Scope( Context *context )
 : m_context( context )
 , m_curr( context->getRoot() )
 {}
+
+Scope::Scope( const Scope *other, Frame *curr )
+: m_context( other->getContext() )
+, m_curr( m_context->getRoot() )
+{
+  Frame *root = getContext()->getRoot();
+  for( Frame *c = curr; c != 0; c = c->getParent() )
+  {
+    if( c == root )
+    {
+      // valid frame as curr
+      setCurr( curr );
+      curr = 0;
+      break;
+    }
+  }
+
+  if( curr )
+  {
+    throw Exception()
+      << "Frame to be used as current Frame for new Scope has different root as the Context used"
+      ;
+  }
+}
 
 Scope::~Scope( void )
 {}
@@ -86,7 +111,7 @@ Value *Scope::create_unified( const String &unified_identifier, const Value &val
   }
   else
   {
-    throw "Identifier already exists";
+    throw Exception() << "Identifier '" << unified_identifier << "' already exists";
   }
 
   return 0;
@@ -154,12 +179,12 @@ bool Scope::call(
   )
 {
   Value *const func = lookup( function_identifier );
-  if( !func ) throw "Function not found";
-  if( !func->isFunction() ) throw "is not a Function";
+  if( !func ) throw ParseException( loc ) << "Function '" << function_identifier << "' not found";
+  if( !func->isFunction() ) throw ParseException( loc ) << "Variable '" << function_identifier << "' is not a Function";
 
   if( !func->getFunction()->call( loc, recursion_depth, this, ret, call_args ) )
   {
-    throw "Function call failed";
+    throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
   }
 
   return true;
@@ -181,10 +206,10 @@ bool Scope::call(
 
   do
   {
-    if( !arg0.isInvalid() ) args.push_back( Function::Arg( String(), arg0 ) ); else break;
-    if( !arg1.isInvalid() ) args.push_back( Function::Arg( String(), arg1 ) ); else break;
-    if( !arg2.isInvalid() ) args.push_back( Function::Arg( String(), arg2 ) ); else break;
-    if( !arg3.isInvalid() ) args.push_back( Function::Arg( String(), arg3 ) ); else break;
+    if( !arg0.isNil() ) args.push_back( Function::Arg( String(), arg0 ) ); else break;
+    if( !arg1.isNil() ) args.push_back( Function::Arg( String(), arg1 ) ); else break;
+    if( !arg2.isNil() ) args.push_back( Function::Arg( String(), arg2 ) ); else break;
+    if( !arg3.isNil() ) args.push_back( Function::Arg( String(), arg3 ) ); else break;
   }
   while( false );
 
@@ -195,21 +220,21 @@ CountPtr< Node > Scope::create_Node(
     const Location *loc
   , index_t recursion_depth
   , const String &name
-  , const Value &arg0
-  , const Value &arg1
-  , const Value &arg2
-  , const Value &arg3
   )
 {
   Value ret;
-  if( !call( loc, recursion_depth+1, name, ret, arg0, arg1, arg2, arg3 ) )
+  if( !call( loc, recursion_depth+1, name, ret ) )
   {
-    throw "Could not find/instantiate Node";
+    throw ParseException()
+      << "Could not find/instantiate Node '" << name << "'"
+      ;
   }
 
   if( !ret.isNode() )
   {
-    throw "Did not create a Node";
+    throw ParseException()
+      << "Object '" << name << "' did not create a Node, created a " << ret.getTypeName()
+      ;
   }
 
   return ret.getNode();
@@ -225,25 +250,45 @@ CountPtr< Output > Scope::toOutput(
   {
     return x.getOutput();
   }
-  else if( x.isInvalid() )
+  else if( x.isNil() )
   {
-    throw "Scope::toOutput(): invalid Value";
+    // Not connected
     return (Output*)0;
   }
   else if( x.isPrimitive() )
   {
     Value ret;
+    if( !call( loc, recursion_depth, String::Static( "constant" ), ret, x ) )
+    {
+      return (Output*)0;
+    }
+
+    if( !ret.isOutput() )
+    {
+      throw ParseException( loc )
+        << "Return value of 'constant' should be Output, is " << ret.getTypeName()
+        ;
+    }
+
+    return ret.getOutput();
+  }
+  else if( x.isArray() )
+  {
+    // TODO: use ConstantArray or something
+    Value ret;
     if( !call( loc, recursion_depth, String::Static( "constant" ), ret, x ) ) return (Output*)0;
-    if( !ret.isOutput() ) throw "return value of 'constant' should be Output";
+    if( !ret.isOutput() )
+    {
+      throw ParseException( loc )
+        << "Return value of 'constant' should be Output, is " << ret.getTypeName()
+        ;
+    }
     return ret.getOutput();
   }
   else
   {
-    throw "Scope::toOutput(): Value must be Output or primitive.";
-    return (Output*)0;
+    throw ParseException( loc ) << "Cannot convert to Output, must be Output, Array or primitive.";
   }
-
-  return (Output*)0;
 }
 
 CountPtr< Frame > Scope::new_Frame( void ) const
