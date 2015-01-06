@@ -28,13 +28,8 @@ class Source : public Refcounted
 public:
   typedef _Parser::location_type location_type;
 
-  Source( void )
-  : m_prevChar( '\0' )
-  , m_putBackChar( '\0' )
-  , m_charWasPutBack( false )
-  {}
-
-  virtual ~Source( void ) {}
+  Source( void );
+  virtual ~Source( void );
 
   char next( location_type *loc );
   void putBackChar( void );
@@ -60,14 +55,10 @@ public:
   typedef _Parser::semantic_type semantic_type;
 
   explicit
-  Scanner( StringUnifier *unifier, Source *source=0 )
-  : m_source( source )
-  , m_unifier( unifier )
-  {
-    setFilename( "" );
-  }
+  Scanner( StringUnifier *unifier, Source *source=0 );
+  ~Scanner( void );
 
-  Scanner &getScanner( void ) { return (*this); }
+  Scanner &getScanner( void );
 
   Scanner &setSource( Source *source );
   Scanner &setFilename( const char *filename );

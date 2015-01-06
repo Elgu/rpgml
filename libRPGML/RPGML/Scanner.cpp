@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -26,6 +26,15 @@ namespace RPGML {
 
 typedef _Parser::location_type location_type;
 typedef _Parser::semantic_type semantic_type;
+
+Source::Source( void )
+: m_prevChar( '\0' )
+, m_putBackChar( '\0' )
+, m_charWasPutBack( false )
+{}
+
+Source::~Source( void )
+{}
 
 char Source::next( location_type *loc )
 {
@@ -76,6 +85,21 @@ char Source::trackLocation( char c, location_type *loc )
   }
 
   return c;
+}
+
+Scanner::Scanner( StringUnifier *unifier, Source *source )
+: m_source( source )
+, m_unifier( unifier )
+{
+  setFilename( "" );
+}
+
+Scanner::~Scanner( void )
+{}
+
+Scanner &Scanner::getScanner( void )
+{
+  return (*this);
 }
 
 Scanner &Scanner::setSource( Source *source )
@@ -130,25 +154,35 @@ static
 const Keyword keywords[] =
 {
   { "bool"    , _Parser::token::BOOL    , Type::BOOL     },
-  { "int"     , _Parser::token::INT     , Type::INT      },
+  { "int"     , _Parser::token::INT     , Type::INT32    },
+  { "uint8"   , _Parser::token::UINT8   , Type::UINT8    },
+  { "int8"    , _Parser::token::INT8    , Type::INT8     },
+  { "uint16"  , _Parser::token::UINT16  , Type::UINT16   },
+  { "int16"   , _Parser::token::INT16   , Type::INT16    },
+  { "uint32"  , _Parser::token::UINT32  , Type::UINT32   },
+  { "int32"   , _Parser::token::INT32   , Type::INT32    },
+  { "uint64"  , _Parser::token::UINT64  , Type::UINT64   },
+  { "int64"   , _Parser::token::INT64   , Type::INT64    },
   { "float"   , _Parser::token::FLOAT   , Type::FLOAT    },
+  { "double"  , _Parser::token::DOUBLE  , Type::DOUBLE   },
   { "string"  , _Parser::token::STRING  , Type::STRING   },
+  { "nil"     , _Parser::token::NIL     , Type::NIL      },
   { "Array"   , _Parser::token::ARRAY   , Type::ARRAY    },
   { "Frame"   , _Parser::token::FRAME   , Type::FRAME    },
   { "Function", _Parser::token::FUNCTION, Type::FUNCTION },
   { "Output"  , _Parser::token::OUTPUT  , Type::OUTPUT   },
   { "Input"   , _Parser::token::INPUT   , Type::INPUT    },
-  { "if"      , _Parser::token::IF      , Type::INVALID  },
-  { "else"    , _Parser::token::ELSE    , Type::INVALID  },
-  { "for"     , _Parser::token::FOR     , Type::INVALID  },
-  { "in"      , _Parser::token::IN      , Type::INVALID  },
-  { "to"      , _Parser::token::TO      , Type::INVALID  },
-  { "step"    , _Parser::token::STEP    , Type::INVALID  },
-  { "true"    , _Parser::token::TRUE    , Type::INVALID  },
-  { "false"   , _Parser::token::FALSE   , Type::INVALID  },
-  { "this"    , _Parser::token::THIS    , Type::INVALID  },
-  { "return"  , _Parser::token::RETURN  , Type::INVALID  },
-  { 0         , _Parser::token::END     , Type::INVALID  }
+  { "if"      , _Parser::token::IF      , Type::NIL  },
+  { "else"    , _Parser::token::ELSE    , Type::NIL  },
+  { "for"     , _Parser::token::FOR     , Type::NIL  },
+  { "in"      , _Parser::token::IN      , Type::NIL  },
+  { "to"      , _Parser::token::TO      , Type::NIL  },
+  { "step"    , _Parser::token::STEP    , Type::NIL  },
+  { "true"    , _Parser::token::TRUE    , Type::NIL  },
+  { "false"   , _Parser::token::FALSE   , Type::NIL  },
+  { "this"    , _Parser::token::THIS    , Type::NIL  },
+  { "return"  , _Parser::token::RETURN  , Type::NIL  },
+  { 0         , _Parser::token::END     , Type::NIL  }
 };
 
 static
@@ -314,14 +348,14 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
 
   if( is_float )
   {
-    const float f = strtof( str.c_str(), 0 );
+    const double f = strtod( str.c_str(), 0 );
     token->fval = f;
     return _Parser::token::F_CONSTANT;
   }
   else
   {
     const int base = ( is_hex ? 16 : 10 );
-    const int i = int( strtol( str.c_str(), 0, base ) );
+    const int64_t i = int64_t( strtoll( str.c_str(), 0, base ) );
     token->ival = i;
     return _Parser::token::I_CONSTANT;
   }
