@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -25,6 +25,7 @@
 #include "Frame.h"
 #include "Node.h"
 #include "InterpretingFunction.h"
+#include "ParseException.h"
 
 #include <iostream>
 
@@ -34,139 +35,167 @@ namespace RPGML {
 
 namespace InterpretingASTVisitor_impl {
 
-  template< class Element, index_t Dims >
-  CountPtr< Array< Element, Dims > >
-  new_Array( GarbageCollector *gc, index_t dims, const index_t *size, const Element &fill_value )
+  Value save_cast( const Value &x, Type type )
   {
-    CountPtr< Array< Element, Dims > > ret( new Array< Element, Dims >( gc, dims, size ) );
-    ret->fill( fill_value );
-    return ret;
+    return x.save_cast( type );
   }
 
-  template< class Element >
-  Value new_Array( GarbageCollector *gc, const Array< index_t, 1 > &size, Type expected_scalar_type, const Value &scalar )
+  Value save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to, GarbageCollector *gc )
   {
-    const index_t Dims = size.size();
+    if( !to ) return x;
+    if( !to->type.isArray() ) return save_cast( x, to->type );
 
-    if( expected_scalar_type != scalar.getType() )
+    // to Array
+
+    if( !to->dims ) throw Exception() << "No array dimensions specified in TypeDescr";
+    if( !to->of ) throw Exception() << "No array 'of'-type specified in TypeDescr";
+
+    // Get Array dimensions and size
+
+    const index_t to_dims = to->dims->size();
+    const Type to_type_of = to->of->type;
+
+    vector< index_t > to_size( to_dims );
+    vector< bool > to_size_known( to_dims, false );
+
+    for( index_t d=0; d<to_dims; ++d )
     {
-      throw "Expected corresponding array or int scalar type as initializer";
-    }
-
-    Element e;
-    if( !scalar.get( e ) )
-    {
-      throw "Could not get initializer value";
-    }
-
-    switch( Dims )
-    {
-      case 1: return Value( new_Array< Element, 1 >( gc, Dims, size.elements(), e ) );
-      case 2: return Value( new_Array< Element, 2 >( gc, Dims, size.elements(), e ) );
-      case 3: return Value( new_Array< Element, 3 >( gc, Dims, size.elements(), e ) );
-      case 4: return Value( new_Array< Element, 4 >( gc, Dims, size.elements(), e ) );
-      default:
-        throw "More than 4 dimensions not supported";
-    }
-
-    return Value();
-  }
-
-  template< class Element, class SrcElement, index_t Dims >
-  CountPtr< Array< Element, Dims > > new_Array( GarbageCollector *gc, const Array< SrcElement, Dims > *src )
-  {
-    typedef Array< Element, Dims > Ret;
-    typedef Array< SrcElement, Dims > Src;
-
-    if( !src ) return (Ret*)0;
-
-    const index_t *const size = src->getSize();
-    CountPtr< Ret > ret( new Ret( gc, Dims, size ) );
-
-    typename Ret::iterator r = ret->begin();
-    const typename Ret::iterator r_end = ret->end();
-
-    typename Src::const_iterator s = src->begin();
-    const typename Src::const_iterator s_end = src->end();
-
-    for(; r != r_end; ++r, ++s )
-    {
-      (*r) = Element(*s);
-    }
-
-    if( s != s_end ) throw "Interal: array sizes not generated correctly";
-    return ret;
-  }
-
-  template< class Element, class SrcElement >
-  CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, const ArrayElements< SrcElement > *src )
-  {
-    typedef ArrayElements< Element > Ret;
-
-    if( !src ) return (Ret*)0;
-
-    const index_t Dims = src->getDims();
-
-    switch( Dims )
-    {
-      case 1:
+      const Value &dims_d = to->dims->at( d );
+      if( dims_d.isNil() )
       {
-        const Array< SrcElement, 1 > *src_array = 0;
-        if( !src->getAs( src_array ) ) return (Ret*)0;
-        return new_Array< Element, SrcElement, 1 >( gc, src_array );
+        to_size[ d ] = 1; //( value.isArray() ? unknown : 0 );
+      }
+      else if( dims_d.isInteger() )
+      {
+        const int64_t dims_d_i = save_cast( dims_d, Type::Int64() ).getInt64();
+        if( dims_d_i < 0 ) throw Exception() << "Array size must not be negative.";
+        to_size[ d ] = index_t( dims_d_i );
+        to_size_known[ d ] = true;
+      }
+      else
+      {
+        throw Exception() << "Array dimension must be of an integer type";
+      }
+    }
+
+    // Assign x to 'to'
+
+    // Create array of specified type
+    CountPtr< ArrayBase > ret( new_Array( gc, to_type_of, to_dims ) );
+
+    if( x.isArray() )
+    {
+      // Array <- Array
+
+      const ArrayBase *const x_base = x.getArray();
+
+      if( x_base->getDims() != to_dims )
+      {
+        throw Exception() << "Number of Array dimensions do not match";
       }
 
-      case 2:
+      const ArrayBase::Size x_size = x_base->getSize();
+
+      // Check size of x
+      for( index_t d=0; d<to_dims; ++d )
       {
-        const Array< SrcElement, 2 > *src_array = 0;
-        if( !src->getAs( src_array ) ) return (Ret*)0;
-        return new_Array< Element, SrcElement, 2 >( gc, src_array );
+        if( !to_size_known[ d ] ) continue;
+
+        if( x_size[ d ] != to_size[ d ] )
+        {
+          throw Exception() << "Dimension size does not match the specified size";
+        }
       }
 
-      case 3:
+      // Resize array to size of x
+      ret->resize( x_size );
+
+      // Try to assign the values in x to the values in the new array
+      for( CountPtr< ArrayBase::CoordinatesIterator > c( ret->getCoordinatesIterator() ); !c->done(); c->next() )
       {
-        const Array< SrcElement, 3 > *src_array = 0;
-        if( !src->getAs( src_array ) ) return (Ret*)0;
-        return new_Array< Element, SrcElement, 3 >( gc, src_array );
+        const ArrayBase::Coordinates C = c->get();
+        if( to_type_of.isArray() )
+        {
+          ret->setValue( save_cast( x_base->getValue( C ), to->of, gc ), C );
+        }
+        else
+        {
+          ret->setValue( save_cast( x_base->getValue( C ), to_type_of ), C );
+        }
       }
 
-      case 4:
-      {
-        const Array< SrcElement, 4 > *src_array = 0;
-        if( !src->getAs( src_array ) ) return (Ret*)0;
-        return new_Array< Element, SrcElement, 4 >( gc, src_array );
-      }
-
-      default:
-        throw "More than 4 dimensions not supported";
+      return Value( ret );
     }
-  }
-
-  /*
-  template< class Element >
-  CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, const ArrayBase *array_base )
-  {
-    const Type src_type = array_base->getType();
-
-    switch( src_type.getEnum() )
+    else
     {
-      case Type::INVALID :
-      case Type::BOOL    :
-      case Type::INT     :
-      case Type::FLOAT   :
-      case Type::STRING  :
-      case Type::FRAME   :
-      case Type::FUNCTION:
-      case Type::NODE    :
-      case Type::OUTPUT  :
-      case Type::INPUT   :
-      case Type::SEQUENCE:
-      case Type::ARRAY   :
+      // Array <- Scalar
+
+      // Resize array to specified size
+      ret->resize_v( to_dims, &to_size[ 0 ] );
+
+      // Fill with x cast to the correct type
+      ret->fillValue( save_cast( x, to_type_of ) );
+
+      return Value( ret );
+    }
+  }
+
+  void save_assign( Value &lvalue, const Value &x )
+  {
+    const Type lvalue_type = lvalue.getType();
+    if( lvalue_type.isNil() )
+    {
+      lvalue = x;
+      return;
     }
 
-    return ret;
+    if( lvalue.isArray() )
+    {
+      ArrayBase *const      lvalue_base    = lvalue.getArray();
+      const ArrayBase::Size lvalue_size    = lvalue_base->getSize();
+      const Type            lvalue_type_of = lvalue_base->getType();
+
+      if( x.isArray() )
+      {
+        const ArrayBase *const x_base = x.getArray();
+        const ArrayBase::Size  x_size = x_base->getSize();
+
+        if( lvalue_size.getDims() == lvalue_size.getDims() )
+        {
+          lvalue_base->resize( x_size );
+
+          for( CountPtr< ArrayBase::CoordinatesIterator > c( x_base->getCoordinatesIterator() ); !c->done(); c->next() )
+          {
+            const ArrayBase::Coordinates C = c->get();
+            const Value v = save_cast( x_base->getValue( C ), lvalue_type_of );
+            lvalue_base->setValue( v, C );
+          }
+        }
+        else
+        {
+          throw Exception() << "Assigning Array with different dimension not supported yet";
+        }
+      }
+      else
+      {
+        try
+        {
+          const Value fill_value = save_cast( x, lvalue_base->getType() );
+          lvalue_base->fillValue( fill_value );
+        }
+        catch( const Value::GetFailed &e )
+        {
+          throw;
+        }
+      }
+    }
+    else
+    {
+      lvalue = save_cast( x, lvalue_type );
+      return;
+    }
   }
-  */
+
 
 
 } // namespace InterpretingASTVisitor_impl
@@ -181,22 +210,22 @@ InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursio
   const Value *const unaryOp_v  = scope->lookup( "unaryOp" );
   if( !unaryOp_v )
   {
-    throw "'unaryOp' not found";
+    throw Exception() << "'unaryOp' not found";
   }
   if( !unaryOp_v->isFunction() )
   {
-    throw "'unaryOp' is not a Function";
+    throw Exception() << "'unaryOp' is not a Function";
   }
   unaryOp = unaryOp_v->getFunction();
 
   const Value *const binaryOp_v = scope->lookup( "binaryOp" );
   if( !binaryOp_v )
   {
-    throw "'binaryOp' not found";
+    throw Exception() << "'binaryOp' not found";
   }
   if( !binaryOp_v->isFunction() )
   {
-    throw "'binaryOp' is not a Function";
+    throw Exception() << "'binaryOp' is not a Function";
   }
   binaryOp = binaryOp_v->getFunction();
 }
@@ -221,7 +250,7 @@ bool InterpretingASTVisitor::visit( const AST::ThisExpression           * )
     }
   }
 
-  throw "No frame that qualifies as 'this'";
+  throw Exception() << "No parent Frame that qualifies as 'this'";
   return_value.clear();
   return false;
 }
@@ -233,7 +262,9 @@ bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
 
   if( !sequence.isSequence() )
   {
-    throw "sequence is not a Sequence";
+    throw ParseException( node->sequence->loc )
+      << "Array definition content is not a Sequence, is " << sequence.getTypeName()
+      ;
   }
 
   CountPtr< Array< Value, 1 > > array = new Array< Value, 1 >( scope->getGC() );
@@ -250,6 +281,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
 bool InterpretingASTVisitor::visit( const AST::FrameConstantExpression *node )
 {
   CountPtr< Frame > ret = new Frame( scope->getGC(), scope->getCurr() );
+  ret->setThis( true );
   Scope::EnterLeaveGuard guard( scope, ret );
 
   if( !node->body->invite( this ) ) return false;
@@ -286,17 +318,21 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
   if( !node->from->invite( this ) ) return false;
   Value from; from.swap( return_value );
 
-  if( !from.isInt() && !from.isFloat() )
+  if( !from.isScalar() )
   {
-    throw "'from' must be int or float.";
+    throw ParseException( node->from->loc )
+      << "'from' must be scalar, is " << from.getTypeName()
+      ;
   }
 
   if( !node->to->invite( this ) ) return false;
   Value to; to.swap( return_value );
 
-  if( !to.isInt() && !to.isFloat() )
+  if( !to.isScalar() )
   {
-    throw "'to' must be int or float.";
+    throw ParseException( node->to->loc )
+      << "'to' must be scalar, is " << to.getTypeName()
+      ;
   }
 
   Value step;
@@ -305,32 +341,20 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
     if( !node->step->invite( this ) ) return false;
     step.swap( return_value );
 
-    if( !step.isInt() && !step.isFloat() )
+    if( !step.isScalar() )
     {
-      throw "'step' must be int or float.";
+      throw ParseException( node->step->loc )
+        << "'step' must be scalar, is " << step.getTypeName()
+        ;
     }
   }
   else
   {
-    step = Value( 1 );
+    // "smallest" possible type
+    step = Value( bool( 1 ) );
   }
 
-  if( from.isFloat() || to.isFloat() || step.isFloat() )
-  {
-    const float from_f = ( from.isFloat() ? from.getFloat() : float( from.getInt() ) );
-    const float to_f   = ( to  .isFloat() ? to  .getFloat() : float( to  .getInt() ) );
-    const float step_f = ( step.isFloat() ? step.getFloat() : float( step.getInt() ) );
-
-    return_value.set( genSequenceFromToStep( scope->getGC(), from_f, to_f, step_f ) );
-  }
-  else
-  {
-    const int from_i = from.getInt();
-    const int to_i   = to  .getInt();
-    const int step_i = step.getInt();
-
-    return_value.set( genSequenceFromToStep( scope->getGC(), from_i, to_i, step_i ) );
-  }
+  return_value.set( genSequenceFromToStep( scope->getGC(), from, to, step ) );
 
   return true;
 }
@@ -347,8 +371,7 @@ bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *nod
   else
   {
     return_value.clear();
-    throw "Identifier not found.";
-    return false;
+    throw Exception() << "Identifier '" << node->identifier << "' not found";
   }
 }
 
@@ -359,8 +382,9 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
 
   if( !function.isFunction() )
   {
-//    cerr << "Is not a Function, is '" << function << "'." << endl;
-    throw "Is not a Function.";
+    throw ParseException( node->function->loc )
+      << "Is not a Function, is " << function.getTypeName()
+      ;
   }
 
 //  cerr << "calling Function '" << function.getFunction()->getName() << "'" << endl;
@@ -386,7 +410,9 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
 
   if( !left.isFrame() )
   {
-    throw "left is not a Frame";
+    throw ParseException( node->left->loc )
+      << "left of '.' is not a Frame, is " << left.getTypeName()
+      ;
   }
 
   Value *const value = left.getFrame()->getVariable( node->member );
@@ -397,8 +423,7 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
   }
   else
   {
-    throw "member not found.";
-    return false;
+    throw Exception() << "Member '" << node->member << "' not found";
   }
 }
 
@@ -416,8 +441,7 @@ bool InterpretingASTVisitor::visit( const AST::FrameAccessExpression            
   }
   else
   {
-    throw "identifier not found right of '.'.";
-    return false;
+    throw Exception() << "Identifier '" << node->identifier << "' not found right of '.'";
   }
 }
 
@@ -430,39 +454,116 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
   CountPtr< Array< Value, 1 > > coord;
   swap( coord, return_value_dims );
 
-  if( !left.isArray() )
+  if( left.isArray() )
   {
-    throw "left of '[]' is not an Array.";
+    const ArrayBase *const array = left.getArray();
+    const index_t Dims = array->getDims();
+
+    if( coord->size() != Dims )
+    {
+      throw ParseException( node->coord->loc )
+        << "Dimensions do not match, array has " << Dims << ", specified are " << coord->size()
+        ;
+    }
+
+    Array< index_t, 1 > coords_int( 0, Dims );
+    for( index_t i=0; i<Dims; ++i )
+    {
+      const Value &c = coord->at( i );
+      if( c.isInteger() )
+      {
+        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
+      }
+      else if( c.isNil() )
+      {
+        throw ParseException( node->coord->dims[ i ]->loc )
+          << "All coordinates must be defined for access, coordinate " << i << " isn't"
+          ;
+      }
+      else
+      {
+        throw ParseException( node->coord->dims[ i ]->loc )
+          << "Type of coordinates must be an integer, is " << c.getTypeName()
+          ;
+      }
+    }
+
+    return_value = array->getValue_v( Dims, coords_int.elements() );
+    return true;
   }
-
-  const ArrayBase *const array = left.getArray();
-  const index_t Dims = array->getDims();
-
-  if( coord->size() != Dims )
+  else if( left.isFrame() || left.isNode() )
   {
-    throw "dimensions do not match";
-  }
+    if( coord->size() != 1 )
+    {
+      throw Exception() << "Frame can only be accessed as 1 dimensional entity";
+    }
 
-  Array< index_t, 1 > coords_int( 0, Dims );
-  for( index_t i=0; i<Dims; ++i )
+    const Value &identifier = coord->at( 0 );
+
+    if( !identifier.isString() )
+    {
+      throw ParseException( node->coord->loc )
+        << "When accessing a Frame, coordinate must be a string, is " << identifier.getTypeName()
+        ;
+    }
+
+    Frame *const frame = ( left.isFrame() ? left.getFrame() : left.getNode() );
+    Value *const value = frame->load( identifier.getString(), scope );
+
+    if( !value )
+    {
+      throw ParseException( node->coord->loc )
+        << "Identifier '" << identifier << "' not found."
+        ;
+    }
+
+    return_value = (*value);
+    return true;
+  }
+  else if( left.isOutput() )
   {
-    const Value &c = coord->at( i );
-    if( c.isInt() )
-    {
-      coords_int[ i ] = index_t( c.getInt() );
-    }
-    else if( c.isInvalid() )
-    {
-      throw "all coordinates must be defined for access";
-    }
-    else
-    {
-      throw "type of coordinate must be int";
-    }
-  }
+    Output *const output = left.getOutput();
 
-  return_value = array->getValue( Dims, coords_int.elements() );
-  return true;
+    CountPtr< Node > at = scope->create_Node( node->loc, getRecursionDepth()+1, "At" );
+    if( at.isNull() ) throw Exception() << "Could not create Node 'At'";
+
+    output->connect( at->getInput( String::Static( "in" ) ) );
+
+    const index_t Dims = coord->size();
+    if( Dims > 4 )
+    {
+      throw ParseException( node->coord->loc )
+        << "Only up to 4 dimensions supported for now, is " << Dims
+        ;
+    }
+
+    for( index_t i=0; i<Dims; ++i )
+    {
+      const Location *const loc = node->coord->dims[ i ]->loc;
+      const Value &c = coord->at( i );
+      if( c.isNil() )
+      {
+        throw ParseException( loc )
+          << "All coordinates must be specified for access, coordinate " << i << " isn't"
+          ;
+      }
+      else
+      {
+        CountPtr< Output > oc = scope->toOutput( loc, getRecursionDepth()+1, c );
+        static const char *const xyzt[] = { "x", "y", "z", "t" };
+        oc->connect( at->getInput( String::Static( xyzt[ i ] ) ) );
+      }
+    }
+
+    return_value = Value( at->getOutput( String::Static( "out" ) ) );
+    return true;
+  }
+  else
+  {
+    throw ParseException( node->left->loc )
+      << "left of '[]' is not an Array or a Frame or an Output, is " << left.getTypeName()
+      ;
+  }
 }
 
 bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *node )
@@ -498,22 +599,15 @@ bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
   Value condition; condition.swap( return_value );
 
   bool is_true;
-  if( condition.isBool() )
+  try
   {
-    is_true = condition.getBool();
+    is_true = condition.to( Type::Bool() ).getBool();
   }
-  else if( condition.isInt() )
+  catch( const RPGML::Exception &e )
   {
-    is_true = bool( condition.getInt() );
-  }
-  else if( condition.isFloat() )
-  {
-    is_true = bool( condition.getFloat() );
-  }
-  else
-  {
-    throw "unsupported type for condition.";
-    return false;
+    throw ParseException( node->condition->loc, e )
+      << ": Unsupported type for condition."
+      ;
   }
 
   if( is_true )
@@ -594,10 +688,6 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     {
       if( !default_value_expr->invite( this ) ) return false;
       default_value.swap( return_value );
-      if( default_value.isInvalid() )
-      {
-        throw "Default value is invalid";
-      }
     }
 
     decl_args->at( i ) = Function::Arg( identifier, default_value );
@@ -617,7 +707,7 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
 
   if( left.isFrame() )
   {
-    value = left.getFrame()->getVariable( identifier );
+    value = left.getFrame()->load( identifier, scope );
   }
   else if( left.isNode() )
   {
@@ -625,15 +715,16 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
   }
   else
   {
-    (void)loc;
-    throw "left of '.' is not accessible via '.'";
+    throw ParseException( loc )
+      << "Left of '.' is not accessible via '.', is " << left.getTypeName()
+      ;
   }
 
   if( !value )
   {
-    (void)loc;
-    throw "identifier not found right of '.'.";
-    return false;
+    throw ParseException( loc )
+      << "Identifier '" << identifier << "' not found right of '.'"
+      ;
   }
 
   return true;
@@ -641,6 +732,8 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
 
 bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, Value *lvalue )
 {
+  using namespace InterpretingASTVisitor_impl;
+
   if( !node->value->invite( this ) ) return false;
   Value value; value.swap( return_value );
 
@@ -656,18 +749,21 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
       {
         param->set( value );
       }
-      catch( const char *e )
+      catch( ... )
       {
         throw;
       }
     }
     else
     {
-      if( value.getType() != lvalue_type )
+      if( lvalue_type.isOutput() )
       {
-        throw "expression type does not match lvalue type";
+        lvalue->set( scope->toOutput( node->loc, getRecursionDepth()+1, value ) );
       }
-      lvalue->swap( value );
+      else
+      {
+        save_assign( (*lvalue), value );
+      }
     }
   }
   else
@@ -675,16 +771,14 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
     const BOP bop = getAssignBOP( node->op );
 
     Value args[ 3 ];
-    args[ 0 ].swap( (*lvalue) ); // move lvalue into arg, will be overwritten anyway
-    args[ 1 ] = Value( getBOPStr( bop ) );
-    args[ 2 ].swap( value );
+    args[ 0 ] = (*lvalue);
+    args[ 1 ] = Value( String::Static( getBOPStr( bop ) ) );
+    args[ 2 ] = value;
 
-    binaryOp->call_impl( node->loc, getRecursionDepth(), scope, (*lvalue), 3, args );
+    Value new_value;
+    binaryOp->call_impl( node->loc, getRecursionDepth()+1, scope, new_value, 3, args );
 
-    if( lvalue->getType() != lvalue_type )
-    {
-      throw "expression type does not match lvalue type";
-    }
+    save_assign( (*lvalue), new_value );
   }
 
   return true;
@@ -695,20 +789,19 @@ bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
   if( !node->output->invite( this ) ) return false;
   Value output_v; output_v.swap( return_value );
 
-  CountPtr< Output > output( scope->toOutput( node->loc, getRecursionDepth(), output_v ) );
-  if( output.isNull() )
-  {
-    throw "left of '->' is not an Output";
-  }
+  CountPtr< Output > output( scope->toOutput( node->loc, getRecursionDepth()+1, output_v ) );
 
   if( !node->input->invite( this ) ) return false;
   Value input; input.swap( return_value );
 
   if( !input.isInput() )
   {
-    throw "right of '->' is not an Input";
+    throw ParseException( node->input->loc )
+      << "Right of '->' is not an Input, is " << input.getTypeName()
+      ;
   }
 
+  // output might be null, but that is ok
   input.getInput()->connect( output );
   return true;
 }
@@ -720,7 +813,7 @@ bool InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *nod
   Value *const lvalue = scope->lookup( identifier );
   if( !lvalue )
   {
-    throw "lvalue not found";
+    throw Exception() << "Identifier '" << identifier << "' not found";
   }
 
   return assign_impl( node, lvalue );
@@ -757,35 +850,78 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
 
     if( coords->size() != Dims )
     {
-      throw "dimensions do not match";
+      throw ParseException( node->coord->loc )
+        << "Dimensions do not match, array has " << Dims << ", specified are " << coords->size()
+        ;
     }
 
     Array< index_t, 1 > coords_int( 0, Dims );
     for( index_t i=0; i<Dims; ++i )
     {
       const Value &c = coords->at( i );
-      if( c.isInt() )
+      if( c.isInteger() )
       {
-        coords_int[ i ] = index_t( c.getInt() );
+        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
       }
-      else if( c.isInvalid() )
+      else if( c.isNil() )
       {
-        throw "all coordinates must be defined for access";
+        throw ParseException( node->coord->dims[ i ]->loc )
+          << "All coordinates must be defined for access, coordinate " << i << " isn't"
+          ;
       }
       else
       {
-        throw "type of coordinate must be int";
+        throw ParseException( node->coord->dims[ i ]->loc )
+          << "Type of coordinates must be an integer, is " << c.getTypeName()
+          ;
       }
     }
 
-    Value lvalue = array->getValue( coords_int.size(), coords_int.elements() );
+    // Assign to temporary
+    Value lvalue = array->getValue_v( coords_int.size(), coords_int.elements() );
     if( !assign_impl( node, &lvalue ) ) return false;
-    array->setValue( lvalue, coords_int.size(), coords_int.elements() );
+    // Copy temporary to final location
+    array->setValue_v( lvalue, coords_int.size(), coords_int.elements() );
     return true;
+  }
+  else if( left.isFrame() || left.isNode() )
+  {
+    // Determine identifier for access
+    if( coords->size() != 1 || !coords->at( 0 ).isString() )
+    {
+      throw ParseException( node->coord->loc )
+        << "When accessing a Frame of a Node via [], the coordinate argument must be a single string"
+        << ", specified are " << coords->size() << " " << coords->at( 0 ).getTypeName() << " coordinates"
+        ;
+    }
+    const String &identifier = coords->at( 0 ).getString();
+
+    // Get lvalue to write to
+    Value *lvalue = 0;
+    if( left.isFrame() )
+    {
+      lvalue = left.getFrame()->load( identifier, scope );
+    }
+    else
+    {
+      lvalue = left.getNode()->getVariable( identifier );
+    }
+
+    if( !lvalue )
+    {
+      throw ParseException( node->loc )
+        << "Identifier '" << identifier << "' not found"
+        ;
+    }
+
+    // Do assignment
+    return assign_impl( node, lvalue );
   }
   else
   {
-    throw "left of '[]' must be an Array";
+    throw ParseException( node->left->loc )
+      << "Left of '[]' must be Array, Frame, or Node, is " << left.getTypeName()
+      ;
   }
 }
 
@@ -795,29 +931,22 @@ bool InterpretingASTVisitor::visit( const AST::IfStatement                  *nod
   Value condition; condition.swap( return_value );
 
   bool condition_is_true;
-
-  if( condition.isBool() )
+  try
   {
-    condition_is_true = condition.getBool();
+    condition_is_true = condition.to( Type::Bool() ).getBool();
   }
-  else if( condition.isInt() )
+  catch( const Value::CastFailed &e )
   {
-    condition_is_true = bool( condition.getInt() );
-  }
-  else if( condition.isFloat() )
-  {
-    condition_is_true = bool( condition.getFloat() );
-  }
-  else
-  {
-    throw "Unsupported type for condition";
+    throw ParseException( node->condition->loc, e )
+      << ": Unsupported type '" << condition << "' for condition"
+      ;
   }
 
   if( condition_is_true )
   {
     if( !node->then_body->invite( this ) ) return false;
   }
-  else
+  else if( node->else_body )
   {
     if( !node->else_body->invite( this ) ) return false;
   }
@@ -838,7 +967,9 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
 
   if( !sequence.isSequence() )
   {
-    throw "right of '=' is not a sequence";
+    throw ParseException( node->sequence->loc )
+      << "Right of '=' is not a sequence, is " << sequence.getTypeName()
+      ;
   }
 
   const String &identifier = node->identifier;
@@ -847,7 +978,9 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
   Value *const for_variable = push_for_variable.get();
   if( 0 == for_variable )
   {
-    throw "Could not create for-variable";
+    throw Exception()
+      << "Could not create for-variable '" << identifier << "'"
+      ;
   }
 
   for( CountPtr< Sequence::Iter > i = sequence.getSequence()->getIter(); !i->done(); i->next() )
@@ -873,7 +1006,7 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
   Value *const for_variable = push_for_variable.get();
   if( 0 == for_variable )
   {
-    throw "Could not create for-variable";
+    throw Exception() << "Could not create for-variable '" << identifier << "'";
   }
 
   if( container.isArray() )
@@ -891,7 +1024,9 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
   }
   else
   {
-    throw "Invalid type for container after 'in'";
+    throw ParseException( node->container->loc )
+      << "Invalid type '" << container.getTypeName() << "' for container after 'in'"
+      ;
   }
 
   return true;
@@ -904,140 +1039,31 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallStatement        *nod
 
 bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
 {
+  using namespace InterpretingASTVisitor_impl;
+
   const String &identifier = node->identifier;
 
+  // Evaluate type expression
   CountPtr< TypeDescr > expected_type;
   if( !node->type->invite( this ) ) return false;
   swap( expected_type, return_value_type_descr );
 
+  // Evaluate initializer value expression
   if( !node->value->invite( this ) ) return false;
   Value value; value.swap( return_value );
 
-  if( expected_type->type.isArray() )
+  if( expected_type->type.isOutput() )
   {
-    const index_t expected_dims = expected_type->dims->size();
-    Array< index_t, 1 > expected_size( 0, expected_dims );
-
-    for( index_t i=0; i<expected_dims; ++i )
-    {
-      const Value &d_i = expected_type->dims->at( i );
-      if( d_i.isInvalid() )
-      {
-        expected_size[ i ] = ( value.isArray() ? unknown : 0 );
-      }
-      else if( d_i.isInt() )
-      {
-        const int d = d_i.getInt();
-        if( d < 0 ) throw "Array size must not be negative";
-        expected_size[ i ] = index_t( d );
-      }
-      else
-      {
-        throw "Invalid expression type for array dimension, must be static int";
-      }
-    }
-
-    GarbageCollector *const gc = scope->getGC();
-    const Type expected_type_of = expected_type->of->type;
-    const index_t *const ex_size = expected_size.elements();
-
-    switch( value.getType().getEnum() )
-    {
-      // One scalar
-      case Type::BOOL    : value = new_Array<           bool             >( gc, expected_size, expected_type_of, value ); break;
-      case Type::INT     : value = new_Array<           int              >( gc, expected_size, expected_type_of, value ); break;
-      case Type::FLOAT   : value = new_Array<           float            >( gc, expected_size, expected_type_of, value ); break;
-      case Type::STRING  : value = new_Array<           String           >( gc, expected_size, expected_type_of, value ); break;
-      case Type::FRAME   : value = new_Array< CountPtr< Frame          > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::FUNCTION: value = new_Array< CountPtr< Function       > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::NODE    : value = new_Array< CountPtr< Node           > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::OUTPUT  : value = new_Array< CountPtr< Output         > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::INPUT   : value = new_Array< CountPtr< Input          > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::PARAM   : value = new_Array< CountPtr< Param          > >( gc, expected_size, expected_type_of, value ); break;
-      case Type::SEQUENCE: value = new_Array< CountPtr< Sequence const > >( gc, expected_size, expected_type_of, value ); break;
-
-      // From Array
-      case Type::ARRAY:
-      {
-        const ArrayBase *const value_array_base = value.getArray();
-
-        if( value_array_base->getDims() == expected_dims )
-        {
-          const index_t *const value_array_size = value_array_base->getSize();
-          for( index_t i=0; i<expected_dims; ++i )
-          {
-            const index_t d_i = expected_size[ i ];
-            if( d_i != unknown && d_i != value_array_size[ i ] )
-            {
-              throw "Size of the array does not match";
-            }
-          }
-
-          const index_t value_array_dims = value_array_base->getDims();
-          if( value_array_base->isValue() )
-          {
-            const ArrayElements< Value > *value_array = 0;
-            if( !value_array_base->getAs( value_array ) )
-            {
-              throw "Internal: Could not getAs ArrayElements< Value >";
-            }
-
-            switch( expected_type_of.getEnum() )
-            {
-              case Type::BOOL    : value.set( new_Array<           bool             >( gc, value_array ).get() ); break;
-              case Type::INT     : value.set( new_Array<           int              >( gc, value_array ).get() ); break;
-              case Type::FLOAT   : value.set( new_Array<           float            >( gc, value_array ).get() ); break;
-              case Type::STRING  : value.set( new_Array<           String           >( gc, value_array ).get() ); break;
-              case Type::FRAME   : value.set( new_Array< CountPtr< Frame          > >( gc, value_array ).get() ); break;
-              case Type::FUNCTION: value.set( new_Array< CountPtr< Function       > >( gc, value_array ).get() ); break;
-              case Type::NODE    : value.set( new_Array< CountPtr< Node           > >( gc, value_array ).get() ); break;
-              case Type::OUTPUT  : value.set( new_Array< CountPtr< Output         > >( gc, value_array ).get() ); break;
-              case Type::INPUT   : value.set( new_Array< CountPtr< Input          > >( gc, value_array ).get() ); break;
-              case Type::PARAM   : value.set( new_Array< CountPtr< Param          > >( gc, value_array ).get() ); break;
-              case Type::SEQUENCE: value.set( new_Array< CountPtr< Sequence const > >( gc, value_array ).get() ); break;
-              case Type::ARRAY   :
-                {
-                  throw "Not implemented yet";
-                }
-              default:
-                throw "Unhandled Type Enum case";
-            }
-          }
-          else if( expected_type->of->type == value_array_base->getType() )
-          {
-            // already fine
-          }
-          else
-          {
-            throw "Type of Array does not match";
-          }
-        }
-        else
-        {
-          throw "Number of dimensions does not match.";
-        }
-      }
-      break;
-
-      default:
-        throw "Unhandled Type Enum case";
-    }
-  } // isArray
+    value.set( scope->toOutput( node->value->loc, getRecursionDepth()+1, value ) );
+  }
   else
   {
-    if(
-         expected_type->type != Type::Invalid()
-      && value.getType() != expected_type->type
-    )
-    {
-      cerr << "value '" << value.getTypeName() << "' != expected_type '" << expected_type->type.getTypeName() << "'" << endl;
-      throw "Type right of '=' does not match declared type";
-    }
+    value = save_cast( value, expected_type, scope->getGC() );
   }
 
   if( !scope->create_unified( identifier, value ) )
   {
-    throw "could not create variable";
+    throw Exception() << "Could not create variable '" << identifier << "'";
   }
   return true;
 }

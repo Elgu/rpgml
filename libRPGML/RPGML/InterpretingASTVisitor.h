@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -68,10 +68,6 @@ public:
   bool get_return_encountered( void ) const { return return_encountered; }
   const Value &get_return_value( void ) const { return return_value; }
 
-private:
-  bool dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value );
-  bool assign_impl( const AST::AssignmentStatement *node, Value *lvalue );
-
   class TypeDescr : public Refcounted
   {
   public:
@@ -82,6 +78,10 @@ private:
     CountPtr< Array< Value, 1 > > dims;
     Type type;
   };
+
+private:
+  bool dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value );
+  bool assign_impl( const AST::AssignmentStatement *node, Value *lvalue );
 
   CountPtr< Scope > scope;
   CountPtr< TypeDescr > return_value_type_descr;
