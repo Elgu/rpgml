@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -72,6 +72,13 @@ CountPtr< JobQueue::Job > JobQueue::getJob( void )
   return (Job*)0;
 }
 
+size_t JobQueue::doJob( Job *_job )
+{
+  CountPtr< Job > job( _job );
+  addJob( job );
+  return job->wait();
+}
+
 void JobQueue::gc_clear( void )
 {
   clear();
@@ -105,12 +112,37 @@ void JobQueue::Job::setPriority( size_t priority )
   m_priority = priority;
 }
 
+size_t JobQueue::Job::wait( void )
+{
+  m_wait_lock.wait();
+  return m_return_value;
+}
+
+size_t JobQueue::Job::done( size_t return_value )
+{
+  m_return_value = return_value;
+  m_wait_lock.done();
+  return m_return_value;
+}
+
 void JobQueue::Job::gc_clear( void )
 {}
 
 void JobQueue::Job::gc_getChildren( Children &children ) const
 {
   (void)children;
+}
+
+JobQueue::EndJob::EndJob( GarbageCollector *_gc )
+: Job( _gc )
+{}
+
+JobQueue::EndJob::~EndJob( void )
+{}
+
+size_t JobQueue::EndJob::doit( CountPtr< JobQueue > )
+{
+  return End;
 }
 
 JobQueue::Queue::Queue( GarbageCollector *_gc )
