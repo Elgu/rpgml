@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -24,6 +24,7 @@
 #include "Node.h"
 #include "InterpretingParser.h"
 #include "FileSource.h"
+#include "ParseException.h"
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -81,19 +82,20 @@ bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *sco
     for( size_t i=0; i<call_args->size(); ++i )
     {
       const Arg &arg = call_args->at( i );
-      if( arg.identifier.empty() )
+      const String &identifier = arg.getIdentifier();
+      if( identifier.empty() )
       {
-        throw Exception( "only identifier arguments allowed when instantiating a Node" );
+        throw Exception() << "Only identifier arguments allowed when instantiating a Node";
       }
 
-      Param *const param = node->getParam( arg.identifier );
-
-      if( !param )
+      try
       {
-        throw Exception( "Param not found." );
+        node->getParam( identifier )->set( arg.getValue() );
       }
-
-      param->set( arg.value );
+      catch( const RPGML::Exception &e )
+      {
+        throw ParseException( loc, e );
+      }
     }
   }
 
@@ -103,7 +105,7 @@ bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *sco
 
 bool NodeCreator::call_impl( const Location *, index_t, Scope *, Value &, index_t, const Value * )
 {
-  throw Exception( "NodeCreator::call_impl() should newer be called" );
+  throw Exception() << "NodeCreator::call_impl() should newer be called";
   return false;
 }
 
@@ -279,6 +281,8 @@ String Frame::genGlobalName( const String &identifier ) const
 
 Value *Frame::push_back( const String &identifier, const Value &value )
 {
+//  std::cerr << "Frame(" << (void*)this << ")::push_back( '" << identifier << "', " << value << " )" << std::endl;
+
   assert( m_values.size() == m_identifiers.size() );
   const index_t index = index_t( m_values.size() );
 
@@ -349,17 +353,44 @@ Value *Frame::load_local ( const String &identifier, const Scope *scope )
 
 Value *Frame::load_global( const String &identifier, const Scope *scope )
 {
-  return load( ".", identifier, scope );
+  const std::vector< String > &searchPaths = scope->getContext()->getSearchPaths();
+
+  Value *ret = 0;
+
+  for( size_t i( 0 ), end( searchPaths.size() ); i < end; ++i )
+  {
+    Value *const ret_i = load( searchPaths[ i ].c_str(), identifier, scope );
+    if( ret_i )
+    {
+      if( ret )
+      {
+        std::cerr
+          << "warning: '" << identifier << "'"
+          << " was found multiple times in different search paths"
+          << std::endl
+          ;
+      }
+      else
+      {
+        ret = ret_i;
+      }
+    }
+  }
+
+  return ret;
 }
 
 Value *Frame::load( const String &path, const String &identifier, const Scope *scope )
 {
+//  std::cerr << "load( '" << path << "', '" << identifier << "', )" << std::endl;
+
 	// Check whether identifier refers to a directory, use it as namespace
   String dir = path + "/" + identifier;
   DIR *const dir_p = opendir( dir.c_str() );
   if( dir_p )
   {
     closedir( dir_p );
+//    std::cerr << "Found directory '" << dir << "'" << std::endl;
     return getStack( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
   }
 
@@ -437,24 +468,19 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
     if( rpgml_p )
     {
       CountPtr< Source > source = new FileSource( rpgml_p );
-      CountPtr< Scope > new_scope = new Scope( *scope );
+      CountPtr< Scope > new_scope = new Scope( scope, this );
       CountPtr< InterpretingParser > parser = new InterpretingParser( new_scope, source );
-      try
-      {
-        parser->parse();
-      }
-      catch( const char *e )
-      {
-        throw Exception()
-          << "Failed to parse '" << rpgml << "'"
-          << ": " << e
-          ;
-      }
+
+      parser->setFilename( rpgml );
+      parser->parse();
+      parser.reset();
+      source.reset();
 
       Value *const ret = getVariable( identifier );
       if( !ret )
       {
         throw Exception()
+          << "Frame(" << (void*)this << "): "
           << "Variable '" << identifier << "'"
           << " was not defined in the rpgml file '" << rpgml << "'"
           ;
