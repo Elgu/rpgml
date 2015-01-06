@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -48,13 +48,13 @@ bool Print::tick_scalar( const ArrayBase *in_base )
 bool Print::tick( void )
 {
   const ArrayBase *const in_base = getInput( INPUT_IN )->getData();
-  if( !in_base ) throw Exception( "Input 'in' is not connected" );
+  if( !in_base ) throw NotConnected( getInput( INPUT_IN ) );
   const index_t in_dims = in_base->getDims();
 
   if( in_dims != 0 )
   {
     throw Exception()
-      << "Only scalar arguments supported at the moment, has "
+      << "Only scalar arguments supported at the moment, has " << in_dims << " dimensions"
       ;
   }
 
@@ -73,7 +73,7 @@ bool Print::tick( void )
     case Type::DOUBLE: return tick_scalar< double   >( in_base );
     case Type::STRING: return tick_scalar< String   >( in_base );
     default:
-      throw Exception() << "Unsupported type '" << in_base->getType().getTypeName() << "'";
+      throw IncompatibleOutput( getInput( INPUT_IN ) );
   }
 
   return true;
@@ -91,5 +91,5 @@ void Print::gc_getChildren( Children &children ) const
 
 } // namespace RPGML
 
-RPGML_CREATE_NODE( Print )
+RPGML_CREATE_NODE( Print,  )
 
