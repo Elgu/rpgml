@@ -176,7 +176,7 @@ void Output::disconnect( void )
   if( m_inputs.isNull() ) return;
 
   CountPtr< inputs_t > tmp = new inputs_t( m_inputs->getGC() );
-  std::swap( (**tmp), (**m_inputs) );
+  std::swap( (*tmp), (*m_inputs) );
 
   for( inputs_t::const_iterator i( tmp->begin() ), end( tmp->end() ); i != end; ++i )
   {

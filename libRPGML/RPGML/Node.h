@@ -132,6 +132,8 @@
     } \
   } \
 
+class utest_Node;
+
 namespace RPGML {
 
 class Port;
@@ -154,6 +156,7 @@ public:
   virtual void gc_getChildren( Children &children ) const;
 
 private:
+  friend class ::utest_Node;
   CountPtr< Node > m_parent;
   String m_identifier;
 };
@@ -180,6 +183,7 @@ public:
   const ArrayBase *getData( void ) const;
 
 private:
+  friend class ::utest_Node;
   CountPtr< Output > m_output;
 };
 
@@ -231,6 +235,7 @@ public:
   virtual void gc_getChildren( Children &children ) const;
 
 private:
+  friend class ::utest_Node;
   typedef Array< CountPtr< Input >, 1 > inputs_t;
   CountPtr< inputs_t  > m_inputs;
   CountPtr< ArrayBase > m_data;
@@ -257,6 +262,7 @@ public:
   virtual Node *getParent( void ) const = 0;
   const String &getIdentifier( void ) const { return m_identifier; }
 private:
+  friend class ::utest_Node;
   const String m_identifier;
 };
 
@@ -417,6 +423,7 @@ protected:
   };
 
 private:
+  friend class ::utest_Node;
   typedef Array< CountPtr< Input  >, 1 > inputs_t;
   typedef Array< CountPtr< Output >, 1 > outputs_t;
   typedef Array< CountPtr< Param  >, 1 > params_t;

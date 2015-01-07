@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -124,7 +124,7 @@ public:
     {
       Collectable::Children children;
       out->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( true, children.contains( in ) );
+      CPPUNIT_ASSERT_EQUAL( true, children.contains( out->m_inputs ) );
     }
 
     // in2 <- out
@@ -136,13 +136,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( out.get() ), in->getOutput() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( out.get() ), in2->getOutput() );
 
-    {
-      Collectable::Children children;
-      out->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( true, children.contains( in ) );
-      CPPUNIT_ASSERT_EQUAL( true, children.contains( in2 ) );
-    }
-
     // out -/> in
 
     CPPUNIT_ASSERT_NO_THROW( in->disconnect() );
@@ -152,13 +145,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( 0 ), in->getOutput() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( out.get() ), in2->getOutput() );
 
-    {
-      Collectable::Children children;
-      out->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( false, children.contains( in ) );
-      CPPUNIT_ASSERT_EQUAL( true, children.contains( in2 ) );
-    }
-
     // out2 -> in2
 
     CPPUNIT_ASSERT_NO_THROW( out2->connect( in2 ) );
@@ -167,18 +153,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( true, out2->isConnected() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( out2.get() ), in2->getOutput() );
 
-    {
-      Collectable::Children children;
-      out->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( false, children.contains( in ) );
-      CPPUNIT_ASSERT_EQUAL( false, children.contains( in2 ) );
-    }
-    {
-      Collectable::Children children;
-      out2->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( true, children.contains( in2 ) );
-    }
-
     // out2 -/> in2
 
     CPPUNIT_ASSERT_NO_THROW( out2->disconnect() );
@@ -186,11 +160,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( false, out->isConnected() );
     CPPUNIT_ASSERT_EQUAL( false, out2->isConnected() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const Output* >( false ), in2->getOutput() );
-    {
-      Collectable::Children children;
-      out2->gc_getChildren( children );
-      CPPUNIT_ASSERT_EQUAL( false, children.contains( in2 ) );
-    }
   }
 
   void test_Output_Data( void )
