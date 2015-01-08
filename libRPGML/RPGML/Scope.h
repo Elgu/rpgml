@@ -20,6 +20,7 @@
 
 #include "Refcounted.h"
 #include "Function.h"
+#include "Frame.h"
 #include "Exception.h"
 
 #include <string>
@@ -53,13 +54,13 @@ public:
   GarbageCollector *getGC( void ) const;
   StringUnifier *getUnifier( void ) const;
 
-  Value *lookup( const String &identifier ) const;
-  Value *lookup( const char *identifier ) const;
-  Value *lookup( const std::string &identifier ) const;
+  Frame::Ref lookup( const String &identifier ) const;
+  Frame::Ref lookup( const char *identifier ) const;
+  Frame::Ref lookup( const std::string &identifier ) const;
 
-  Value *create( const String &identifier     , const Value &value ) const;
-  Value *create( const char *identifier       , const Value &value ) const;
-  Value *create( const std::string &identifier, const Value &value ) const;
+  Frame::Ref create( const String &identifier     , const Value &value ) const;
+  Frame::Ref create( const char *identifier       , const Value &value ) const;
+  Frame::Ref create( const std::string &identifier, const Value &value ) const;
 
   class EnterLeaveGuard;
 
@@ -67,7 +68,7 @@ public:
   CountPtr< EnterLeaveGuard > enter( const char *identifier );
   CountPtr< EnterLeaveGuard > enter( const std::string &identifier );
 
-  Value *create_unified( const String &unified_identifier, const Value &value ) const;
+  Frame::Ref create_unified( const String &unified_identifier, const Value &value ) const;
 
   const StringData *unify( const String &identifier ) const;
   const StringData *unify( const char *identifier ) const;
@@ -90,9 +91,19 @@ public:
     , const Value &arg1 = Value()
     , const Value &arg2 = Value()
     , const Value &arg3 = Value()
+    , const Value &arg4 = Value()
     );
 
-  CountPtr< Node > create_Node(
+  bool call(
+      const Location *loc
+    , index_t recursion_depth
+    , const String &function_identifier
+    , Value &ret
+    , index_t n_args
+    , const Value *args
+    );
+
+  CountPtr< Node > createNode(
       const Location *loc
     , index_t recursion_depth
     , const String &node_name
@@ -104,7 +115,7 @@ public:
     , const Value &x
     );
 
-  CountPtr< Frame > new_Frame( void ) const;
+  CountPtr< Frame > newFrame( void ) const;
 
   //! like 'foo.bar.identifier'
   String genGlobalName( const String &identifier ) const;

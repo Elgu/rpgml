@@ -18,11 +18,9 @@
 #include "Scope.h"
 
 #include "Context.h"
-#include "Frame.h"
 #include "Value.h"
 #include "String.h"
 #include "StringUnifier.h"
-#include "Refcounted.h"
 #include "Node.h"
 #include "ParseException.h"
 
@@ -78,28 +76,35 @@ Frame *Scope::getRoot( void ) const
   return m_context->getRoot();
 }
 
-Value *Scope::lookup( const String &identifier ) const
+Frame::Ref Scope::lookup( const String &identifier ) const
 {
-  for( Frame *curr = getCurr(); curr; curr = curr->getParent() )
+  if( identifier.empty() ) return Frame::Ref();
+
+  if( identifier[ 0 ] == '.' )
   {
-    Value *const ret = curr->load( identifier, this );
-    if( ret ) return ret;
+    return getRoot()->load( identifier.mid( 1 ), this );
   }
 
-  return 0;
+  for( Frame *curr = getCurr(); curr; curr = curr->getParent() )
+  {
+    Frame::Ref ret = curr->load( identifier, this );
+    if( !ret.isNull() ) return ret;
+  }
+
+  return Frame::Ref();
 }
 
-Value *Scope::lookup( const char *identifier ) const
+Frame::Ref Scope::lookup( const char *identifier ) const
 {
-  return lookup( String::Static( identifier ) );
+  return lookup( String( unify( identifier ) ) );
 }
 
-Value *Scope::lookup( const std::string &identifier ) const
+Frame::Ref Scope::lookup( const std::string &identifier ) const
 {
-  return lookup( String( new StdString( identifier ) ) );
+  return lookup( String( unify( identifier ) ) );
 }
 
-Value *Scope::create_unified( const String &unified_identifier, const Value &value ) const
+Frame::Ref Scope::create_unified( const String &unified_identifier, const Value &value ) const
 {
   Frame *const curr = getCurr();
 
@@ -114,20 +119,20 @@ Value *Scope::create_unified( const String &unified_identifier, const Value &val
     throw Exception() << "Identifier '" << unified_identifier << "' already exists";
   }
 
-  return 0;
+  return Frame::Ref();
 }
 
-Value *Scope::create( const String &identifier, const Value &value ) const
+Frame::Ref Scope::create( const String &identifier, const Value &value ) const
 {
   return create_unified( unify( identifier ), value );
 }
 
-Value *Scope::create( const char *identifier       , const Value &value ) const
+Frame::Ref Scope::create( const char *identifier       , const Value &value ) const
 {
   return create_unified( unify( identifier ), value );
 }
 
-Value *Scope::create( const std::string &identifier, const Value &value ) const
+Frame::Ref Scope::create( const std::string &identifier, const Value &value ) const
 {
   return create_unified( unify( identifier ), value );
 }
@@ -147,12 +152,12 @@ CountPtr< Scope::EnterLeaveGuard > Scope::enter( const String &identifier )
 
 CountPtr< Scope::EnterLeaveGuard > Scope::enter( const char *identifier )
 {
-  return enter( String::Static( identifier ) );
+  return enter( unify( identifier ) );
 }
 
 CountPtr< Scope::EnterLeaveGuard > Scope::enter( const std::string &identifier )
 {
-  return enter( identifier.c_str() );
+  return enter( unify( identifier ) );
 }
 
 const StringData *Scope::unify( const String &identifier ) const
@@ -199,31 +204,54 @@ bool Scope::call(
   , const Value &arg1
   , const Value &arg2
   , const Value &arg3
+  , const Value &arg4
   )
 {
-  Function::Args args;
-  args.reserve( 4 );
+  Value args[ 5 ];
+  index_t n_args = 0;
 
   do
   {
-    if( !arg0.isNil() ) args.push_back( Function::Arg( String(), arg0 ) ); else break;
-    if( !arg1.isNil() ) args.push_back( Function::Arg( String(), arg1 ) ); else break;
-    if( !arg2.isNil() ) args.push_back( Function::Arg( String(), arg2 ) ); else break;
-    if( !arg3.isNil() ) args.push_back( Function::Arg( String(), arg3 ) ); else break;
+    if( !arg0.isNil() ) args[ n_args++ ] = arg0; else break;
+    if( !arg1.isNil() ) args[ n_args++ ] = arg1; else break;
+    if( !arg2.isNil() ) args[ n_args++ ] = arg2; else break;
+    if( !arg3.isNil() ) args[ n_args++ ] = arg3; else break;
+    if( !arg4.isNil() ) args[ n_args++ ] = arg4; else break;
   }
   while( false );
 
-  return call( loc, recursion_depth, function_identifier, ret, &args );
+  return call( loc, recursion_depth, function_identifier, ret, n_args, args );
 }
 
-CountPtr< Node > Scope::create_Node(
+bool Scope::call(
+    const Location *loc
+  , index_t recursion_depth
+  , const String &function_identifier
+  , Value &ret
+  , index_t n_args
+  , const Value *args
+  )
+{
+  Value *const func = lookup( function_identifier );
+  if( !func ) throw ParseException( loc ) << "Function '" << function_identifier << "' not found";
+  if( !func->isFunction() ) throw ParseException( loc ) << "Variable '" << function_identifier << "' is not a Function";
+
+  if( !func->getFunction()->call( loc, recursion_depth, this, ret, n_args, args ) )
+  {
+    throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
+  }
+
+  return true;
+}
+
+CountPtr< Node > Scope::createNode(
     const Location *loc
   , index_t recursion_depth
   , const String &name
   )
 {
   Value ret;
-  if( !call( loc, recursion_depth+1, name, ret ) )
+  if( !call( loc, recursion_depth+1, name, ret, 0, (const Value*)0 ) )
   {
     throw ParseException()
       << "Could not find/instantiate Node '" << name << "'"
@@ -258,7 +286,7 @@ CountPtr< Output > Scope::toOutput(
   else if( x.isPrimitive() )
   {
     Value ret;
-    if( !call( loc, recursion_depth, String::Static( "constant" ), ret, x ) )
+    if( !call( loc, recursion_depth, String::Static( ".constant" ), ret, x ) )
     {
       return (Output*)0;
     }
@@ -274,16 +302,91 @@ CountPtr< Output > Scope::toOutput(
   }
   else if( x.isArray() )
   {
-    // TODO: use ConstantArray or something
-    Value ret;
-    if( !call( loc, recursion_depth, String::Static( "constant" ), ret, x ) ) return (Output*)0;
-    if( !ret.isOutput() )
+    const ArrayBase *const array_base = x.getArray();
+    const ArrayBase::Size  array_size = array_base->getSize();
+    const Type             array_type = array_base->getType();
+    const int              dims       = array_size.getDims();
+
+    CountPtr< Node > array_node = createNode( loc, recursion_depth, String::Static( ".ConstantArray" ) );
+
+    if( array_type.isPrimitive() )
+    {
+      const Type constant_array_type = array_type;
+
+      array_node->getParam( "type" )->set( Value( String::Static( constant_array_type.getTypeName() ) ) );
+      array_node->getParam( "dims" )->set( Value( dims ) );
+
+      static const char *const size_names[] = { "sizeX", "sizeY", "sizeZ", "sizeT" };
+      for( int d=0; d<dims; ++d )
+      {
+        array_node->getParam( size_names[ d ] )->set( Value( array_size[ d ] ) );
+      }
+
+      const Frame::Ref constant_array_v = array_node->getVariable( "in" );
+      if( constant_array_v.isNull() )
+      {
+        throw ParseException( loc ) << "Could not get 'in' from ConstantArray";
+      }
+      if( !constant_array_v->isArray() )
+      {
+        throw ParseException( loc )
+          << "Expected 'in' of ConstantArray to be an Array, is " << constant_array_v->getTypeName()
+          ;
+      }
+      const ArrayBase *const constant_array_base = constant_array_v->getArray();
+
+      const ArrayBase::Size constant_array_size = constant_array_base->getSize();
+      if( constant_array_size != array_size )
+      {
+        throw ParseException( loc )
+          << "Expected 'in[]' of ConstantArray to be the specified size."
+          << " Specified was " << array_size
+          << ", is " << constant_array_size
+          ;
+      }
+
+      if( !constant_array_base->getType().isParam() )
+      {
+        throw ParseException( loc )
+          << "Expected 'in[]' of ConstantArray to be a Param Array"
+          << ", is " << constant_array_base->getType() << " Array"
+          ;
+      }
+
+      const ParamArrayElements *constant_array = 0;
+      if( !constant_array_base->getAs( constant_array ) )
+      {
+        throw ParseException( loc )
+          << "Could not get 'in[]' of ConstantArray as ParamArrayElements"
+          ;
+      }
+
+      ParamArrayElements::const_iterator         p    ( constant_array->begin()            );
+      ParamArrayElements::const_iterator         p_end( constant_array->end()              );
+      CountPtr< ArrayBase::ValueIterator       > a    ( array_base    ->getValueIterator() );
+
+      for( ; !a->done() && p != p_end; a->next(), ++p )
+      {
+        (*p)->set( a->get() );
+      }
+
+      if( !a->done() || p != p_end )
+      {
+        throw ParseException( new Location( __FILE__, __LINE__ ) )
+          << "Internal: Array Iterators did not match"
+          << ": a->done() = " << a->done()
+          << ", ( p == p_end ) = " << ( p == p_end )
+          ;
+      }
+    }
+    else
     {
       throw ParseException( loc )
-        << "Return value of 'constant' should be Output, is " << ret.getTypeName()
+        << "Unsupported Array type of " << array_base->getType()
         ;
     }
-    return ret.getOutput();
+
+    return array_node->getOutput( "out" );
   }
   else
   {
@@ -291,7 +394,7 @@ CountPtr< Output > Scope::toOutput(
   }
 }
 
-CountPtr< Frame > Scope::new_Frame( void ) const
+CountPtr< Frame > Scope::newFrame( void ) const
 {
   return new Frame( getGC(), getCurr() );
 }
