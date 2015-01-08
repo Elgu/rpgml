@@ -67,7 +67,7 @@ public:
   public:
     explicit
     Coordinates( int dims, const index_t *coords )
-    : m_coords( coords )
+    : m_coords( dims > 0 ? coords : 0 )
     , m_dims( dims )
     {}
 
@@ -645,7 +645,7 @@ public:
   {
     if( inRange( x, y, z, t ) )
     {
-      return Value( at( x, y, z, t ) );
+      return CreateValue< Element >::doit( at( x, y, z, t ) );
     }
     else
     {
@@ -657,7 +657,7 @@ public:
   {
     if( inRange_v( dims, x ) )
     {
-      return Value( at_v( dims, x ) );
+      return CreateValue< Element >::doit( at_v( dims, x ) );
     }
     else
     {
@@ -674,9 +674,7 @@ public:
   {
     if( inRange( x, y, z, t ) )
     {
-      Element e;
-      value.get( e );
-      at( x, y, z, t ) = e;
+      at( x, y, z, t ) = value.get< Element >();
     }
     else
     {
@@ -688,9 +686,7 @@ public:
   {
     if( inRange_v( dims, x ) )
     {
-      Element e;
-      value.get( e );
-      at_v( dims, x ) = e;
+      at_v( dims, x ) = value.get< Element >();
     }
     else
     {
@@ -705,9 +701,7 @@ public:
 
   virtual void fillValue( const Value &value )
   {
-    Element e;
-    value.get( e );
-    Base::fill( e );
+    Base::fill( value.get< Element >() );
   }
 
   typedef Iterator< Element& > Elements;
@@ -774,7 +768,7 @@ private:
 
     virtual bool done( void ) { return ( m_i >= m_array->size() ); }
     virtual void next( void ) { ++m_i; }
-    virtual Value get( void ) { return Value( m_array->_elements_at( m_i ) ); }
+    virtual Value get( void ) { return CreateValue< Element >::doit( m_array->_elements_at( m_i ) ); }
     virtual CountPtr< ValueIterator > clone( void ) const { return new _ValueIterator( *this ); }
 
   private:
@@ -892,6 +886,138 @@ CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, 
   }
   return new_Array< Element >( gc, dims );
 }
+
+typedef ArrayElements< bool                       >     BoolArrayElements;
+typedef ArrayElements< uint8_t                    >    UInt8ArrayElements;
+typedef ArrayElements< int8_t                     >     Int8ArrayElements;
+typedef ArrayElements< uint16_t                   >   UInt16ArrayElements;
+typedef ArrayElements< int16_t                    >    Int16ArrayElements;
+typedef ArrayElements< uint32_t                   >   UInt32ArrayElements;
+typedef ArrayElements< int32_t                    >    Int32ArrayElements;
+typedef ArrayElements< uint64_t                   >   UInt64ArrayElements;
+typedef ArrayElements< int64_t                    >    Int64ArrayElements;
+typedef ArrayElements< float                      >    FloatArrayElements;
+typedef ArrayElements< double                     >   DoubleArrayElements;
+typedef ArrayElements< String                     >   StringArrayElements;
+typedef ArrayElements< CountPtr< Frame          > >    FrameArrayElements;
+typedef ArrayElements< CountPtr< Function       > > FunctionArrayElements;
+typedef ArrayElements< CountPtr< Node           > >     NodeArrayElements;
+typedef ArrayElements< CountPtr< Output         > >   OutputArrayElements;
+typedef ArrayElements< CountPtr< Input          > >    InputArrayElements;
+typedef ArrayElements< CountPtr< Param          > >    ParamArrayElements;
+typedef ArrayElements< CountPtr< const Sequence > > SequenceArrayElements;
+typedef ArrayElements< CountPtr< ArrayBase      > >    ArrayArrayElements;
+typedef ArrayElements< int                        >      IntArrayElements;
+
+typedef Array< bool                      , 0 >     BoolArray0D;
+typedef Array< uint8_t                   , 0 >    UInt8Array0D;
+typedef Array< int8_t                    , 0 >     Int8Array0D;
+typedef Array< uint16_t                  , 0 >   UInt16Array0D;
+typedef Array< int16_t                   , 0 >    Int16Array0D;
+typedef Array< uint32_t                  , 0 >   UInt32Array0D;
+typedef Array< int32_t                   , 0 >    Int32Array0D;
+typedef Array< uint64_t                  , 0 >   UInt64Array0D;
+typedef Array< int64_t                   , 0 >    Int64Array0D;
+typedef Array< float                     , 0 >    FloatArray0D;
+typedef Array< double                    , 0 >   DoubleArray0D;
+typedef Array< String                    , 0 >   StringArray0D;
+typedef Array< CountPtr< Frame          >, 0 >    FrameArray0D;
+typedef Array< CountPtr< Function       >, 0 > FunctionArray0D;
+typedef Array< CountPtr< Node           >, 0 >     NodeArray0D;
+typedef Array< CountPtr< Output         >, 0 >   OutputArray0D;
+typedef Array< CountPtr< Input          >, 0 >    InputArray0D;
+typedef Array< CountPtr< Param          >, 0 >    ParamArray0D;
+typedef Array< CountPtr< const Sequence >, 0 > SequenceArray0D;
+typedef Array< CountPtr< ArrayBase      >, 0 >    ArrayArray0D;
+typedef Array< int                       , 0 >      IntArray0D;
+
+typedef Array< bool                      , 1 >     BoolArray1D;
+typedef Array< uint8_t                   , 1 >    UInt8Array1D;
+typedef Array< int8_t                    , 1 >     Int8Array1D;
+typedef Array< uint16_t                  , 1 >   UInt16Array1D;
+typedef Array< int16_t                   , 1 >    Int16Array1D;
+typedef Array< uint32_t                  , 1 >   UInt32Array1D;
+typedef Array< int32_t                   , 1 >    Int32Array1D;
+typedef Array< uint64_t                  , 1 >   UInt64Array1D;
+typedef Array< int64_t                   , 1 >    Int64Array1D;
+typedef Array< float                     , 1 >    FloatArray1D;
+typedef Array< double                    , 1 >   DoubleArray1D;
+typedef Array< String                    , 1 >   StringArray1D;
+typedef Array< CountPtr< Frame          >, 1 >    FrameArray1D;
+typedef Array< CountPtr< Function       >, 1 > FunctionArray1D;
+typedef Array< CountPtr< Node           >, 1 >     NodeArray1D;
+typedef Array< CountPtr< Output         >, 1 >   OutputArray1D;
+typedef Array< CountPtr< Input          >, 1 >    InputArray1D;
+typedef Array< CountPtr< Param          >, 1 >    ParamArray1D;
+typedef Array< CountPtr< const Sequence >, 1 > SequenceArray1D;
+typedef Array< CountPtr< ArrayBase      >, 1 >    ArrayArray1D;
+typedef Array< int                       , 1 >      IntArray1D;
+
+typedef Array< bool                      , 2 >     BoolArray2D;
+typedef Array< uint8_t                   , 2 >    UInt8Array2D;
+typedef Array< int8_t                    , 2 >     Int8Array2D;
+typedef Array< uint16_t                  , 2 >   UInt16Array2D;
+typedef Array< int16_t                   , 2 >    Int16Array2D;
+typedef Array< uint32_t                  , 2 >   UInt32Array2D;
+typedef Array< int32_t                   , 2 >    Int32Array2D;
+typedef Array< uint64_t                  , 2 >   UInt64Array2D;
+typedef Array< int64_t                   , 2 >    Int64Array2D;
+typedef Array< float                     , 2 >    FloatArray2D;
+typedef Array< double                    , 2 >   DoubleArray2D;
+typedef Array< String                    , 2 >   StringArray2D;
+typedef Array< CountPtr< Frame          >, 2 >    FrameArray2D;
+typedef Array< CountPtr< Function       >, 2 > FunctionArray2D;
+typedef Array< CountPtr< Node           >, 2 >     NodeArray2D;
+typedef Array< CountPtr< Output         >, 2 >   OutputArray2D;
+typedef Array< CountPtr< Input          >, 2 >    InputArray2D;
+typedef Array< CountPtr< Param          >, 2 >    ParamArray2D;
+typedef Array< CountPtr< const Sequence >, 2 > SequenceArray2D;
+typedef Array< CountPtr< ArrayBase      >, 2 >    ArrayArray2D;
+typedef Array< int                       , 2 >      IntArray2D;
+
+typedef Array< bool                      , 3 >     BoolArray3D;
+typedef Array< uint8_t                   , 3 >    UInt8Array3D;
+typedef Array< int8_t                    , 3 >     Int8Array3D;
+typedef Array< uint16_t                  , 3 >   UInt16Array3D;
+typedef Array< int16_t                   , 3 >    Int16Array3D;
+typedef Array< uint32_t                  , 3 >   UInt32Array3D;
+typedef Array< int32_t                   , 3 >    Int32Array3D;
+typedef Array< uint64_t                  , 3 >   UInt64Array3D;
+typedef Array< int64_t                   , 3 >    Int64Array3D;
+typedef Array< float                     , 3 >    FloatArray3D;
+typedef Array< double                    , 3 >   DoubleArray3D;
+typedef Array< String                    , 3 >   StringArray3D;
+typedef Array< CountPtr< Frame          >, 3 >    FrameArray3D;
+typedef Array< CountPtr< Function       >, 3 > FunctionArray3D;
+typedef Array< CountPtr< Node           >, 3 >     NodeArray3D;
+typedef Array< CountPtr< Output         >, 3 >   OutputArray3D;
+typedef Array< CountPtr< Input          >, 3 >    InputArray3D;
+typedef Array< CountPtr< Param          >, 3 >    ParamArray3D;
+typedef Array< CountPtr< const Sequence >, 3 > SequenceArray3D;
+typedef Array< CountPtr< ArrayBase      >, 3 >    ArrayArray3D;
+typedef Array< int                       , 3 >      IntArray3D;
+
+typedef Array< bool                      , 4 >     BoolArray4D;
+typedef Array< uint8_t                   , 4 >    UInt8Array4D;
+typedef Array< int8_t                    , 4 >     Int8Array4D;
+typedef Array< uint16_t                  , 4 >   UInt16Array4D;
+typedef Array< int16_t                   , 4 >    Int16Array4D;
+typedef Array< uint32_t                  , 4 >   UInt32Array4D;
+typedef Array< int32_t                   , 4 >    Int32Array4D;
+typedef Array< uint64_t                  , 4 >   UInt64Array4D;
+typedef Array< int64_t                   , 4 >    Int64Array4D;
+typedef Array< float                     , 4 >    FloatArray4D;
+typedef Array< double                    , 4 >   DoubleArray4D;
+typedef Array< String                    , 4 >   StringArray4D;
+typedef Array< CountPtr< Frame          >, 4 >    FrameArray4D;
+typedef Array< CountPtr< Function       >, 4 > FunctionArray4D;
+typedef Array< CountPtr< Node           >, 4 >     NodeArray4D;
+typedef Array< CountPtr< Output         >, 4 >   OutputArray4D;
+typedef Array< CountPtr< Input          >, 4 >    InputArray4D;
+typedef Array< CountPtr< Param          >, 4 >    ParamArray4D;
+typedef Array< CountPtr< const Sequence >, 4 > SequenceArray4D;
+typedef Array< CountPtr< ArrayBase      >, 4 >    ArrayArray4D;
+typedef Array< int                       , 4 >      IntArray4D;
 
 } // namespace RPGML
 
