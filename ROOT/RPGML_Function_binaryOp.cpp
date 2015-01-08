@@ -216,7 +216,7 @@ bool Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth,
 
   if( left.isOutput() || right.isOutput() )
   {
-    CountPtr< Node > node( scope->create_Node( loc, recursion_depth+1, String::Static( "BinaryOp" ) ) );
+    CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".BinaryOp" ) ) );
 
     CountPtr< Output > left_output = scope->toOutput( loc, recursion_depth, left );
     CountPtr< Output > right_output = scope->toOutput( loc, recursion_depth, right );
