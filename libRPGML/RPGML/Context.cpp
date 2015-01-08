@@ -141,7 +141,6 @@ CountPtr< Graph > Context::createGraph( void ) const
     throw Exception() << "Found Array '@needed', but is null";
   }
 
-  typedef Array< CountPtr< Node >, 1 > NodeArray1D;
   NodeArray1D *needed_p = 0;
   if( !needed_base->getAs( needed_p ) )
   {
