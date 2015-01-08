@@ -398,7 +398,7 @@ template<> struct TypeOf< CountPtr< Node      > > { static const Type::Enum E = 
 template<> struct TypeOf< CountPtr< Output    > > { static const Type::Enum E = Type::OUTPUT  ; };
 template<> struct TypeOf< CountPtr< Input     > > { static const Type::Enum E = Type::INPUT   ; };
 template<> struct TypeOf< CountPtr< Param     > > { static const Type::Enum E = Type::PARAM   ; };
-template<> struct TypeOf< CountPtr< Sequence  > > { static const Type::Enum E = Type::SEQUENCE; };
+template<> struct TypeOf< CountPtr< const Sequence  > > { static const Type::Enum E = Type::SEQUENCE; };
 template<> struct TypeOf< CountPtr< ArrayBase > > { static const Type::Enum E = Type::ARRAY   ; };
 
 template< Type::Enum E > struct EnumType {};
@@ -421,7 +421,7 @@ template<> struct EnumType< Type::NODE     >{ typedef CountPtr< Node      > T; }
 template<> struct EnumType< Type::OUTPUT   >{ typedef CountPtr< Output    > T; };
 template<> struct EnumType< Type::INPUT    >{ typedef CountPtr< Input     > T; };
 template<> struct EnumType< Type::PARAM    >{ typedef CountPtr< Param     > T; };
-template<> struct EnumType< Type::SEQUENCE >{ typedef CountPtr< Sequence  > T; };
+template<> struct EnumType< Type::SEQUENCE >{ typedef CountPtr< const Sequence  > T; };
 template<> struct EnumType< Type::ARRAY    >{ typedef CountPtr< ArrayBase > T; };
 
 template< typename T > struct IsSigned { static const bool B = false; };
