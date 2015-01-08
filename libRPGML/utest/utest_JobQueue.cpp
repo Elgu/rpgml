@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -49,12 +49,13 @@ public:
     virtual ~NrJob( void )
     {}
 
+    int nr;
+
+  protected:
     virtual size_t doit( CountPtr< JobQueue > )
     {
       return size_t( nr );
     }
-
-    int nr;
   };
 
   class IncJob : public JobQueue::Job
@@ -68,6 +69,9 @@ public:
     virtual ~IncJob( void )
     {}
 
+    int *p;
+
+  protected:
     virtual size_t doit( CountPtr< JobQueue > queue )
     {
       ++(*p);
@@ -78,8 +82,6 @@ public:
       }
       return 0;
     }
-
-    int *p;
   };
 
   class EndWorker : public JobQueue::Job
@@ -94,6 +96,7 @@ public:
     virtual ~EndWorker( void )
     {}
 
+  protected:
     virtual size_t doit( CountPtr< JobQueue > )
     {
       return size_t( -1 );
@@ -117,7 +120,7 @@ public:
       for(;;)
       {
         CountPtr< JobQueue::Job > job = q->getJob();
-        if( size_t(-1) == job->doit( q ) ) return 0;
+        if( size_t(-1) == job->work( q ) ) return 0;
         Thread::yield();
       }
     }
@@ -143,7 +146,7 @@ public:
     {
       CountPtr< JobQueue::Job > job = q->getJob();
 //      std::cerr << "utest_JobQueue: job = " << (void*)job.get() << ", nr = " << job->doit() << std::endl;
-      CPPUNIT_ASSERT_EQUAL( num_jobs-i-1, job->doit( q ) );
+      CPPUNIT_ASSERT_EQUAL( num_jobs-i-1, job->work( q ) );
       CPPUNIT_ASSERT_EQUAL( num_jobs-i-1, job->getPriority() );
     }
   }
