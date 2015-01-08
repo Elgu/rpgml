@@ -93,7 +93,7 @@ class Visitor
 {
 public:
   Visitor( index_t _recursion_depth=0 )
-  : recursion_depth( _recursion_depth )
+  : m_rd( _recursion_depth )
   {}
   virtual ~Visitor( void ) {}
 
@@ -139,10 +139,10 @@ public:
   {
     try
     {
-      ++recursion_depth;
-      if( recursion_depth > 100 ) throw "Maximum recursion depth reached";
+      ++m_rd;
+      if( m_rd > 100 ) throw "Maximum recursion depth reached";
       bool ret = visit( node );
-      --recursion_depth;
+      --m_rd;
       return ret;
     }
     catch( const ParseException & )
@@ -163,13 +163,13 @@ public:
     }
   }
 
-  index_t getRecursionDepth( void ) const
+  index_t getRD( void ) const
   {
-    return recursion_depth;
+    return m_rd;
   }
 
 private:
-  index_t recursion_depth;
+  index_t m_rd; //!< Current recursion depth (getRD())
 };
 
 class Expression : public Node
