@@ -3,36 +3,37 @@
 
 #include "Semaphore.h"
 #include "Atomic.h"
+#include "Refcounted.h"
 
 namespace RPGML {
 
 class WaitLock
 {
 public:
-  WaitLock( void )
-  : m_num_waiting( 0 )
-  {}
+  WaitLock( void );
+  ~WaitLock( void );
 
-  ~WaitLock( void )
-  {
-    done();
-  }
+  void wait( void );
+  void done( void );
 
-  void wait( void )
+  class Token : public Refcounted
   {
-    ++m_num_waiting;
-    m_wait_sem.lock();
-  }
+  private:
+    explicit Token( WaitLock *lock );
+  public:
+    virtual ~Token( void );
+    void wait( void );
+  private:
+    friend class WaitLock;
+    WaitLock *m_lock;
+    Token( const Token & );
+    Token &operator=( const Token & );
+  };
 
-  void done( void )
-  {
-    while( m_num_waiting.trydec() )
-    {
-      m_wait_sem.unlock();
-    }
-  }
+  CountPtr< Token > getToken( void );
 
 protected:
+  friend class Token;
   Semaphore m_wait_sem;
   Atomic< int > m_num_waiting;
 };
