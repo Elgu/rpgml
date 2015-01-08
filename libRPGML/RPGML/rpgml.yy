@@ -201,9 +201,9 @@ namespace RPGML
 
 identifier
   : IDENTIFIER { ($$) = ($1); }
-  | IN         { ($$) = scanner.unify( String::Static( "in" ) ); }
-  | TO         { ($$) = scanner.unify( String::Static( "to" ) ); }
-  | STEP       { ($$) = scanner.unify( String::Static( "step" ) ); }
+  | IN         { ($$) = scanner.unify( "in" ); }
+  | TO         { ($$) = scanner.unify( "to" ); }
+  | STEP       { ($$) = scanner.unify( "step" ); }
   ;
 
 array_constant
@@ -668,6 +668,7 @@ function_argument_decl_list
 function_definition_statement
   : FUNCTION identifier '(' ')' compound_statement
     {
+      ($5)->own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5) );
       (void)($1);
     }
