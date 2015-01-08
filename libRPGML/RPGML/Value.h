@@ -124,6 +124,12 @@ public:
   explicit Value ( Param          *_param );
   explicit Value ( Sequence const *_seq  );
 
+  template< class T >
+  explicit Value( const CountPtr< T > &cp ) : p( 0 ) { set( cp.get() ); }
+
+  template< class T >
+  explicit Value( const CountPtr< const T > &cp ) : p( 0 ) { set( cp.get() ); }
+
   Value &set( bool     _x );
   Value &set( uint8_t  _x );
   Value &set( int8_t   _x );
@@ -148,6 +154,12 @@ public:
   Value &set( Param          *_param );
   Value &set( Sequence const *_seq  );
   Value &set( const Value &v );
+
+  template< class T >
+  Value &set( const CountPtr< T > &cp ) { return set( cp.get() ); }
+
+  template< class T >
+  Value &set( const CountPtr< const T > &cp ) { return set( cp.get() ); }
 
   Type        getType    ( void ) const { return m_type; }
   Type::Enum  getEnum    ( void ) const { return m_type.getEnum(); }
@@ -316,6 +328,29 @@ private:
 };
 
 CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, const Value &fill_value = Value() );
+
+template< class T > struct CreateValue { static Value doit( const T & ) { throw Exception() << "Cannot use getValue() with custom type"; } };
+template<> struct CreateValue< Value                      >{ static Value doit( const Value                      &x ) { return        x; } };
+template<> struct CreateValue< bool                       >{ static Value doit( const bool                       &x ) { return Value( x ); } };
+template<> struct CreateValue< uint8_t                    >{ static Value doit( const uint8_t                    &x ) { return Value( x ); } };
+template<> struct CreateValue< int8_t                     >{ static Value doit( const int8_t                     &x ) { return Value( x ); } };
+template<> struct CreateValue< uint16_t                   >{ static Value doit( const uint16_t                   &x ) { return Value( x ); } };
+template<> struct CreateValue< int16_t                    >{ static Value doit( const int16_t                    &x ) { return Value( x ); } };
+template<> struct CreateValue< uint32_t                   >{ static Value doit( const uint32_t                   &x ) { return Value( x ); } };
+template<> struct CreateValue< int32_t                    >{ static Value doit( const int32_t                    &x ) { return Value( x ); } };
+template<> struct CreateValue< uint64_t                   >{ static Value doit( const uint64_t                   &x ) { return Value( x ); } };
+template<> struct CreateValue< int64_t                    >{ static Value doit( const int64_t                    &x ) { return Value( x ); } };
+template<> struct CreateValue< float                      >{ static Value doit( const float                      &x ) { return Value( x ); } };
+template<> struct CreateValue< double                     >{ static Value doit( const double                     &x ) { return Value( x ); } };
+template<> struct CreateValue< String                     >{ static Value doit( const String                     &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Frame          > >{ static Value doit( const CountPtr< Frame          > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Function       > >{ static Value doit( const CountPtr< Function       > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Node           > >{ static Value doit( const CountPtr< Node           > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Output         > >{ static Value doit( const CountPtr< Output         > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Input          > >{ static Value doit( const CountPtr< Input          > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Param          > >{ static Value doit( const CountPtr< Param          > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< const Sequence > >{ static Value doit( const CountPtr< const Sequence > &x ) { return Value( x ); } };
+template<> struct CreateValue< CountPtr< ArrayBase      > >{ static Value doit( const CountPtr< ArrayBase      > &x ) { return Value( x ); } };
 
 } // namespace RPGML
 
