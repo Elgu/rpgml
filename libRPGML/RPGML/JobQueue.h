@@ -41,24 +41,50 @@ public:
 
   class Job : public Collectable
   {
-    friend class JobQueue;
   public:
     explicit
     Job( GarbageCollector *_gc, size_t priority = 0 );
     virtual ~Job( void );
 
-    virtual size_t doit( CountPtr< JobQueue > queue ) = 0;
+    virtual void gc_clear( void );
+    virtual void gc_getChildren( Children &children ) const;
 
+    //! Calls doit() and done()
+    size_t work( CountPtr< JobQueue > queue );
     size_t wait( void );
-    //! Called by workers like size_t ret = done( doit( queue ) );
-    size_t done( size_t return_value );
 
     size_t getPriority( void ) const;
     void setPriority( size_t priority );
 
-    virtual void gc_clear( void );
-    virtual void gc_getChildren( Children &children ) const;
+    size_t getReturnValue( void ) const;
+
+    class Token : public Refcounted
+    {
+    private:
+      explicit
+      Token( Job *job );
+    public:
+      virtual ~Token( void );
+      size_t wait( void );
+    private:
+      friend class Job;
+      Token( const Token & );
+      Token &operator=( const Token & );
+      CountPtr< Job > m_job;
+      CountPtr< WaitLock::Token > m_token;
+      size_t m_return_value;
+    };
+
+    CountPtr< Token > getToken( void );
+
+  protected:
+    virtual size_t doit( CountPtr< JobQueue > queue ) = 0;
+
   private:
+    friend class JobQueue;
+    friend class Token;
+    //! Called by workers like size_t ret = done( doit( queue ) );
+    size_t done( size_t return_value );
     WaitLock m_wait_lock;
     size_t m_priority;
     size_t m_return_value;
@@ -69,6 +95,7 @@ public:
   public:
     EndJob( GarbageCollector *_gc );
     virtual ~EndJob( void );
+  protected:
     virtual size_t doit( CountPtr< JobQueue > queue );
   };
 

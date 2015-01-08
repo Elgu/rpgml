@@ -75,8 +75,9 @@ CountPtr< JobQueue::Job > JobQueue::getJob( void )
 size_t JobQueue::doJob( Job *_job )
 {
   CountPtr< Job > job( _job );
+  CountPtr< Job::Token > token( job->getToken() );
   addJob( job );
-  return job->wait();
+  return token->wait();
 }
 
 void JobQueue::gc_clear( void )
@@ -112,6 +113,16 @@ void JobQueue::Job::setPriority( size_t priority )
   m_priority = priority;
 }
 
+size_t JobQueue::Job::getReturnValue( void ) const
+{
+  return m_return_value;
+}
+
+size_t JobQueue::Job::work( CountPtr< JobQueue > queue )
+{
+  return done( doit( queue ) );
+}
+
 size_t JobQueue::Job::wait( void )
 {
   m_wait_lock.wait();
@@ -131,6 +142,35 @@ void JobQueue::Job::gc_clear( void )
 void JobQueue::Job::gc_getChildren( Children &children ) const
 {
   (void)children;
+}
+
+CountPtr< JobQueue::Job::Token > JobQueue::Job::getToken( void )
+{
+  return new Token( this );
+}
+
+JobQueue::Job::Token::Token( Job *job )
+: m_job( job )
+, m_return_value( 0 )
+{
+  if( !m_job.isNull() )
+  {
+    m_token = m_job->m_wait_lock.getToken();
+  }
+}
+
+JobQueue::Job::Token::~Token( void )
+{}
+
+size_t JobQueue::Job::Token::wait( void )
+{
+  if( !m_token.isNull() )
+  {
+    m_token->wait();
+    m_token.reset();
+    m_return_value = m_job->getReturnValue();
+  }
+  return m_return_value;
 }
 
 JobQueue::EndJob::EndJob( GarbageCollector *_gc )
