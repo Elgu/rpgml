@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -55,35 +55,75 @@ public:
 
   void reserve( index_t size );
 
+  class Ref;
+  class ConstRef;
+
+  class Ref
+  {
+  public:
+    Ref( void );
+    explicit Ref( Frame *frame, index_t index );
+    ~Ref( void );
+    bool isNull( void ) const;
+    Value *getValue( void ) const;
+    index_t getIndex( void ) const;
+    Frame *getFrame( void ) const;
+    operator Value*( void ) const;
+    Value &operator*( void ) const;
+    Value *operator->( void ) const;
+  private:
+    friend class ConstRef;
+    CountPtr< Frame > m_frame;
+    index_t m_index;
+  };
+
+  class ConstRef
+  {
+  public:
+    ConstRef( void );
+    ConstRef( const Ref &ref );
+    explicit ConstRef( const Frame *frame, index_t index );
+    ~ConstRef( void );
+    bool isNull( void ) const;
+    const Value *getValue( void ) const;
+    index_t getIndex( void ) const;
+    const Frame *getFrame( void ) const;
+    operator const Value*( void ) const;
+    const Value &operator*( void ) const;
+    const Value *operator->( void ) const;
+  private:
+    CountPtr< const Frame > m_frame;
+    index_t m_index;
+  };
+
   index_t getIndex( const char *identifier ) const;
   index_t getCreateIndex( const String &identifier, bool *existed_p=0 );
 
   index_t set( const String &identifier, const Value &value );
 
-  Value       *getVariable( const char *identifier );
-  const Value *getVariable( const char *identifier ) const;
-  Value       *getStack( index_t index );
-  const Value *getStack( index_t index ) const;
+  Ref      getVariable( const char *identifier );
+  ConstRef getVariable( const char *identifier ) const;
+  Ref      getStack( index_t index );
+  ConstRef getStack( index_t index ) const;
 
   //! like 'foo.bar.identifier'
   String genGlobalName( const String &identifier ) const;
 
-  Value *push_back( const String &identifier, const Value &value );
-  void   pop_back( void );
+  Ref push_back( const String &identifier, const Value &value );
+  void pop_back( void );
 
   class PushPopGuard
   {
   public:
     PushPopGuard( Frame *frame, const String &identifier, const Value &value=Value() );
     ~PushPopGuard( void );
-    Value *get( void ) const;
+    Ref get( void ) const;
   private:
-    Frame *const m_frame;
-    Value *const m_value;
+    Ref m_ref;
   };
 
   // Load from the directory associated with this Frame
-  Value *load( const String &identifier, const Scope *scope );
+  Ref load( const String &identifier, const Scope *scope );
 
   index_t getSize( void ) const { return index_t( m_values.size() ); }
 
@@ -125,9 +165,12 @@ public:
 
 private:
 
-  Value *load_local ( const String &identifier, const Scope *scope );
-  Value *load_global( const String &identifier, const Scope *scope );
-  Value *load( const String &path, const String &identifier, const Scope *scope );
+  Ref load_local ( const String &identifier, const Scope *scope );
+  Ref load_global( const String &identifier, const Scope *scope );
+  Ref load( const String &path, const String &identifier, const Scope *scope );
+
+  friend class Ref;
+  friend class ConstRef;
 
   values_t m_values;
   identifiers_t m_identifiers;

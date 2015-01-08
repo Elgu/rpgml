@@ -45,6 +45,7 @@ public:
   virtual ~NodeCreator( void );
 
   virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
+  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
   virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
@@ -103,9 +104,18 @@ bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *sco
   return true;
 }
 
+bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+{
+  if( 0 == n_args )
+  {
+    return call( loc, recursion_depth, scope, ret, (const Args*)0 );
+  }
+  return call_impl( loc, recursion_depth, scope, ret, n_args, args );
+}
+
 bool NodeCreator::call_impl( const Location *, index_t, Scope *, Value &, index_t, const Value * )
 {
-  throw Exception() << "NodeCreator::call_impl() should newer be called";
+  throw Exception() << "NodeCreator::call_impl() should never be called";
   return false;
 }
 
@@ -179,6 +189,7 @@ index_t Frame::getDepth( void ) const
 void Frame::reserve( index_t n )
 {
   m_values.reserve( n );
+  m_identifiers.reserve( n );
 }
 
 index_t Frame::getIndex( const char *identifier ) const
@@ -220,40 +231,56 @@ index_t Frame::set( const String &identifier, const Value &value )
   return index;
 }
 
-const Value *Frame::getVariable( const char *identifier ) const
+Frame::ConstRef Frame::getVariable( const char *identifier ) const
 {
   const index_t index = getIndex( identifier );
 
   if( index != unknown )
   {
-    return &m_values[ index ];
+    return ConstRef( this, index );
   }
   else
   {
-    return 0;
+    return ConstRef();
   }
 }
 
-Value *Frame::getVariable( const char *identifier )
+Frame::Ref Frame::getVariable( const char *identifier )
 {
-  return const_cast< Value* >( ((const Frame*)this)->getVariable( identifier ) );
+  const index_t index = getIndex( identifier );
+
+  if( index != unknown )
+  {
+    return Ref( this, index );
+  }
+  else
+  {
+    return Ref();
+  }
 }
 
-const Value *Frame::getStack( index_t index ) const
+Frame::ConstRef Frame::getStack( index_t index ) const
 {
   if( size_t( index ) < m_values.size() )
   {
-    return &m_values[ index ];
+    return ConstRef( this, index );
   }
   else
   {
-    return 0;
+    return ConstRef();
   }
 }
 
-Value       *Frame::getStack( index_t index )
+Frame::Ref Frame::getStack( index_t index )
 {
-  return const_cast< Value* >( ((const Frame*)this)->getStack( index ) );
+  if( size_t( index ) < m_values.size() )
+  {
+    return Ref( this, index );
+  }
+  else
+  {
+    return Ref();
+  }
 }
 
 String Frame::genGlobalName( const String &identifier ) const
@@ -279,17 +306,15 @@ String Frame::genGlobalName( const String &identifier ) const
   return ret;
 }
 
-Value *Frame::push_back( const String &identifier, const Value &value )
+Frame::Ref Frame::push_back( const String &identifier, const Value &value )
 {
-//  std::cerr << "Frame(" << (void*)this << ")::push_back( '" << identifier << "', " << value << " )" << std::endl;
-
   assert( m_values.size() == m_identifiers.size() );
   const index_t index = index_t( m_values.size() );
 
   m_identifiers.push_back( identifier );
   m_values.push_back( value );
 
-  return &m_values[ index ];
+  return Ref( this, index );
 }
 
 void Frame::pop_back( void )
@@ -302,67 +327,220 @@ void Frame::pop_back( void )
   m_identifiers.resize( new_size );
 }
 
-Frame::PushPopGuard::PushPopGuard( Frame *frame, const String &identifier, const Value &value )
+Frame::Ref::Ref( void )
+: m_index( 0 )
+{}
+
+Frame::Ref::Ref( Frame *frame, index_t index )
+: m_frame( frame ), m_index( index )
+{}
+
+Frame::Ref::~Ref( void )
+{}
+
+bool Frame::Ref::isNull( void ) const
+{
+  return m_frame.isNull();
+}
+
+Value *Frame::Ref::getValue( void ) const
+{
+  if( !isNull() )
+  {
+    return &m_frame->m_values[ m_index ];
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+index_t Frame::Ref::getIndex( void ) const
+{
+  return m_index;
+}
+
+Frame *Frame::Ref::getFrame( void ) const
+{
+  return m_frame;
+}
+
+Frame::Ref::operator Value*( void ) const
+{
+  return getValue();
+}
+
+Value &Frame::Ref::operator*( void ) const
+{
+  return *getValue();
+}
+
+Value *Frame::Ref::operator->( void ) const
+{
+  return getValue();
+}
+
+Frame::ConstRef::ConstRef( void )
+: m_index( 0 )
+{}
+
+Frame::ConstRef::ConstRef( const Ref &ref )
+: m_frame( ref.m_frame )
+, m_index( ref.m_index )
+{}
+
+Frame::ConstRef::ConstRef( const Frame *frame, index_t index )
 : m_frame( frame )
-, m_value( m_frame ? m_frame->push_back( identifier, value ) : 0 )
+, m_index( index )
+{}
+
+Frame::ConstRef::~ConstRef( void )
+{}
+
+bool Frame::ConstRef::isNull( void ) const
+{
+  return m_frame.isNull();
+}
+
+const Value *Frame::ConstRef::getValue( void ) const
+{
+  if( !isNull() )
+  {
+    return &m_frame->m_values[ m_index ];
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+index_t Frame::ConstRef::getIndex( void ) const
+{
+  return m_index;
+}
+
+const Frame *Frame::ConstRef::getFrame( void ) const
+{
+  return m_frame;
+}
+
+Frame::ConstRef::operator const Value*( void ) const
+{
+  return getValue();
+}
+
+const Value &Frame::ConstRef::operator*( void ) const
+{
+  return *getValue();
+}
+
+const Value *Frame::ConstRef::operator->( void ) const
+{
+  return getValue();
+}
+
+Frame::PushPopGuard::PushPopGuard( Frame *frame, const String &identifier, const Value &value )
+: m_ref( frame ? frame->push_back( identifier, value ) : Ref() )
 {}
 
 Frame::PushPopGuard::~PushPopGuard( void )
 {
-  if( m_frame ) m_frame->pop_back();
+  if( !m_ref.isNull() ) m_ref.getFrame()->pop_back();
 }
 
-Value *Frame::PushPopGuard::get( void ) const
+Frame::Ref Frame::PushPopGuard::get( void ) const
 {
-  return m_value;
+  return m_ref;
 }
 
-Value *Frame::load( const String &identifier, const Scope *scope )
+Frame::Ref Frame::load( const String &identifier, const Scope *scope )
 {
-  const index_t index = getIndex( identifier );
-
-  if( index != unknown )
+  if( identifier.empty() )
   {
-    return &m_values[ index ];
+    throw Exception() << "Cannot load empty identifier";
   }
 
-  const bool is_root = ( this == scope->getRoot() );
-
-  if( !getPath().empty() || is_root )
+  if( identifier[ 0 ] == '.' )
   {
-    if( !identifier.empty() )
+    throw Exception() << "Frame member identifiers cannot start with a '.'";
+  }
+
+  Frame *curr_frame = this;
+  size_t dot_pos = 0;
+  size_t identifier_begin = 0;
+  while( String::npos != ( dot_pos = identifier.find( '.', dot_pos ) ) )
+  {
+    const String frame_identifier = identifier.mid( identifier_begin, dot_pos-1 );
+    if( frame_identifier.empty() )
     {
-      if( is_root )
-      {
-        return load_global( identifier, scope );
-      }
-      else
-      {
-        return load_local( identifier, scope );
-      }
+      throw Exception()
+        << "Identifier '" << identifier << "' contains an empty frame identifier between two '.'"
+        ;
+    }
+
+    Frame::Ref v = curr_frame->load( frame_identifier, scope );
+    if( v.isNull() )
+    {
+      throw Exception() << "Identifier '" << frame_identifier << "' not found";
+    }
+    else if( v->isFrame() )
+    {
+      curr_frame = v->getFrame();
+    }
+    else if( v->isNode() )
+    {
+      curr_frame = v->getNode();
+    }
+    else
+    {
+      throw Exception()
+        << "Identifier '" << frame_identifier << "' is not a Frame or a Node, is " << v->getType()
+        ;
+    }
+
+    identifier_begin = dot_pos+1;
+  }
+
+  const index_t index = curr_frame->getIndex( identifier );
+  if( index != unknown )
+  {
+    return Ref( curr_frame, index );
+  }
+
+  const bool is_root = ( curr_frame == scope->getRoot() );
+
+  if( !curr_frame->getPath().empty() || is_root )
+  {
+    if( is_root )
+    {
+      return curr_frame->load_global( identifier, scope );
+    }
+    else
+    {
+      return curr_frame->load_local( identifier, scope );
     }
   }
 
-  return 0;
+  return Ref();
 }
 
-Value *Frame::load_local ( const String &identifier, const Scope *scope )
+Frame::Ref Frame::load_local ( const String &identifier, const Scope *scope )
 {
   return load( getPath(), identifier, scope );
 }
 
-Value *Frame::load_global( const String &identifier, const Scope *scope )
+Frame::Ref Frame::load_global( const String &identifier, const Scope *scope )
 {
   const std::vector< String > &searchPaths = scope->getContext()->getSearchPaths();
 
-  Value *ret = 0;
+  Frame::Ref ret;
 
   for( size_t i( 0 ), end( searchPaths.size() ); i < end; ++i )
   {
-    Value *const ret_i = load( searchPaths[ i ].c_str(), identifier, scope );
-    if( ret_i )
+    const Ref ret_i = load( searchPaths[ i ].c_str(), identifier, scope );
+    if( !ret_i.isNull() )
     {
-      if( ret )
+      if( !ret.isNull() )
       {
         std::cerr
           << "warning: '" << identifier << "'"
@@ -380,7 +558,7 @@ Value *Frame::load_global( const String &identifier, const Scope *scope )
   return ret;
 }
 
-Value *Frame::load( const String &path, const String &identifier, const Scope *scope )
+Frame::Ref Frame::load( const String &path, const String &identifier, const Scope *scope )
 {
 //  std::cerr << "load( '" << path << "', '" << identifier << "', )" << std::endl;
 
@@ -476,8 +654,8 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
       parser.reset();
       source.reset();
 
-      Value *const ret = getVariable( identifier );
-      if( !ret )
+      Frame::Ref ret = getVariable( identifier );
+      if( ret.isNull() )
       {
         throw Exception()
           << "Frame(" << (void*)this << "): "
@@ -489,7 +667,7 @@ Value *Frame::load( const String &path, const String &identifier, const Scope *s
     }
   }
 
-  return 0;
+  return Ref();
 }
 
 void Frame::gc_clear( void )
