@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -144,7 +144,7 @@ public:
       CPPUNIT_ASSERT_EQUAL( size_t(0), s.size() );
       CPPUNIT_ASSERT( s.empty() );
       CPPUNIT_ASSERT_EQUAL( '\0', s.get()[ 0 ] );
-      CPPUNIT_ASSERT_EQUAL( (const StringData*)0, s.getData() );
+      CPPUNIT_ASSERT( !s.getData().isNull() );
       CPPUNIT_ASSERT_EQUAL( 0, s.compare( "" ) );
       CPPUNIT_ASSERT( s.equals( "" ) );
     }
@@ -159,7 +159,7 @@ public:
       CPPUNIT_ASSERT( !s.empty() );
       CPPUNIT_ASSERT_EQUAL( '\0', s.get()[ 3 ] );
       CPPUNIT_ASSERT_EQUAL( foo->get(), s.get() );
-      CPPUNIT_ASSERT_EQUAL( foo.get(), s.getData() );
+      CPPUNIT_ASSERT_EQUAL( foo.get(), s.getData().get() );
       CPPUNIT_ASSERT_EQUAL( 0, s.compare( "foo" ) );
       CPPUNIT_ASSERT( s.equals( "foo" ) );
 
@@ -170,7 +170,7 @@ public:
       CPPUNIT_ASSERT( !s2.empty() );
       CPPUNIT_ASSERT_EQUAL( '\0', s2.get()[ 3 ] );
       CPPUNIT_ASSERT_EQUAL( foo->get(), s2.get() );
-      CPPUNIT_ASSERT_EQUAL( foo.get(), s2.getData() );
+      CPPUNIT_ASSERT_EQUAL( foo.get(), s2.getData().get() );
       CPPUNIT_ASSERT_EQUAL( 0, s2.compare( "foo" ) );
       CPPUNIT_ASSERT( s2.equals( "foo" ) );
     }
@@ -226,6 +226,36 @@ public:
         CPPUNIT_ASSERT_EQUAL( 0, s.compare( "fooyolo" ) );
         CPPUNIT_ASSERT( s.equals( "fooyolo" ) );
       }
+    }
+
+    String ABC( "abcdefghijklmnopqrstuvwxyz" );
+    CPPUNIT_ASSERT_EQUAL( size_t(26), ABC.length() );
+
+    // String::mid()
+    {
+      CPPUNIT_ASSERT_EQUAL( String(), ABC.mid( 4, 3 ) );
+      CPPUNIT_ASSERT_EQUAL( String(), ABC.mid( 30, 31 ) );
+
+      String abcd = ABC.mid( 0, 3 );
+      CPPUNIT_ASSERT_EQUAL( size_t(4), abcd.length() );
+      CPPUNIT_ASSERT_EQUAL( String( "abcd" ), abcd );
+
+      String e = ABC.mid( 4, 4 );
+      CPPUNIT_ASSERT_EQUAL( size_t(1), e.length() );
+      CPPUNIT_ASSERT_EQUAL( String( "e" ), e );
+
+      String xyz = ABC.mid( 23 );
+      CPPUNIT_ASSERT_EQUAL( size_t(3), xyz.length() );
+      CPPUNIT_ASSERT_EQUAL( String( "xyz" ), xyz );
+    }
+
+    // String::find()
+    {
+      CPPUNIT_ASSERT_EQUAL( String::npos, ABC.find( '?' ) );
+      CPPUNIT_ASSERT_EQUAL( size_t(0), ABC.find( 'a' ) );
+      CPPUNIT_ASSERT_EQUAL( size_t(25), ABC.find( 'z' ) );
+
+      CPPUNIT_ASSERT_EQUAL( String::npos, ABC.find( 'a', 1 ) );
     }
   }
 };
