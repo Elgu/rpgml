@@ -103,8 +103,6 @@ private:
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
 
-    virtual size_t doit( CountPtr< JobQueue > queue );
-
     GN_Array_t predecessors;
     GN_Array_t successors;
     CountPtr< Graph > graph;
@@ -112,6 +110,9 @@ private:
     CountPtr< JobQueue > main_thread;
     Atomic< size_t > predecessors_to_be_executed;
     int marker;
+
+  protected:
+    virtual size_t doit( CountPtr< JobQueue > queue );
   };
 
   class EndNode : public GraphNode
@@ -119,6 +120,7 @@ private:
   public:
     explicit
     EndNode( GarbageCollector *_gc, Graph *_graph );
+  protected:
     virtual size_t doit( CountPtr< JobQueue > queue );
   };
 

@@ -124,7 +124,7 @@ void Graph::execute( JobQueue *queue )
   for(;;)
   {
     CountPtr< JobQueue::Job > job = main_thread_queue->getJob();
-    const size_t job_ret = job->done( job->doit( main_thread_queue ) );
+    const size_t job_ret = job->work( main_thread_queue );
     if( JobQueue::End == job_ret ) break;
   }
 }
