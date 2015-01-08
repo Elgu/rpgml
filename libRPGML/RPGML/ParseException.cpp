@@ -28,6 +28,7 @@ ParseException::ParseException( const Location *_loc )
 ParseException::ParseException( const Location *_loc, const RPGML::Exception &e )
 : loc( _loc )
 {
+  e.copyBackTraceBuffer( *this );
   (*this) << (*loc) << ": " << e.what();
 }
 
