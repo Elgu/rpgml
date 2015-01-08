@@ -55,8 +55,10 @@ public:
 
   //! Sets up call and calls call_impl()
   virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
+  //! Sets up call and calls call_impl()
+  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
 
-  //! "Bare" Function call, use on own risk directly
+  //! "Bare" Function call, use at own risk directly
   virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args ) = 0;
 
   class Arg
@@ -96,7 +98,8 @@ public:
   virtual const char *getName( void ) const = 0;
 
 private:
-  void fill_args( Frame &args, const Args &call_args );
+  void setupFunctionFrame( Frame &args, const Args &call_args );
+  void setupFunctionFrame( Frame &frame, index_t n_args, const Value *args );
 
   CountPtr< Frame > m_parent;
   CountPtr< const Args > m_decl;

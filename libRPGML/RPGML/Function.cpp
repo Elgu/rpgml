@@ -75,15 +75,25 @@ size_t Function::getFrameSize( void ) const
 bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args )
 {
   Scope::EnterLeaveGuard guard1( scope, getParent() );
-  CountPtr< Frame > args = new Frame( scope->getGC(), scope->getCurr() );
-  Scope::EnterLeaveGuard guard2( scope, args );
+  CountPtr< Frame > function_frame = new Frame( scope->getGC(), scope->getCurr() );
+  Scope::EnterLeaveGuard guard2( scope, function_frame );
 
-  fill_args( *args, *call_args );
-  const index_t n_args = index_t( args->getSize() );
-  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? args->getStack( 0 ) : 0 ) );
+  setupFunctionFrame( *function_frame, *call_args );
+  const index_t n_args = index_t( function_frame->getSize() );
+  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
 }
 
-void Function::fill_args( Frame &args, const Args &call_args )
+bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+{
+  Scope::EnterLeaveGuard guard1( scope, getParent() );
+  CountPtr< Frame > function_frame = new Frame( scope->getGC(), scope->getCurr() );
+  Scope::EnterLeaveGuard guard2( scope, function_frame );
+
+  setupFunctionFrame( *function_frame, n_args, args );
+  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
+}
+
+void Function::setupFunctionFrame( Frame &frame, const Args &call_args )
 {
   const Args &decl_args = *(m_decl.get());
 
@@ -95,19 +105,7 @@ void Function::fill_args( Frame &args, const Args &call_args )
     throw "too many arguments";
   }
 
-//  {
-//    cerr << "Function::fill_args(): " << endl;
-//    for( index_t pos = 0; pos < decl_args.size(); ++pos )
-//    {
-//      cerr << "  decl_args[ " << pos << " ] = { '" << decl_args[ pos ].identifier << "', '" << decl_args[ pos ].value << "' )" << endl;
-//    }
-//    for( index_t pos = 0; pos < call_args.size(); ++pos )
-//    {
-//      cerr << "  call_args[ " << pos << " ] = { '" << call_args[ pos ].identifier << "', '" << call_args[ pos ].value << "' )" << endl;
-//    }
-//  }
-
-  args.reserve( n_decl_args );
+  frame.reserve( n_decl_args );
   std::vector< int8_t > used( call_args.size(), int8_t( false ) );
 
   index_t pos = 0;
@@ -118,7 +116,7 @@ void Function::fill_args( Frame &args, const Args &call_args )
     const String &call_identifier = call_args[ pos ].getIdentifier();
     if( call_identifier.empty() )
     {
-      args.push_back( decl_args[ pos ].getIdentifier(), call_args[ pos ].getValue() );
+      frame.push_back( decl_args[ pos ].getIdentifier(), call_args[ pos ].getValue() );
       used[ pos ] = true;
     }
     else
@@ -143,7 +141,7 @@ void Function::fill_args( Frame &args, const Args &call_args )
         {
           found = true;
           // Was not yet initialized (even with invalid Value)
-          args.push_back( call_identifier, call_args[ i ].getValue() );
+          frame.push_back( call_identifier, call_args[ i ].getValue() );
           used[ i ] = true;
         }
       }
@@ -159,7 +157,7 @@ void Function::fill_args( Frame &args, const Args &call_args )
       if( decl_args[ pos ].hasValue() )
       {
         const Value &default_value = decl_args[ pos ].getValue();
-        args.push_back( decl_identifier, default_value );
+        frame.push_back( decl_identifier, default_value );
       }
       else
       {
@@ -173,6 +171,43 @@ void Function::fill_args( Frame &args, const Args &call_args )
     if( !used[ i ] )
     {
       throw "init argument identifier not found or already initialized by fixed argument or dupplicate";
+    }
+  }
+}
+
+void Function::setupFunctionFrame( Frame &frame, index_t n_args, const Value *args )
+{
+  const Args &decl_args = *(m_decl.get());
+
+  const index_t n_decl_args = index_t( decl_args.size() );
+
+  if( n_args > n_decl_args )
+  {
+    throw "too many arguments";
+  }
+
+  frame.reserve( n_decl_args );
+  index_t pos = 0;
+
+  // positional arguments, no identifier
+  for( ; pos < n_args; ++pos )
+  {
+    frame.push_back( decl_args[ pos ].getIdentifier(), args[ pos ] );
+  }
+
+  // default value arguments
+  for( ; pos < n_decl_args; ++pos )
+  {
+    const String &decl_identifier = decl_args[ pos ].getIdentifier();
+
+    if( decl_args[ pos ].hasValue() )
+    {
+      const Value &default_value = decl_args[ pos ].getValue();
+      frame.push_back( decl_identifier, default_value );
+    }
+    else
+    {
+      throw "no default value for argument, must be specified";
     }
   }
 }
