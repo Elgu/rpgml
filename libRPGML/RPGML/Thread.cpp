@@ -51,7 +51,7 @@ Thread::~Thread( void )
 void Thread::gc_clear( void )
 {}
 
-void Thread::gc_getChildren( Children &children ) const
+void Thread::gc_getChildren( Children & ) const
 {}
 
 bool Thread::isRunning( void ) const
