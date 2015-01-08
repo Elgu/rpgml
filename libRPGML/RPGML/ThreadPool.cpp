@@ -96,7 +96,7 @@ size_t ThreadPool::Worker::run( void )
   for(;;)
   {
     CountPtr< JobQueue::Job > job = m_queue->getJob();
-    const size_t ret = job->done( job->doit( m_queue ) );
+    const size_t ret = job->work( m_queue );
     if( JobQueue::End == ret ) return 0;
   }
 }
