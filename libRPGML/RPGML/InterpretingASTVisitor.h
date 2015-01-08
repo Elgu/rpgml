@@ -88,9 +88,6 @@ private:
   CountPtr< Array< Value, 1 > > return_value_dims;
   Value return_value;
   bool return_encountered;
-
-  CountPtr< Function > unaryOp;
-  CountPtr< Function > binaryOp;
 };
 
 } // namespace RPGML

@@ -206,29 +206,7 @@ InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursio
 : AST::Visitor( _recursion_depth )
 , scope( _scope )
 , return_encountered( false )
-{
-  const Value *const unaryOp_v  = scope->lookup( "unaryOp" );
-  if( !unaryOp_v )
-  {
-    throw Exception() << "'unaryOp' not found";
-  }
-  if( !unaryOp_v->isFunction() )
-  {
-    throw Exception() << "'unaryOp' is not a Function";
-  }
-  unaryOp = unaryOp_v->getFunction();
-
-  const Value *const binaryOp_v = scope->lookup( "binaryOp" );
-  if( !binaryOp_v )
-  {
-    throw Exception() << "'binaryOp' not found";
-  }
-  if( !binaryOp_v->isFunction() )
-  {
-    throw Exception() << "'binaryOp' is not a Function";
-  }
-  binaryOp = binaryOp_v->getFunction();
-}
+{}
 
 InterpretingASTVisitor::~InterpretingASTVisitor( void )
 {}
@@ -400,7 +378,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
     args.push_back( Function::Arg( node->args->at( i )->identifier, value ) );
   }
 
-  return function.getFunction()->call( node->loc, getRecursionDepth(), scope, return_value, &args );
+  return function.getFunction()->call( node->loc, getRD()+1, scope, return_value, &args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::DotExpression                *node )
@@ -470,20 +448,39 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
     for( index_t i=0; i<Dims; ++i )
     {
       const Value &c = coord->at( i );
-      if( c.isInteger() )
-      {
-        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
-      }
-      else if( c.isNil() )
+      if( c.isNil() )
       {
         throw ParseException( node->coord->dims[ i ]->loc )
           << "All coordinates must be defined for access, coordinate " << i << " isn't"
           ;
       }
+      else if( c.isInteger() )
+      {
+        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
+      }
+      else if( c.isOutput() )
+      {
+        Value at_args[ 1+Dims ];
+        at_args[ 0 ] = left;
+        for( index_t j=0; j<Dims; ++j )
+        {
+          at_args[ 1+j ] = coord->at( j );
+        }
+
+        scope->call( node->coord->loc, getRD()+1, String::Static( ".at" ), return_value, 1+Dims, at_args );
+        if( !return_value.isOutput() )
+        {
+          throw ParseException( node->loc )
+            << "Calling at() with at least one Output should have returned an Output"
+            << ", returned " << return_value.getType()
+            ;
+        }
+        return true;
+      }
       else
       {
         throw ParseException( node->coord->dims[ i ]->loc )
-          << "Type of coordinates must be an integer, is " << c.getTypeName()
+          << "Type of coordinates must be an integer or Output, is " << c.getTypeName()
           ;
       }
     }
@@ -524,7 +521,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
   {
     Output *const output = left.getOutput();
 
-    CountPtr< Node > at = scope->create_Node( node->loc, getRecursionDepth()+1, "At" );
+    CountPtr< Node > at = scope->createNode( node->loc, getRD()+1, ".At" );
     if( at.isNull() ) throw Exception() << "Could not create Node 'At'";
 
     output->connect( at->getInput( String::Static( "in" ) ) );
@@ -549,7 +546,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
       }
       else
       {
-        CountPtr< Output > oc = scope->toOutput( loc, getRecursionDepth()+1, c );
+        CountPtr< Output > oc = scope->toOutput( loc, getRD()+1, c );
         static const char *const xyzt[] = { "x", "y", "z", "t" };
         oc->connect( at->getInput( String::Static( xyzt[ i ] ) ) );
       }
@@ -575,7 +572,7 @@ bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *nod
   if( !node->arg->invite( this ) ) return false;
   args[ 1 ].swap( return_value );
 
-  return unaryOp->call_impl( node->loc, getRecursionDepth(), scope, return_value, 2, args );
+  return scope->call( node->loc, getRD()+1, String::Static( ".unaryOp" ), return_value, 2, args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
@@ -590,7 +587,7 @@ bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *nod
   if( !node->right->invite( this ) ) return false;
   args[ 2 ].swap( return_value );
 
-  return binaryOp->call_impl( node->loc, getRecursionDepth(), scope, return_value, 3, args );
+  return scope->call( node->loc, getRD()+1, String::Static( ".binaryOp" ), return_value, 3, args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *node )
@@ -680,17 +677,19 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
 
   for( size_t i=0; i<n_args; ++i )
   {
-    Value default_value;
     const AST::FunctionDefinitionStatement::ArgDecl *const decl = node->args->at( i );
     const String &identifier = decl->identifier;
     const AST::Expression *const default_value_expr = decl->default_value;
     if( default_value_expr )
     {
       if( !default_value_expr->invite( this ) ) return false;
-      default_value.swap( return_value );
+      const Value &default_value = return_value;
+      decl_args->at( i ) = Function::Arg( identifier, default_value );
     }
-
-    decl_args->at( i ) = Function::Arg( identifier, default_value );
+    else
+    {
+      decl_args->at( i ) = Function::Arg( identifier );
+    }
   }
 
   Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), node->identifier, decl_args, node->body ) );
@@ -758,7 +757,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
     {
       if( lvalue_type.isOutput() )
       {
-        lvalue->set( scope->toOutput( node->loc, getRecursionDepth()+1, value ) );
+        lvalue->set( scope->toOutput( node->loc, getRD()+1, value ) );
       }
       else
       {
@@ -776,7 +775,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, 
     args[ 2 ] = value;
 
     Value new_value;
-    binaryOp->call_impl( node->loc, getRecursionDepth()+1, scope, new_value, 3, args );
+    return scope->call( node->loc, getRD()+1, String::Static( ".binaryOp" ), new_value, 3, args );
 
     save_assign( (*lvalue), new_value );
   }
@@ -789,7 +788,7 @@ bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
   if( !node->output->invite( this ) ) return false;
   Value output_v; output_v.swap( return_value );
 
-  CountPtr< Output > output( scope->toOutput( node->loc, getRecursionDepth()+1, output_v ) );
+  CountPtr< Output > output( scope->toOutput( node->loc, getRD()+1, output_v ) );
 
   if( !node->input->invite( this ) ) return false;
   Value input; input.swap( return_value );
@@ -975,8 +974,8 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
   const String &identifier = node->identifier;
 
   Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
-  Value *const for_variable = push_for_variable.get();
-  if( 0 == for_variable )
+  Frame::Ref for_variable = push_for_variable.get();
+  if( for_variable.isNull() )
   {
     throw Exception()
       << "Could not create for-variable '" << identifier << "'"
@@ -1003,8 +1002,8 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
   const String &identifier = node->identifier;
 
   Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
-  Value *const for_variable = push_for_variable.get();
-  if( 0 == for_variable )
+  Frame::Ref for_variable = push_for_variable.get();
+  if( for_variable.isNull() )
   {
     throw Exception() << "Could not create for-variable '" << identifier << "'";
   }
@@ -1054,7 +1053,7 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
 
   if( expected_type->type.isOutput() )
   {
-    value.set( scope->toOutput( node->value->loc, getRecursionDepth()+1, value ) );
+    value.set( scope->toOutput( node->value->loc, getRD()+1, value ) );
   }
   else
   {
