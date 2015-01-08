@@ -90,9 +90,10 @@ private:
     typedef JobQueue::Job Base;
     Update( GarbageCollector *_gc, Window *self );
     virtual ~Update( void );
-    virtual size_t doit( CountPtr< JobQueue > queue );
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
+  protected:
+    virtual size_t doit( CountPtr< JobQueue > queue );
   private:
     CountPtr< Window > m_self;
   };
