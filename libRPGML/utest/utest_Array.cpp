@@ -28,17 +28,81 @@ class utest_Array : public CppUnit::TestFixture
 {
   CPPUNIT_TEST_SUITE( utest_Array );
 
+  CPPUNIT_TEST( test_Coordinates );
   CPPUNIT_TEST( test_isCollectable );
-  CPPUNIT_TEST( test_properties );
+  CPPUNIT_TEST( test_gc );
+  CPPUNIT_TEST( test_getType );
   CPPUNIT_TEST( test_resize );
   CPPUNIT_TEST( test_CoordinatesIterator );
-  CPPUNIT_TEST( test_gc );
+  CPPUNIT_TEST( test_getAs );
 
   CPPUNIT_TEST_SUITE_END();
 
 public:
   void setUp() {}
   void tearDown() {}
+
+  void test_Coordinates( void )
+  {
+    index_t const c1[ 4 ] = { 3, 4, 5, 6 };
+    index_t const c2[ 4 ] = { 2, 3, 4, 5 };
+    index_t const c3[ 4 ] = { 4, 5, 6, 7 };
+
+    {
+      ArrayBase::Coordinates coord1( 0, c1 );
+      CPPUNIT_ASSERT_EQUAL( 0, coord1.getDims() );
+      CPPUNIT_ASSERT_EQUAL( (const index_t*)0, coord1.getCoords() );
+    }
+
+    {
+      ArrayBase::Coordinates coord1( 3, c1 );
+      ArrayBase::Coordinates coord2( 3, c2+1 );
+      ArrayBase::Coordinates coord3( 4, c1 );
+      ArrayBase::Coordinates coord4( 3, c1+1 );
+      ArrayBase::Coordinates coord5( 4, c3   );
+
+      CPPUNIT_ASSERT_EQUAL( 3, coord1.getDims() );
+      CPPUNIT_ASSERT_EQUAL( 3, coord2.getDims() );
+      CPPUNIT_ASSERT_EQUAL( &c1[ 0 ], coord1.getCoords() );
+      CPPUNIT_ASSERT_EQUAL( &c2[ 1 ], coord2.getCoords() );
+      CPPUNIT_ASSERT_EQUAL( &c1[ 0 ], static_cast< const index_t* >( coord1 ) );
+      CPPUNIT_ASSERT_EQUAL( &c2[ 1 ], static_cast< const index_t* >( coord2 ) );
+
+      CPPUNIT_ASSERT_EQUAL( index_t( 3 ), coord1[ 0 ] );
+      CPPUNIT_ASSERT_EQUAL( index_t( 4 ), coord1[ 1 ] );
+      CPPUNIT_ASSERT_EQUAL( index_t( 5 ), coord1[ 2 ] );
+
+      CPPUNIT_ASSERT_EQUAL( true , coord1 == coord2 );
+      CPPUNIT_ASSERT_EQUAL( false, coord1 != coord2 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord1 == coord3 );
+      CPPUNIT_ASSERT_EQUAL( true , coord1 != coord3 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord1 == coord4 );
+      CPPUNIT_ASSERT_EQUAL( true , coord1 != coord4 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord1 == coord5 );
+      CPPUNIT_ASSERT_EQUAL( true , coord1 != coord5 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord2 == coord3 );
+      CPPUNIT_ASSERT_EQUAL( true , coord2 != coord3 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord2 == coord4 );
+      CPPUNIT_ASSERT_EQUAL( true , coord2 != coord4 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord2 == coord5 );
+      CPPUNIT_ASSERT_EQUAL( true , coord2 != coord5 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord3 == coord4 );
+      CPPUNIT_ASSERT_EQUAL( true , coord3 != coord4 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord3 == coord5 );
+      CPPUNIT_ASSERT_EQUAL( true , coord3 != coord5 );
+
+      CPPUNIT_ASSERT_EQUAL( false, coord4 == coord5 );
+      CPPUNIT_ASSERT_EQUAL( true , coord4 != coord5 );
+    }
+  }
 
   void test_isCollectable( void )
   {
@@ -50,19 +114,18 @@ public:
     CPPUNIT_ASSERT_EQUAL( true, isCollectable( dummy3 ) );
   }
 
-  void test_properties( void )
+  void test_getType( void )
   {
     Array< int, 2 > i2( 0 );
     Array< float, 1 > f1( 0 );
     Array< String, 0 > s0( 0 );
+    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getDims() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), f1.getDims() );
+    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
 
     CPPUNIT_ASSERT_EQUAL( Type::Int(), i2.getType() );
     CPPUNIT_ASSERT_EQUAL( Type::Float(), f1.getType() );
     CPPUNIT_ASSERT_EQUAL( Type::String(), s0.getType() );
-
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), f1.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
   }
 
   void test_CoordinatesIterator( void )
@@ -209,6 +272,82 @@ public:
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( true, m2 );
   }
+
+  class Other : public Collectable
+  {
+  public:
+    Other( GarbageCollector *_gc=0, int _i=0 )
+    : Collectable( _gc )
+    , i( _i )
+    {}
+    int i;
+    virtual void gc_clear( void ) {}
+    virtual void gc_getChildren( Children & ) const {}
+  };
+
+  template< class T >
+  void test_getAs_t( void )
+  {
+    GarbageCollector gc;
+
+    typedef Array< T, 2 > TArray2D;
+    typedef ArrayElements< T > TArrayElements;
+
+    {
+      CountPtr< TArray2D       > a = new TArray2D( &gc );
+      CountPtr< TArrayElements > a_elements = a.get();
+      CountPtr< ArrayBase      > a_base     = a.get();
+      CountPtr< const TArray2D       > ac          = a.get();
+      CountPtr< const TArrayElements > ac_elements = a.get();
+      CountPtr< const ArrayBase      > ac_base     = a.get();
+
+      {
+        TArray2D *p = 0;
+        CPPUNIT_ASSERT_EQUAL( a.get(), a         ->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a.get(), a_elements->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a.get(), a_base    ->getAs( p ) );
+
+        const TArray2D *pc = 0;
+        CPPUNIT_ASSERT_EQUAL( ac.get(), a         ->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac.get(), a_elements->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac.get(), a_base    ->getAs( pc ) );
+      }
+
+      {
+        TArrayElements *p = 0;
+        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a         ->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a_elements->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a_base    ->getAs( p ) );
+
+        const TArrayElements *pc = 0;
+        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a         ->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a_elements->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a_base    ->getAs( pc ) );
+      }
+
+      {
+        ArrayBase *p = 0;
+        CPPUNIT_ASSERT_EQUAL( a_base.get(), a         ->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a_base.get(), a_elements->getAs( p ) );
+        CPPUNIT_ASSERT_EQUAL( a_base.get(), a_base    ->getAs( p ) );
+
+        const ArrayBase *pc = 0;
+        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a         ->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a_elements->getAs( pc ) );
+        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a_base    ->getAs( pc ) );
+      }
+    }
+  }
+
+  void test_getAs( void )
+  {
+    test_getAs_t< int >();
+    test_getAs_t< String >();
+    test_getAs_t< CountPtr< ArrayBase > >();
+    test_getAs_t< Other >();
+    test_getAs_t< CountPtr< Other > >();
+  }
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( utest_Array );
