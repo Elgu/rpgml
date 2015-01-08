@@ -38,6 +38,7 @@ OBJECTS=\
 	JobQueue.o\
 	Graph.o\
 	ParseException.o\
+	WaitLock.o\
 	rpgml.tab.o\
 	utest_Exception.o\
 	utest_Type.o\
