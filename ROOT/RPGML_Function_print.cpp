@@ -46,10 +46,10 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
     case Type::STRING: std::cout << in.getString(); break;
     case Type::OUTPUT:
       {
-        CountPtr< Node > node( scope->create_Node( loc, recursion_depth+1, String::Static( "Print" ) ) );
+        CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".Print" ) ) );
 
         scope->toOutput( loc, recursion_depth+1, in )->connect( node->getInput( "in" ) );
-        scope->call( loc, recursion_depth+1, String::Static( "needing" ), ret, Value( node.get() ) );
+        scope->call( loc, recursion_depth+1, String::Static( ".needing" ), ret, Value( node.get() ) );
 
         ret = Value( true );
         return true;

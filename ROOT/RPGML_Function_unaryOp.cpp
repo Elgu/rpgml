@@ -99,7 +99,7 @@ bool Function_unaryOp::call_impl( const Location *loc, index_t recursion_depth, 
 
   if( in.isOutput() )
   {
-    CountPtr< Node > node( scope->create_Node( loc, recursion_depth+1, String::Static( "UnaryOp" ) ) );
+    CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".UnaryOp" ) ) );
     node->getInput( "in" )->connect( in.getOutput() );
     node->getParam( "op" )->set( op_v );
     ret = Value( node->getOutput( "out" ) );

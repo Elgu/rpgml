@@ -55,19 +55,9 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
   }
   const String &what_str = what.getString();
 
-  if(
-       !in.isArray()
-    && !in.isOutput()
-  )
-  {
-    throw Exception()
-      << "Type of 'in' must be Array or Output, is " << in.getType()
-      ;
-  }
-
   if( in.isOutput() )
   {
-    CountPtr< Node > node( scope->create_Node( loc, recursion_depth+1, String::Static( "Get" ) ) );
+    CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".Get" ) ) );
 
     in.getOutput()->connect( node->getInput( "in" ) );
 
@@ -95,8 +85,7 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
       << "Unknown 'what'-string '" << what_str << "'"
       ;
   }
-
-  if( in.isArray() )
+  else if( in.isArray() )
   {
     const ArrayBase *const in_array = in.getArray();
 
@@ -135,6 +124,12 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
     throw Exception()
       << "Unknown 'what'-string '" << what_str << "'"
+      ;
+  }
+  else
+  {
+    throw Exception()
+      << "Type of 'in' must be Array or Output, is " << in.getType()
       ;
   }
 
