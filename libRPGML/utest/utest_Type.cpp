@@ -275,7 +275,7 @@ public:
     CPPUNIT_ASSERT( Type::Output  () == typeOf( CountPtr< Output    > () ) );
     CPPUNIT_ASSERT( Type::Input   () == typeOf( CountPtr< Input     > () ) );
     CPPUNIT_ASSERT( Type::Param   () == typeOf( CountPtr< Param     > () ) );
-    CPPUNIT_ASSERT( Type::Sequence() == typeOf( CountPtr< Sequence  > () ) );
+    CPPUNIT_ASSERT( Type::Sequence() == typeOf( CountPtr< const Sequence  > () ) );
     CPPUNIT_ASSERT( Type::Array   () == typeOf( CountPtr< ArrayBase > () ) );
 
     CPPUNIT_ASSERT( Type::Other   () == typeOf( (const char*)0 ) );
