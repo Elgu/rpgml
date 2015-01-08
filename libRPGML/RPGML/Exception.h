@@ -57,6 +57,9 @@ public:
   void breakpoint( void );
   void print_backtrace( void ) const;
 
+//protected: I cannot call this from ParseException for some reason
+  void copyBackTraceBuffer( Exception &dest ) const;
+
 private:
   static const int BACKTRACE_BUFFER_SIZE = 64;
   void *m_backtrace_buffer[ BACKTRACE_BUFFER_SIZE ];

@@ -65,5 +65,14 @@ Exception &Exception::append( const std::string &text )
   return (*this);
 }
 
+void Exception::copyBackTraceBuffer( Exception &dest ) const
+{
+  std::copy(
+      m_backtrace_buffer
+    , m_backtrace_buffer + BACKTRACE_BUFFER_SIZE
+    , dest.m_backtrace_buffer
+    );
+}
+
 } // namespace RPGML
 
