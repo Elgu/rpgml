@@ -39,11 +39,19 @@
   push_back( String::Static( identifier  ), Value( getOutput( OUTPUT_ENUM ) ) ); \
 
 #define DEFINE_PARAM( PARAM_ENUM, identifier, method ) \
-  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method ) ); \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, unknown, false ) ); \
   push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
 #define DEFINE_PARAM_INDEX( PARAM_ENUM, identifier, method, index ) \
-  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index ) ); \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index, false ) ); \
+  push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
+
+#define DEFINE_PARAM_ARRAY( PARAM_ENUM, identifier, method ) \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, unknown, true ) ); \
+  push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
+
+#define DEFINE_PARAM_ARRAY_INDEX( PARAM_ENUM, identifier, method, index ) \
+  setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index, true ) ); \
   push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
 #define GET_INPUT_MANDATORY( INPUT_ENUM, var_identifier, type, dims ) \
@@ -234,9 +242,14 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
+  typedef Array< CountPtr< Input >, 1 > inputs_t;
+
+  typedef inputs_t::iterator inputs_iterator;
+  inputs_iterator inputs_begin( void );
+  inputs_iterator inputs_end  ( void );
+
 private:
   friend class ::utest_Node;
-  typedef Array< CountPtr< Input >, 1 > inputs_t;
   CountPtr< inputs_t  > m_inputs;
   CountPtr< ArrayBase > m_data;
   bool m_hasChanged;
@@ -245,24 +258,44 @@ private:
 class Param : public Collectable
 {
 public:
-  explicit Param(
-      GarbageCollector *_gc
-    , const String &identifier
-    )
-  : Collectable( _gc )
-  , m_identifier( identifier )
-  {}
+  explicit
+  Param( GarbageCollector *_gc , const String &identifier );
 
-  virtual ~Param( void ) {}
+  virtual ~Param( void );
 
-  virtual void gc_clear( void ) {}
-  virtual void gc_getChildren( Children & ) const {}
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children & ) const;
 
-  virtual void set( const Value &value ) = 0;
+  virtual void set( const Value &value, int n_coords=0, const index_t *coords=0 ) = 0;
   virtual Node *getParent( void ) const = 0;
   const String &getIdentifier( void ) const { return m_identifier; }
+
+  struct Setting
+  {
+    Setting( void ) {}
+    Setting( const Value &_value, int n_coords, const index_t *_coords );
+    int compare( const Setting &other ) const;
+    bool operator<( const Setting &other ) const;
+    bool operator==( const Setting &other ) const;
+    bool operator!=( const Setting &other ) const;
+    Value value;
+    std::vector< index_t > coords;
+  };
+
+private:
+  typedef std::vector< Setting > settings_t;
+public:
+  typedef BeginEndIterator< Iterator< Setting >, settings_t::const_iterator > SettingsIterator;
+
+  void set( const Setting &setting );
+
+  CountPtr< SettingsIterator > getSettings( void ) const;
+
+protected:
+  void setValue( const Value &accepted_value, int n_coords, const index_t *coords );
 private:
   friend class ::utest_Node;
+  settings_t m_settings;
   const String m_identifier;
 };
 
@@ -345,7 +378,6 @@ public:
   virtual ~Node( void );
 
   virtual const char *getName( void ) const = 0;
-  const String &getIdentifier( void ) const;
   const SharedObject *getSO( void ) const;
 
   virtual bool tick( CountPtr< JobQueue > main_thread );
@@ -356,13 +388,13 @@ public:
 
   Input *getInput( index_t i ) const;
   Input *getInput( int     i ) const;
-  Input *getInput( const char *identifier ) const;
+  Input *getInput( const char *identifier, index_t *index=0 ) const;
   Output *getOutput( index_t i ) const;
   Output *getOutput( int     i ) const;
-  Output *getOutput( const char *identifier ) const;
+  Output *getOutput( const char *identifier, index_t *index=0 ) const;
   Param *getParam( index_t i ) const;
   Param *getParam( int     i ) const;
-  Param *getParam( const char *identifier ) const;
+  Param *getParam( const char *identifier, index_t *index=0 ) const;
 
   Param *setParam( index_t i, CountPtr< Param > param );
 
@@ -383,19 +415,22 @@ protected:
   class NodeParam : public Param
   {
   public:
-    typedef void (ParentNode::*callback_t)( const Value &value, index_t );
+    typedef Param Base;
+    typedef void (ParentNode::*callback_t)( const Value &value, index_t, int, const index_t* );
 
     explicit NodeParam(
         GarbageCollector *_gc
       , ParentNode *parent
       , const String &identifier
       , callback_t callback
-      , index_t index=0
+      , index_t index
+      , bool is_array
       )
     : Param( _gc, identifier )
     , m_parent( parent )
     , m_callback( callback )
     , m_index( index )
+    , m_is_array( is_array )
     {}
     virtual ~NodeParam( void ) {}
 
@@ -406,9 +441,14 @@ protected:
       children.add( static_cast< Collectable* >( m_parent.get() ) );
     }
 
-    virtual void set( const Value &value )
+    virtual void set( const Value &value, int n_coords=0, const index_t *coords=0 )
     {
-      (m_parent->*m_callback)( value, m_index );
+      if( !m_is_array && ( n_coords > 0 || coords != 0 ) )
+      {
+        throw Exception() << "Param '" << getIdentifier() << "' is not a Param Array";
+      }
+      (m_parent->*m_callback)( value, m_index, n_coords, coords );
+      setValue( value, n_coords, coords );
     }
 
     virtual Node *getParent( void ) const
@@ -420,6 +460,7 @@ protected:
     CountPtr< ParentNode > m_parent;
     callback_t m_callback;
     index_t m_index;
+    bool m_is_array;
   };
 
 private:
@@ -430,7 +471,6 @@ private:
   CountPtr< inputs_t  > m_inputs;
   CountPtr< outputs_t > m_outputs;
   CountPtr< params_t  > m_params;
-  const String m_identifier;
   CountPtr< const SharedObject > m_so;
 };
 

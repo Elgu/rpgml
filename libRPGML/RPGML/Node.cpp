@@ -232,9 +232,24 @@ bool Output::isConnected( void ) const
 {
   for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
-    if( (*i).get() ) return true;
+    if( !i->isNull() ) return true;
   }
   return false;
+}
+
+Output::inputs_iterator Output::inputs_begin( void )
+{
+  inputs_iterator ret = m_inputs->begin();
+  inputs_iterator end = m_inputs->end();
+
+  while( ret != end && ret->isNull() ) ++ret;
+
+  return ret;
+}
+
+Output::inputs_iterator Output::inputs_end  ( void )
+{
+  return m_inputs->end();
 }
 
 bool Output::hasChanged( void ) const
@@ -259,9 +274,9 @@ Node::Node(
 , m_inputs( new inputs_t( _gc ) )
 , m_outputs( new outputs_t( _gc ) )
 , m_params( new params_t( _gc ) )
-, m_identifier( identifier )
 , m_so( so )
 {
+  setIdentifier( identifier );
   if( num_inputs  ) setNumInputs ( num_inputs  );
   if( num_outputs ) setNumOutputs( num_outputs );
   if( num_params  ) setNumParams ( num_params  );
@@ -271,11 +286,6 @@ Node::Node(
 
 Node::~Node( void )
 {}
-
-const String &Node::getIdentifier( void ) const
-{
-  return m_identifier;
-}
 
 const SharedObject *Node::getSO( void ) const
 {
@@ -322,11 +332,13 @@ Input *Node::getInput( int i ) const
   return getInput( index_t( i ) );
 }
 
-Input *Node::getInput( const char *identifier ) const
+Input *Node::getInput( const char *identifier, index_t *index ) const
 {
+  if( index ) (*index) = 0;
   for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
+    if( index ) ++(*index);
   }
   throw InputNotFound() << "Input '" << identifier << "' not found";
 }
@@ -345,11 +357,13 @@ Output *Node::getOutput( int i ) const
   return getOutput( index_t( i ) );
 }
 
-Output *Node::getOutput( const char *identifier ) const
+Output *Node::getOutput( const char *identifier, index_t *index ) const
 {
+  if( index ) (*index) = 0;
   for( outputs_t::const_iterator i( m_outputs->begin() ), end( m_outputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
+    if( index ) ++(*index);
   }
   throw OutputNotFound() << "Output '" << identifier << "' not found";
 }
@@ -368,11 +382,13 @@ Param *Node::getParam( int i ) const
   return getParam( index_t( i ) );
 }
 
-Param *Node::getParam( const char *identifier ) const
+Param *Node::getParam( const char *identifier, index_t *index ) const
 {
+  if( index ) (*index) = 0;
   for( params_t::const_iterator i( m_params->begin() ), end( m_params->end() ); i != end; ++i )
   {
     if( !(*i).isNull() && (*i)->getIdentifier() == identifier ) return (*i);
+    if( index ) ++(*index);
   }
   throw ParamNotFound() << "Param '" << identifier << "' not found";
 }
@@ -478,6 +494,81 @@ Node::InitFailed::InitFailed( const Output *_output )
   (*this)
     << "Initializing Output '" << output->getIdentifier() << "' failed"
     ;
+}
+
+Param::Param( GarbageCollector *_gc , const String &identifier )
+: Collectable( _gc )
+, m_identifier( identifier )
+{}
+
+Param::~Param( void )
+{}
+
+void Param::gc_clear( void )
+{}
+
+void Param::gc_getChildren( Children & ) const
+{}
+
+void Param::set( const Setting &setting )
+{
+  const int n_coords = int( setting.coords.size() );
+  const index_t *const coords = ( n_coords ? &setting.coords[ 0 ] : 0 );
+  set( setting.value, n_coords, coords );
+}
+
+CountPtr< Param::SettingsIterator > Param::getSettings( void ) const
+{
+  return new SettingsIterator( m_settings.begin(), m_settings.end() );
+}
+
+void Param::setValue( const Value &accepted_value, int n_coords, const index_t *coords )
+{
+  m_settings.push_back( Setting( accepted_value, n_coords, coords ) );
+}
+
+Param::Setting::Setting( const Value &_value, int n_coords, const index_t *_coords )
+: value( _value )
+{
+  if( n_coords && _coords ) coords.insert( coords.end(), _coords, _coords + n_coords );
+}
+
+int Param::Setting::compare( const Setting &other ) const
+{
+  const int cmp_value = value.compare_exactly( other.value );
+  if( 0 != cmp_value ) return cmp_value;
+
+  const size_t coords_size = coords.size();
+  const size_t other_coords_size = other.coords.size();
+
+  if( coords_size < other_coords_size ) return -1;
+  if( other_coords_size < coords_size ) return  1;
+
+  // other_coords_size == coords_size
+  for( size_t i=0; i<other_coords_size; ++i )
+  {
+    const index_t coords_i = coords[ i ];
+    const index_t other_coords_i = other.coords[ i ];
+    if( coords_i < other_coords_i ) return -1;
+    if( other_coords_i < coords_i ) return  1;
+  }
+
+  return 0;
+}
+
+bool Param::Setting::operator<( const Setting &other ) const
+{
+  return ( 0 > compare( other ) );
+}
+
+bool Param::Setting::operator==( const Setting &other ) const
+{
+  return ( 0 == compare( other ) );
+}
+
+bool Param::Setting::operator!=( const Setting &other ) const
+{
+  return ( 0 != compare( other ) );
 }
 
 } // namespace RPGML
