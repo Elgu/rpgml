@@ -42,12 +42,15 @@ namespace RPGML {
 class StringData : public Refcounted
 {
 public:
-  StringData( void ) : m_begin( 0 ) {}
-  explicit StringData( const char *begin ) : m_begin( begin ) {}
-  virtual ~StringData( void ) {}
-  const char *get( void ) const { return m_begin; }
+  StringData( void );
+  explicit StringData( const char *begin );
+  virtual ~StringData( void );
+  const char *get( void ) const;
+  bool isUnified( void ) const;
+  virtual const void *getUnifier( void ) const;
+  int compare( const StringData &other ) const;
 protected:
-  void set( const char *begin ) { m_begin = begin; }
+  void set( const char *begin );
 private:
   const char *m_begin;
 };
@@ -59,8 +62,10 @@ private:
   MallocString( void ) : m_str() { set( m_str ); }
 public:
   virtual ~MallocString( void ) {}
-  static CountPtr< const StringData > create( const char *s, size_t len, const char *s2=0, size_t len2=0 );
+  static CountPtr< const MallocString > create( const char *s, size_t len, const char *s2=0, size_t len2=0 );
 private:
+  MallocString( const MallocString & );
+  MallocString &operator=( const MallocString & );
   const char m_str[ 0 ];
 };
 

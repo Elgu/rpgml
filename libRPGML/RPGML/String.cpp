@@ -17,11 +17,51 @@
  */
 #include "String.h"
 
+#include <cstring>
+
 namespace RPGML {
 
   const char *const String::empty_c_str = "";
 
-  CountPtr< const StringData > MallocString::create( const char *s, size_t len, const char *s2, size_t len2 )
+  StringData::StringData( void )
+  : m_begin( 0 )
+  {}
+
+  StringData::StringData( const char *begin )
+  : m_begin( begin )
+  {}
+
+  StringData::~StringData( void )
+  {}
+
+  const char *StringData::get( void ) const
+  {
+    return m_begin;
+  }
+
+  bool StringData::isUnified( void ) const
+  {
+    return 0 != getUnifier();
+  }
+
+  const void *StringData::getUnifier( void ) const
+  {
+    return 0;
+  }
+
+  void StringData::set( const char *begin )
+  {
+    m_begin = begin;
+  }
+
+  int StringData::compare( const StringData &other ) const
+  {
+    const char *const this_str = get();
+    const char *const other_str = other.get();
+    return ::strcmp( this_str, other_str );
+  }
+
+  CountPtr< const MallocString > MallocString::create( const char *s, size_t len, const char *s2, size_t len2 )
   {
     assert( s2 || !len2 );
     const size_t memsize = ( sizeof( MallocString )+1 ) + ( len + len2 );
@@ -33,7 +73,7 @@ namespace RPGML {
     str[ len+len2 ] = '\0';
 
     // CountPtr for return must be created before CountPtr "ret" is destroyed
-    return CountPtr< const StringData >( ret.get() );
+    return CountPtr< const MallocString >( ret );
   }
 
   const size_t String::npos = size_t(-1);
@@ -214,6 +254,15 @@ namespace RPGML {
 
   bool String::equals( const String &other ) const
   {
+    const void *this_unifier;
+    if(
+        !m_str.isNull() && !other.m_str.isNull()
+      && ( 0 != ( this_unifier = m_str->getUnifier() ) )
+      && ( this_unifier == other.m_str->getUnifier() )
+      )
+    {
+      return ( get() == other.get() );
+    }
     return 0 == compare( other );
   }
 
