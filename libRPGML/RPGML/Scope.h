@@ -119,6 +119,10 @@ public:
 
   //! like 'foo.bar.identifier'
   String genGlobalName( const String &identifier ) const;
+  String genGlobalName( const String &node_name, const Location *loc ) const;
+
+  static
+  String make_printable( const String &s );
 
   size_t getNr( void ) const;
 

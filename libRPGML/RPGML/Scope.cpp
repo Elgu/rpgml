@@ -25,6 +25,8 @@
 #include "ParseException.h"
 
 #include <iostream>
+#include <ctype.h>
+
 using namespace std;
 
 namespace RPGML {
@@ -285,20 +287,14 @@ CountPtr< Output > Scope::toOutput(
   }
   else if( x.isPrimitive() )
   {
-    Value ret;
-    if( !call( loc, recursion_depth, String::Static( ".constant" ), ret, x ) )
-    {
-      return (Output*)0;
-    }
+    CountPtr< Node > ret = createNode( loc, recursion_depth, String::Static( ".Constant" ) );
 
-    if( !ret.isOutput() )
-    {
-      throw ParseException( loc )
-        << "Return value of 'constant' should be Output, is " << ret.getTypeName()
-        ;
-    }
+    ret->getParam( "value" )->set( x );
 
-    return ret.getOutput();
+    const String global_name = genGlobalName( "Constant " + make_printable( toString( x ).mid( 0, 32 ) ), loc );
+    ret->setIdentifier( global_name );
+
+    return ret->getOutput( "out" );
   }
   else if( x.isArray() )
   {
@@ -325,58 +321,21 @@ CountPtr< Output > Scope::toOutput(
       const Frame::Ref constant_array_v = array_node->getVariable( "in" );
       if( constant_array_v.isNull() )
       {
-        throw ParseException( loc ) << "Could not get 'in' from ConstantArray";
+        throw ParseException( new Location( __FILE__, __LINE__ ) )
+          << "Could not get 'in' from ConstantArray";
       }
-      if( !constant_array_v->isArray() )
-      {
-        throw ParseException( loc )
-          << "Expected 'in' of ConstantArray to be an Array, is " << constant_array_v->getTypeName()
-          ;
-      }
-      const ArrayBase *const constant_array_base = constant_array_v->getArray();
-
-      const ArrayBase::Size constant_array_size = constant_array_base->getSize();
-      if( constant_array_size != array_size )
-      {
-        throw ParseException( loc )
-          << "Expected 'in[]' of ConstantArray to be the specified size."
-          << " Specified was " << array_size
-          << ", is " << constant_array_size
-          ;
-      }
-
-      if( !constant_array_base->getType().isParam() )
-      {
-        throw ParseException( loc )
-          << "Expected 'in[]' of ConstantArray to be a Param Array"
-          << ", is " << constant_array_base->getType() << " Array"
-          ;
-      }
-
-      const ParamArrayElements *constant_array = 0;
-      if( !constant_array_base->getAs( constant_array ) )
-      {
-        throw ParseException( loc )
-          << "Could not get 'in[]' of ConstantArray as ParamArrayElements"
-          ;
-      }
-
-      ParamArrayElements::const_iterator         p    ( constant_array->begin()            );
-      ParamArrayElements::const_iterator         p_end( constant_array->end()              );
-      CountPtr< ArrayBase::ValueIterator       > a    ( array_base    ->getValueIterator() );
-
-      for( ; !a->done() && p != p_end; a->next(), ++p )
-      {
-        (*p)->set( a->get() );
-      }
-
-      if( !a->done() || p != p_end )
+      if( !constant_array_v->isParam() )
       {
         throw ParseException( new Location( __FILE__, __LINE__ ) )
-          << "Internal: Array Iterators did not match"
-          << ": a->done() = " << a->done()
-          << ", ( p == p_end ) = " << ( p == p_end )
+          << "Expected 'in' of ConstantArray to be a Param, is " << constant_array_v->getTypeName()
           ;
+      }
+      Param *const constant_array = constant_array_v->getParam();
+
+      for( CountPtr< ArrayBase::CoordinatesIterator > c( array_base->getCoordinatesIterator() ); !c->done(); c->next() )
+      {
+        const ArrayBase::Coordinates C = c->get();
+        constant_array->set( array_base->getValue( C ), C.getDims(), C.getCoords() );
       }
     }
     else
@@ -402,6 +361,49 @@ CountPtr< Frame > Scope::newFrame( void ) const
 String Scope::genGlobalName( const String &identifier ) const
 {
   return getCurr()->genGlobalName( identifier );
+}
+
+String Scope::genGlobalName( const String &node_name, const Location *loc ) const
+{
+  return
+    genGlobalName(
+        ":" + node_name
+      + "@" + toString( loc->withoutFilename() )
+      + "#" + toString( getNr() )
+      );
+}
+
+String Scope::make_printable( const String &s )
+{
+  std::string ret;
+
+  for( const char *c = s.c_str(); (*c) != '\0'; ++c )
+  {
+    switch( (*c) )
+    {
+      case '\a': ret += "\\a"; break;
+      case '\b': ret += "\\b"; break;
+      case '\f': ret += "\\f"; break;
+      case '\n': ret += "\\n"; break;
+      case '\r': ret += "\\r"; break;
+      case '\t': ret += "\\t"; break;
+      case '\v': ret += "\\v"; break;
+      default:
+        if( ::isprint( (*c) ) )
+        {
+          ret += (*c);
+        }
+        else
+        {
+          ret += "\\x";
+          ret += char( '0' + char(((*c)&0xF0)>>4) );
+          ret += char( '0' + char( (*c)&0x0F)   );
+        }
+        break;
+    }
+  }
+
+  return String::MoveFrom( ret );
 }
 
 size_t Scope::getNr( void ) const
