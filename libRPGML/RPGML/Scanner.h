@@ -78,7 +78,6 @@ public:
   String unified_filename;
   std::string *filename;
 
-  const StringData *unify_move( String &str )       { return m_unifier->unify_move( str ); }
   const StringData *unify_move( std::string &str )  { return m_unifier->unify_move( str ); }
   const StringData *unify( const String &str )      { return m_unifier->unify( str ); }
   const StringData *unify( const char *str )        { return m_unifier->unify( str ); }
