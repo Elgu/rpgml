@@ -48,6 +48,8 @@ public:
 
   bool empty( void ) const;
 
+  void merge( void );
+
   void setEverythingChanged( bool changed = true );
 
   //! Must be called by the main thread of a process
@@ -102,6 +104,12 @@ private:
 
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
+
+    int compare( const GraphNode &other ) const;
+    bool equivalent( const GraphNode &other ) const;
+
+    static
+    bool compare_less( const GN_Array_t::Element &x1, const GN_Array_t::Element &x2 );
 
     GN_Array_t predecessors;
     GN_Array_t successors;

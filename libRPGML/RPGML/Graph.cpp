@@ -18,6 +18,10 @@
 #include "Graph.h"
 
 #include <iostream>
+#include <cstring>
+#include <algorithm>
+
+using namespace std;
 
 namespace RPGML {
 
@@ -82,6 +86,119 @@ bool Graph::alreadyAdded( const Node *node, index_t *index ) const
   }
 
   return false;
+}
+
+void Graph::merge( void )
+{
+  cerr << "merge: starting with " << m_nodes.size() << " nodes" << endl;
+
+  bool merged_one;
+  do
+  {
+    merged_one = false;
+
+    GN_Array_t new_nodes( 0 );
+
+    sort( m_nodes.begin(), m_nodes.end(), GraphNode::compare_less );
+
+    const index_t num_nodes = m_nodes.size();
+
+    // Start of first block of equivalent Nodes
+    index_t equal_first = 0;
+    index_t equal_last  = 0;
+    // Run one time more to be able to merge the last block
+    // Start comparing from 1, start first block at 0
+    for( index_t i=1; i<=num_nodes; ++i )
+    {
+      if( i < num_nodes && m_nodes[ equal_first ]->equivalent( *m_nodes[ i ] ) )
+      {
+        equal_last = i;
+      }
+      else
+      {
+        // Merge block of equivalent Nodes into first of that block
+        GN_Array_t::Element &gn_merge_into = m_nodes[ equal_first ];
+        Node *const merge_into = gn_merge_into->node;
+
+        for( index_t merge_i = equal_first+1; merge_i <= equal_last; ++merge_i )
+        {
+          GN_Array_t::Element &gn_merge_node = m_nodes[ merge_i ];
+          Node *const merge_node = gn_merge_node->node;
+
+          cerr
+            << "Merging '" << merge_node->getIdentifier() << "'"
+            << " into '" << merge_into->getIdentifier() << "'"
+            << endl
+            ;
+
+          bool merge_failed = false;
+
+          const index_t num_outputs = merge_node->getNumOutputs();
+
+          // Check, whether all Outputs needed by the to-be-merged Node are present in the merge-into Node
+          // Remember the indeces, so the string lookup does not have to be done twice
+          vector< index_t > into_output_index( num_outputs );
+          for( index_t o=0; o<num_outputs; ++o )
+          {
+            Output *const merge_output = merge_node->getOutput( o );
+            try
+            {
+              // throws, if not found
+              (void)merge_into->getOutput( merge_output->getIdentifier(), &into_output_index[ o ] );
+            }
+            catch( const Node::NotFound & )
+            {
+              merge_failed = true;
+              break;
+            }
+          }
+
+          if( !merge_failed )
+          {
+            // Do the merge:
+            // Connect all Inputs connected to the Outputs of the to-be-merged Node
+            // to the corresponding Outputs of the merge-into Node
+            for( index_t o=0; o<num_outputs; ++o )
+            {
+              Output *const merge_output = merge_node->getOutput( o );
+              Output *const into_output  = merge_into->getOutput( into_output_index[ o ] );
+
+              while( merge_output->isConnected() )
+              {
+                Input *const input = merge_output->inputs_begin()->get();
+                if( input ) input->connect( into_output );
+              }
+            }
+            merged_one = true;
+          }
+          else
+          {
+            // Not merged, so keep it
+            new_nodes.push_back( gn_merge_node );
+          }
+        }
+
+        // Add first to the new nodes array
+        new_nodes.push_back( gn_merge_into );
+
+        // Start of next block
+        equal_first = equal_last = i;
+      }
+    }
+
+    // Make merged Nodes current
+    m_nodes.swap( new_nodes );
+  }
+  while( merged_one );
+
+  // Update index
+  m_Node_to_index.clear();
+  for( index_t i( 0 ), end( m_nodes.size() ); i < end; ++i )
+  {
+    m_Node_to_index[ m_nodes[ i ]->node.get() ] = i;
+  }
+
+  cerr << "merge: ending with " << m_nodes.size() << " nodes" << endl;
 }
 
 void Graph::setEverythingChanged( bool changed )
@@ -352,6 +469,108 @@ void Graph::GraphNode::clear_order( void )
 void Graph::GraphNode::reset_predecessor_counter( void )
 {
   predecessors_to_be_executed = predecessors.size();
+}
+
+namespace Graph_impl {
+
+  template< class T >
+  static inline
+  bool cmp( const T &x1, const T &x2 )
+  {
+    if( x1 == x2 ) return 0;
+    if( x1 < x2 ) return -1;
+    return 1;
+  }
+
+} // namespace Graph_impl
+
+bool Graph::GraphNode::equivalent( const GraphNode &other ) const
+{
+  return ( 0 == compare( other ) );
+}
+
+bool Graph::GraphNode::compare_less( const GN_Array_t::Element &x1, const GN_Array_t::Element &x2 )
+{
+  return ( 0 > x1->compare( *x2 ) );
+}
+
+int Graph::GraphNode::compare( const GraphNode &other ) const
+{
+  using namespace Graph_impl;
+
+  const char *const node_name = node->getName();
+  const char *const other_name = other.node->getName();
+
+  // Names are static strings defined in the .so files
+  if( node_name != other_name ) return ::strcmp( node_name, other_name );
+
+  const index_t node_num_inputs = node->getNumInputs();
+  const index_t other_num_inputs = other.node->getNumInputs();
+
+  const int cmp_num_inputs = cmp( node_num_inputs, other_num_inputs );
+  if( 0 != cmp_num_inputs ) return cmp_num_inputs;
+
+  const index_t node_num_params = node->getNumParams();
+  const index_t other_num_params = other.node->getNumParams();
+
+  const int cmp_num_params = cmp( node_num_params, other_num_params );
+  if( 0 != cmp_num_params ) return cmp_num_params;
+
+  for( index_t i=0; i<node_num_inputs; ++i )
+  {
+    const Input *const node_input = node->getInput( i );
+    const String &node_input_identifier = node_input->getIdentifier();
+
+    const Input *other_input = 0;
+    try
+    {
+      other_input = other.node->getInput( node_input_identifier );
+    }
+    catch( const Node::NotFound & )
+    {
+      return 1;
+    }
+    if( !other_input ) return 1;
+
+    const Output *const node_output = node_input->getOutput();
+    const Output *const other_output = other_input->getOutput();
+
+    const int cmp_output = cmp( node_output, other_output );
+    if( 0 != cmp_output ) return cmp_output;
+  }
+
+  for( index_t i=0; i<node_num_params; ++i )
+  {
+    const Param *const node_param = node->getParam( i );
+    const String &node_param_identifier = node_param->getIdentifier();
+
+    const Param *other_param = 0;
+    try
+    {
+      other_param = other.node->getParam( node_param_identifier );
+    }
+    catch( const Node::NotFound & )
+    {
+      return 1;
+    }
+    if( !other_param ) return 1;
+
+    for(
+        CountPtr< Param::SettingsIterator >
+          node_settings = node_param->getSettings()
+        , other_settings = other_param->getSettings()
+      ;     !node_settings->done()
+        && !other_settings->done()
+      ;    node_settings->next()
+        , other_settings->next()
+      )
+    {
+      const int cmp_param = node_settings->get().compare( other_settings->get() );
+      if( 0 != cmp_param ) return cmp_param;
+    }
+  }
+
+  return 0;
 }
 
 void Graph::GraphNode::gc_clear( void )
