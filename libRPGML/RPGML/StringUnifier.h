@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -33,41 +33,52 @@ public:
   StringUnifier( void ) {}
   virtual ~StringUnifier( void ) {}
 
+  class Unified : public StdString
+  {
+  private:
+    friend class StringUnifier;
+    Unified( StringUnifier *unifier, const char *s )
+    : StdString( s )
+    , m_unifier( unifier )
+    {}
+    Unified( StringUnifier *unifier, const std::string &s )
+    : StdString( s )
+    , m_unifier( unifier )
+    {}
+  public:
+    Unified( void ) : m_unifier( 0 ) {}
+    virtual ~Unified( void ) {}
+    virtual const void *getUnifier( void ) const { return m_unifier; }
+  private:
+    Unified( const Unified & );
+    Unified &operator=( const Unified & );
+    StringUnifier *m_unifier;
+  };
+
   template< class S >
-  const StringData *unify( const S &s )
+  const Unified *unify( const S &s )
   {
     const char *const c_in = getCharPtr( s );
-    const String *const ret1 = get( c_in );
-    if( ret1 ) return ret1->getData();
+    const Unified *const ret1 = get( c_in );
+    if( ret1 ) return ret1;
 
-    String ret2( s );
-    const char *const c_out = ret2.c_str();
+    CountPtr< const Unified > ret2 = new Unified( this, c_in );
+    const char *const c_out = ret2->get();
     m_map.insert( std::make_pair( c_out, ret2 ) );
-    return ret2.getData();
+    return ret2;
   }
 
-  const StringData *unify_move( String &s )
+  const Unified *unify_move( std::string &s )
   {
     const char *const c_in = getCharPtr( s );
-    const String *ret1 = get( c_in );
-    if( ret1 ) return ret1->getData();
+    const Unified *const ret1 = get( c_in );
+    if( ret1 ) return ret1;
 
-    const char *const c_out = s.c_str();
-    m_map.insert( std::make_pair( c_out, s ) );
-    return s.getData();
-  }
-
-  const StringData *unify_move( std::string &s )
-  {
-    const char *const c_in = getCharPtr( s );
-    const String *const ret1 = get( c_in );
-    if( ret1 ) return ret1->getData();
-
-    String ret2;
-    ret2.moveFrom( s );
-    const char *const c_out = ret2.c_str();
-    m_map.insert( std::make_pair( c_out, ret2 ) );
-    return ret2.getData();
+    CountPtr< Unified > ret2 = new Unified();
+    ret2->moveFrom( s );
+    const char *const c_out = ret2->get();
+    m_map.insert( std::make_pair( c_out, CountPtr< const Unified >( ret2 ) ) );
+    return ret2;
   }
 
   void clear( void )
@@ -83,9 +94,9 @@ public:
 
     for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
     {
-      if( 1 == i->second.count() )
+      if( 1 == i->second->count() )
       {
-        to_be_removed.push_back( i->second.c_str() );
+        to_be_removed.push_back( i->second->get() );
       }
     }
 
@@ -102,6 +113,12 @@ public:
   }
 
 private:
+  static
+  const char *getCharPtr( const StringData *s )
+  {
+    return s->get();
+  }
+
   static
   const char *getCharPtr( const String &s )
   {
@@ -121,13 +138,13 @@ private:
   }
 
   template< class S >
-  const String *get( const S &s )
+  const Unified *get( const S &s )
   {
     const char *const c_in = getCharPtr( s );
     map_t::const_iterator found = m_map.find( c_in );
     if( found != m_map.end() )
     {
-      return &found->second;
+      return found->second;
     }
     else
     {
@@ -143,7 +160,7 @@ private:
     }
   };
 
-  typedef std::map< const char*, String, compare > map_t;
+  typedef std::map< const char*, CountPtr< const Unified >, compare > map_t;
   map_t m_map;
 };
 
