@@ -67,6 +67,11 @@ public:
     // destructor is kept
   }
 
+  bool isNull( void ) const
+  {
+    return !m_guarded;
+  }
+
 protected:
   void setDestructor( Destructor *destructor )
   {
