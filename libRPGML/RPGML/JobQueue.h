@@ -51,13 +51,14 @@ public:
 
     //! Calls doit() and done()
     size_t work( CountPtr< JobQueue > queue );
-    size_t wait( void );
 
     size_t getPriority( void ) const;
     void setPriority( size_t priority );
 
+    //! Only valid after done() has been called
     size_t getReturnValue( void ) const;
 
+    //! For waiting once on a Job, get one before addJob()
     class Token : public Refcounted
     {
     private:
@@ -83,6 +84,8 @@ public:
   private:
     friend class JobQueue;
     friend class Token;
+    //! Use a Token to wait for a Job, getToken() before addJob()
+    size_t wait( void );
     //! Called by workers like size_t ret = done( doit( queue ) );
     size_t done( size_t return_value );
     WaitLock m_wait_lock;
