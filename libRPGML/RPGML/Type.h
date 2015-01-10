@@ -153,6 +153,13 @@ public:
   bool operator<=( Enum e ) const { return m_e <= e; }
   bool operator>=( Enum e ) const { return m_e >= e; }
 
+  int compare( const Type &other ) const
+  {
+    if( m_e == other.m_e ) return  0;
+    if( m_e <  other.m_e ) return -1;
+    return 1;
+  }
+
   Enum getEnum( void ) const { return m_e; }
   operator Enum( void ) const { return getEnum(); }
 
