@@ -97,6 +97,21 @@ public:
 
   typedef Coordinates Size;
 
+  class OutOfRange : public Exception
+  {
+  public:
+    typedef Exception Base;
+    explicit
+    OutOfRange( const Size &size, const Coordinates &coords )
+    {
+      (*this)
+        << "Out of range: Size is " << size
+        << ", coordinates are " << coords
+        ;
+    }
+    EXCEPTION_BODY( OutOfRange );
+  };
+
   explicit
   ArrayBase( GarbageCollector *_gc )
   : Base( _gc )
@@ -172,6 +187,8 @@ public:
   typedef typename elements_t::const_reverse_iterator const_reverse_iterator;
   typedef typename elements_t::reference              reference;
   typedef typename elements_t::const_reference        const_reference;
+  typedef Base::OutOfRange         OutOfRange;
+  typedef Base::DimensionsMismatch DimensionsMismatch;
 
   virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
 
@@ -356,6 +373,8 @@ public:
   typedef typename Base::Children               Children;
   typedef typename Base::Coordinates            Coordinates;
   typedef typename Base::Size                   Size;
+  typedef typename Base::OutOfRange             OutOfRange;
+  typedef typename Base::DimensionsMismatch     DimensionsMismatch;
 
   virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
 
@@ -445,11 +464,11 @@ public:
   {
     switch( Dims )
     {
-      case 0: if( x != 1 ) throw "If Dims is 0, x must be 1."; // fallthrough
-      case 1: if( y != 1 ) throw "If Dims less than 2, y must be 1."; // fallthrough
-      case 2: if( z != 1 ) throw "If Dims less than 3, z must be 1."; // fallthrough
-      case 3: if( t != 1 ) throw "If Dims less than 4, t must be 1."; // fallthrough
-      default: if( Dims >= 4 ) throw "If Dims is greater than 4, resize( x, y, z, t ) must not be used.";
+      case 0: if( x != 1 ) throw Exception() << "If Dims is 0, x must be 1, is " << x; // fallthrough
+      case 1: if( y != 1 ) throw Exception() << "If Dims less than 2, y must be 1, is " << y; // fallthrough
+      case 2: if( z != 1 ) throw Exception() << "If Dims less than 3, z must be 1, is " << z; // fallthrough
+      case 3: if( t != 1 ) throw Exception() << "If Dims less than 4, t must be 1, is " << t; // fallthrough
+      default: if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, resize( x, y, z, t ) must not be used.";
     }
     switch( Dims )
     {
@@ -542,8 +561,7 @@ public:
     {
       if( x[ i ] >= m_size[ i ] )
       {
-        throw Exception()
-          << "Coordiante " << i << " out of range"
+        throw OutOfRange( getSize(), Coordinates( dims, x ) )
           << ": Getting Array element position failed"
           ;
       }
@@ -616,14 +634,14 @@ public:
 
   void push_back( const Element &x )
   {
-    if( Dims != 1 ) throw "push_back() only makes sense on 1D-arrays";
+    if( Dims != 1 ) throw Exception() << "push_back() only makes sense on 1D-Arrays, is " << Dims;
     ++m_size[ 0 ];
     Base::_push_back( x );
   }
 
   void pop_back( void )
   {
-    if( Dims != 1 ) throw "push_back() only makes sense on 1D-arrays";
+    if( Dims != 1 ) throw Exception() << "pop_back() only makes sense on 1D-Arrays, is " << Dims;
     if( m_size[ 0 ] > 0 )
     {
       --m_size[ 0 ];
@@ -649,7 +667,8 @@ public:
     }
     else
     {
-      throw "Array::getValue(): Out of range.";
+      const index_t xyzt[ 4 ] = { x, y, z, t };
+      throw OutOfRange( getSize(), Coordinates( Dims, xyzt ) );
     }
   }
 
@@ -661,7 +680,7 @@ public:
     }
     else
     {
-      throw "Array::getValue(): Out of range.";
+      throw OutOfRange( getSize(), Coordinates( dims, x ) );
     }
   }
 
@@ -678,7 +697,8 @@ public:
     }
     else
     {
-      throw "Array::setValue(): Out of range.";
+      const index_t xyzt[ 4 ] = { x, y, z, t };
+      throw OutOfRange( getSize(), Coordinates( Dims, xyzt ) );
     }
   }
 
@@ -690,7 +710,7 @@ public:
     }
     else
     {
-      throw "Array::setValue(): Out of range.";
+      throw OutOfRange( getSize(), Coordinates( dims, x ) );
     }
   }
 
@@ -1034,6 +1054,7 @@ inline
 std::ostream &operator<<( std::ostream &o, const RPGML::ArrayBase::Coordinates &x )
 {
   const int dims = x.getDims();
+  if( dims < 1 ) return o;
   o << "[ ";
   for( int i=0; i<dims; ++i )
   {
