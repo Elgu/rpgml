@@ -71,11 +71,7 @@ bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *sco
   (void)recursion_depth;
   (void)call_args;
 
-  const String global_name =
-    scope->genGlobalName(
-         ":" + m_name + "@" + toString( loc->withoutFilename() )
-       + "#" + toString( scope->getNr() )
-       );
+  const String global_name = scope->genGlobalName( m_name, loc );
   CountPtr< Node > node( m_create_Node( getGC(), global_name, getSO() ) );
 
   if( call_args )
