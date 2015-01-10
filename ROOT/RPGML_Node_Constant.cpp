@@ -27,7 +27,6 @@ Constant::Constant( GarbageCollector *_gc, const String &identifier, const RPGML
 : Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
 , m_first( true )
 {
-  DEFINE_INPUT ( INPUT_IN  , "in"  );
   DEFINE_OUTPUT( OUTPUT_OUT, "out" );
   DEFINE_PARAM ( PARAM_VALUE , "value", Constant::set_value );
 }
@@ -40,7 +39,7 @@ const char *Constant::getName( void ) const
   return "Constant";
 }
 
-void Constant::set_value( const Value &value, index_t )
+void Constant::set_value( const Value &value, index_t, int, const index_t* )
 {
   if( !value.getType().isPrimitive() )
   {

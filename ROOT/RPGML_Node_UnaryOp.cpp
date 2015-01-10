@@ -40,7 +40,7 @@ const char *UnaryOp::getName( void ) const
   return "UnaryOp";
 }
 
-void UnaryOp::set_op( const Value &value, index_t )
+void UnaryOp::set_op( const Value &value, index_t, int, const index_t* )
 {
   if( value.getType() != Type::String() )
   {

@@ -51,7 +51,7 @@ const char *NamedWindow::getName( void ) const
   return "cv.NamedWindow";
 }
 
-void NamedWindow::set_flags( const Value &value, index_t )
+void NamedWindow::set_flags( const Value &value, index_t, int, const index_t* )
 {
   if( value.getType() != Type::String() )
   {

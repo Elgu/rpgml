@@ -42,7 +42,7 @@ const char *Counter::getName( void ) const
   return "Counter";
 }
 
-void Counter::set_start( const Value &value, index_t )
+void Counter::set_start( const Value &value, index_t, int, const index_t* )
 {
   try
   {
@@ -57,7 +57,7 @@ void Counter::set_start( const Value &value, index_t )
   }
 }
 
-void Counter::set_step( const Value &value, index_t )
+void Counter::set_step( const Value &value, index_t, int, const index_t* )
 {
   try
   {

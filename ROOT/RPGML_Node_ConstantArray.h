@@ -39,11 +39,11 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  void set_type( const Value &value, index_t );
-  void set_dims( const Value &value, index_t );
-  void set_fill( const Value &value, index_t );
-  void set_size( const Value &value, index_t d );
-  void set_value( const Value &value, index_t i );
+  void set_type( const Value &value, index_t, int, const index_t* );
+  void set_dims( const Value &value, index_t, int, const index_t* );
+  void set_fill( const Value &value, index_t, int, const index_t* );
+  void set_size( const Value &value, index_t d, int, const index_t* );
+  void set_in  ( const Value &value, index_t, int n_coords, const index_t *coords );
 
 private:
   typedef NodeParam< ConstantArray > NParam;
@@ -62,14 +62,14 @@ private:
 
   enum Params
   {
+    PARAM_FILL , // must be first
     PARAM_TYPE ,
     PARAM_DIMS ,
     PARAM_SIZEX,
     PARAM_SIZEY,
     PARAM_SIZEZ,
     PARAM_SIZET,
-    PARAM_FILL ,
-    PARAM_VALUE0,
+    PARAM_IN   ,
     NUM_PARAMS
   };
 

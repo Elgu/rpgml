@@ -37,7 +37,7 @@ const char *BinaryOp::getName( void ) const
   return "BinaryOp";
 }
 
-void BinaryOp::set_op( const Value &value, index_t )
+void BinaryOp::set_op( const Value &value, index_t, int, const index_t* )
 {
   if( value.getType() != Type::String() )
   {

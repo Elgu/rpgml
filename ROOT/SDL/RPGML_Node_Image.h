@@ -38,7 +38,7 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  void set_foo( const Value &value, index_t );
+  void set_foo( const Value &value, index_t, int, const index_t* );
 
 private:
   typedef NodeParam< Image > NParam;

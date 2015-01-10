@@ -52,7 +52,7 @@ const char *Image::getName( void ) const
   return "SDL.Image";
 }
 
-void Image::set_foo( const Value &value, index_t )
+void Image::set_foo( const Value &value, index_t, int, const index_t* )
 {
   if( value.getType() != Type::String() )
   {

@@ -44,6 +44,7 @@ ConstantArray::ConstantArray( GarbageCollector *_gc, const String &identifier, c
   DEFINE_PARAM_INDEX( PARAM_SIZEY, "sizeY", ConstantArray::set_size, 1 );
   DEFINE_PARAM_INDEX( PARAM_SIZEZ, "sizeZ", ConstantArray::set_size, 2 );
   DEFINE_PARAM_INDEX( PARAM_SIZET, "sizeT", ConstantArray::set_size, 3 );
+  DEFINE_PARAM_ARRAY( PARAM_IN   , "in"   , ConstantArray::set_in );
 }
 
 ConstantArray::~ConstantArray( void )
@@ -54,7 +55,7 @@ const char *ConstantArray::getName( void ) const
   return "ConstantArray";
 }
 
-void ConstantArray::set_type( const Value &value, index_t )
+void ConstantArray::set_type( const Value &value, index_t, int, const index_t* )
 {
   if( !value.isString() )
   {
@@ -83,7 +84,7 @@ void ConstantArray::set_type( const Value &value, index_t )
   if( all_set() ) create_array();
 }
 
-void ConstantArray::set_dims( const Value &value, index_t )
+void ConstantArray::set_dims( const Value &value, index_t, int, const index_t* )
 {
   if( !value.isInteger() )
   {
@@ -106,7 +107,7 @@ void ConstantArray::set_dims( const Value &value, index_t )
   if( all_set() ) create_array();
 }
 
-void ConstantArray::set_fill( const Value &value, index_t )
+void ConstantArray::set_fill( const Value &value, index_t, int, const index_t* )
 {
   if( value.isNil() ) return;
 
@@ -135,7 +136,7 @@ void ConstantArray::set_fill( const Value &value, index_t )
   m_fill = value;
 }
 
-void ConstantArray::set_size( const Value &value, index_t d )
+void ConstantArray::set_size( const Value &value, index_t d, int, const index_t* )
 {
   if( d > 4 ) throw Exception() << "Only 4 dimensions supported";
 
@@ -158,23 +159,37 @@ void ConstantArray::set_size( const Value &value, index_t d )
   if( all_set() ) create_array();
 }
 
-void ConstantArray::set_value( const Value &value, index_t i )
+void ConstantArray::set_in( const Value &value, index_t, int n_coords, const index_t *coords )
 {
   if( m_array.isNull() ) create_array();
 
-  const index_t n = m_array->size();
-  if( i >= n ) throw Exception() << "Setting Param 'value': Index out of range";
-
-  const ArrayBase::Size size = m_array->getSize();
-
-  index_t x[ 4 ] = { 0 };
-  for( int d=0; d<size.getDims(); ++d )
+  if( n_coords != m_dims )
   {
-    x[ d ] = i % size[ d ];
-    i /= size[ d ];
+    throw Exception()
+      << "Param 'in' has " << m_dims << " coordinates, specified " << n_coords
+      ;
   }
 
-  m_array->setValue( value.to( m_type ), ArrayBase::Coordinates( size.getDims(), x ) );
+  try
+  {
+    m_array->setValue_v( value.to( m_type ), n_coords, coords );
+  }
+  catch( const ArrayBase::Exception &e )
+  {
+    throw Exception()
+      << "Could not set Param 'in'"
+      << ": Failed to set Array value"
+      << ": " << e.what()
+      ;
+  }
+  catch( const Value::Exception &e )
+  {
+    throw Exception()
+      << "Could not set Param 'in'"
+      << ": Failed to convert value"
+      << ": " << e.what()
+      ;
+  }
 }
 
 bool ConstantArray::all_set( void ) const
@@ -215,7 +230,6 @@ void ConstantArray::create_array( void )
 
   m_array = new_Array( getGC(), m_type, m_dims );
   m_array->resize_v( m_dims, m_size );
-  const index_t n = m_array->size();
 
   if( !m_fill.isNil() )
   {
@@ -232,21 +246,6 @@ void ConstantArray::create_array( void )
         ;
     }
   }
-
-  // TODO: Create type ParamArray<> in Node.h, do only temporary Param are used
-  typedef ArrayElements< CountPtr< Param > > ParamArray;
-  CountPtr< ParamArray > param_array = new_Array< CountPtr< Param > >( getGC(), m_dims );
-  param_array->resize_v( m_dims, m_size );
-  setNumParams( PARAM_VALUE0+n );
-
-  index_t i = 0;
-  for( ParamArray::iterator p( param_array->begin() ), end( param_array->end() ); p != end; ++p, ++i )
-  {
-    setParam( PARAM_VALUE0+i, new NParam( getGC(), this, "in " + toString( i ), &ConstantArray::set_value, i ) );
-    (*p).reset( getParam( PARAM_VALUE0+i ) );
-  }
-
-  push_back( String::Static( "in" ), Value( param_array ) );
 }
 
 bool ConstantArray::tick( void )
