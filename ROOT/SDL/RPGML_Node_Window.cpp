@@ -91,7 +91,7 @@ const char *Window::getName( void ) const
   return "SDL.Window";
 }
 
-void Window::set_flag( const Value &value, index_t flag )
+void Window::set_flag( const Value &value, index_t flag, int, const index_t* )
 {
   try
   {
@@ -114,8 +114,17 @@ void Window::set_flag( const Value &value, index_t flag )
 
 bool Window::tick( CountPtr< JobQueue > main_thread )
 {
-  if( !hasAnyInputChanged() ) return true;
-  setAllOutputChanged();
+  const bool update_window =
+       m_rgba.isNull()
+    || m_window.isNull()
+    || getInput( INPUT_X )->hasChanged()
+    || getInput( INPUT_Y )->hasChanged()
+    || getInput( INPUT_WIDTH  )->hasChanged()
+    || getInput( INPUT_HEIGHT )->hasChanged()
+    || getInput( INPUT_RED   )->hasChanged()
+    || getInput( INPUT_GREEN )->hasChanged()
+    || getInput( INPUT_BLUE  )->hasChanged()
+    ;
 
   GET_INPUT_IF_CONNECTED( INPUT_TITLE , title , String, 0 );
   GET_INPUT_IF_CONNECTED( INPUT_X     , x     , int   , 0 );
@@ -134,30 +143,26 @@ bool Window::tick( CountPtr< JobQueue > main_thread )
   const index_t *const size = red_base->getSize();
   m_width  = ( width  ? (**width)  : size[ 0 ] );
   m_height = ( height ? (**height) : size[ 1 ] );
-  m_x = ( x ? (**x) : SDL_WINDOWPOS_UNDEFINED );
-  m_y = ( y ? (**y) : SDL_WINDOWPOS_UNDEFINED );
-  m_title = ( title ? (**title) : String::Static( "RPGML.SDL.Window" ) );
+  m_x      = ( x      ? (**x)      : SDL_WINDOWPOS_UNDEFINED );
+  m_y      = ( y      ? (**y)      : SDL_WINDOWPOS_UNDEFINED );
+  m_title  = ( title  ? (**title)  : String::Static( "RPGML.SDL.Window" ) );
 
-  if( m_rgba.isNull() )
+  if( update_window )
   {
-    m_rgba.reset( new Array< uint8_t, 2 >( getGC() ) );
+    if( m_rgba.isNull() )
+    {
+      m_rgba.reset( new Array< uint8_t, 2 >( getGC() ) );
+    }
+    m_rgba->resize( size[ 0 ]*4, size[ 1 ] );
+    fill_rgba( size[ 0 ], size[ 1 ] );
   }
-  m_rgba->resize( size[ 0 ]*4, size[ 1 ] );
-  fill_rgba( size[ 0 ], size[ 1 ] );
 
   if( 0 != main_thread->doJob( m_update ) )
   {
     throw Exception() << "Texture update failed: " << m_error;
   }
 
-  if( 0 != main_thread->doJob( m_purge ) )
-  {
-    if( m_purge->hasExitRequest() )
-    {
-      throw ExitRequest();
-    }
-  }
-
+  purge_events( main_thread );
   check_events();
   return true;
 }
@@ -407,6 +412,17 @@ void Window::handle_event( const SDL_Event &event )
       break;
 
     default: break;
+  }
+}
+
+void Window::purge_events( JobQueue *main_thread )
+{
+  if( 0 != main_thread->doJob( m_purge ) )
+  {
+    if( m_purge->hasExitRequest() )
+    {
+      throw ExitRequest();
+    }
   }
 }
 

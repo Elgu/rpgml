@@ -42,7 +42,7 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  void set_flag( const Value &value, index_t flag );
+  void set_flag( const Value &value, index_t flag, int, const index_t* );
 
 private:
   typedef NodeParam< Window > NParam;
@@ -109,6 +109,7 @@ private:
 
   void fill_rgba( int width, int height );
 
+  void purge_events( JobQueue *main_thread );
   void check_events( void );
   void handle_event( const SDL_Event &event );
   int event_filter( SDL_Event *event );
