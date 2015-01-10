@@ -109,6 +109,9 @@ int main( int argc, char **argv )
     CountPtr< Graph > graph = context->createGraph();
     if( graph->empty() ) return 0;
 
+    graph->merge();
+    gc.run();
+
     CountPtr< ThreadPool > pool = new ThreadPool( &gc, num_threads );
 
     std::cerr << "executing ..." << std::endl;
