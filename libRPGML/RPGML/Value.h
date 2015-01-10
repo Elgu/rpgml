@@ -28,6 +28,7 @@ namespace RPGML {
 
 class String  ;
 class StringData;
+class StringUnifier;
 class ArrayBase   ;
 class Frame     ;
 class Function;
@@ -92,6 +93,8 @@ public:
   Value operator+ ( const Value &right ) const;
   Value operator- ( const Value &right ) const;
   Value operator% ( const Value &right ) const;
+
+  int compare_exactly( const Value &other ) const;
 
   void clear( void );
   void swap( Value &other );
@@ -293,6 +296,8 @@ public:
 
   bool isCollectable( void ) const;
   const Collectable *getCollectable( void ) const;
+
+  Value &unify( StringUnifier *unifier );
 private:
   template< class PrimitiveType >
   static int primitive_compare( PrimitiveType x, PrimitiveType y );
@@ -314,15 +319,15 @@ private:
     float    f   ;
     double   d   ;
 
-    StringData const *str ;
-    ArrayBase      *arr ;
-    Frame          *frame;
-    Function       *func;
-    Node           *node;
-    Output         *out ;
-    Input          *in  ;
-    Param          *param  ;
-    Sequence const *seq ;
+    StringData const *str  ;
+    Frame            *frame;
+    Function         *func ;
+    Node             *node ;
+    Output           *out  ;
+    Input            *in   ;
+    Param            *param;
+    Sequence const   *seq  ;
+    ArrayBase        *arr  ;
   };
   Type m_type;
 };

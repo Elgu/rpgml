@@ -23,6 +23,7 @@
 #include "Function.h"
 #include "Node.h"
 #include "Sequence.h"
+#include "StringUnifier.h"
 
 #include <sstream>
 #include <cmath>
@@ -242,6 +243,15 @@ const Collectable *Value::getCollectable( void ) const
 {
   if( isCollectable() ) return col;
   return 0;
+}
+
+Value &Value::unify( StringUnifier *unifier )
+{
+  if( isString() )
+  {
+    set( unifier->unify( getString() ) );
+  }
+  return (*this);
 }
 
 Value Value::to( Type type ) const
@@ -1188,6 +1198,53 @@ Value Value::operator% ( const Value &right ) const
   }
 
   throw Exception( "left and right must be scalar" );
+}
+
+namespace Value_impl {
+
+  template< class T >
+  static inline
+  int cmp( const T &x1, const T &x2 )
+  {
+    if( x1 == x2 ) return  0;
+    if( x1 <  x2 ) return -1;
+    return 1;
+  }
+
+} // namespace Value_impl
+
+int Value::compare_exactly( const Value &other ) const
+{
+  using namespace Value_impl;
+
+  const int cmp_type = m_type.compare( other.m_type );
+  if( 0 != cmp_type) return cmp_type;
+
+  switch( m_type.getEnum() )
+  {
+    case Type::NIL     : return 0;
+    case Type::BOOL    : return cmp( b   , other.b    );
+    case Type::UINT8   : return cmp( ui8 , other.ui8  );
+    case Type::INT8    : return cmp(  i8 , other. i8  );
+    case Type::UINT16  : return cmp( ui16, other.ui16 );
+    case Type::INT16   : return cmp(  i16, other. i16 );
+    case Type::UINT32  : return cmp( ui32, other.ui32 );
+    case Type::INT32   : return cmp(  i32, other. i32 );
+    case Type::UINT64  : return cmp( ui64, other.ui64 );
+    case Type::INT64   : return cmp(  i64, other. i64 );
+    case Type::FLOAT   : return cmp( f   , other.f    );
+    case Type::DOUBLE  : return cmp( d   , other.d    );
+    case Type::STRING  : return str->compare( *other.str );
+    case Type::FRAME   : return cmp( frame, other.frame );
+    case Type::FUNCTION: return cmp( func , other.func  );
+    case Type::NODE    : return cmp( node , other.node  );
+    case Type::OUTPUT  : return cmp( out  , other.out   );
+    case Type::INPUT   : return cmp( in   , other.in    );
+    case Type::PARAM   : return cmp( param, other.param );
+    case Type::SEQUENCE: return cmp( seq  , other.seq   );
+    case Type::ARRAY   : return cmp( arr  , other.arr   );
+    default: return 0;
+  }
 }
 
 std::ostream &Value::print( std::ostream &o ) const
