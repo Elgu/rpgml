@@ -464,8 +464,9 @@ template< typename T > struct IsFloatingPoint
   static const bool B = ( _E >= Type::FLOAT && _E <= Type::DOUBLE );
 };
 
-template< typename T > struct MakeSigned { static const Type::Enum E = Type::NIL; static const bool B = false; };
+template< typename _T > struct MakeSigned { typedef _T T; static const Type::Enum E = Type::OTHER; static const bool B = false; };
 
+template<> struct MakeSigned< bool     >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
 template<> struct MakeSigned< uint8_t  >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
 template<> struct MakeSigned< int8_t   >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
 template<> struct MakeSigned< uint16_t >{ typedef int16_t T; static const Type::Enum E = Type::INT16 ; static const bool B = true; };

@@ -1039,6 +1039,42 @@ typedef Array< CountPtr< const Sequence >, 4 > SequenceArray4D;
 typedef Array< CountPtr< ArrayBase      >, 4 >    ArrayArray4D;
 typedef Array< int                       , 4 >      IntArray4D;
 
+template< class Element, int Dims >
+struct MakeSigned< Array< Element, Dims > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef Array< SignedElement, Dims > T;
+  static const Type::Enum E = Type::OTHER;
+  static const bool B = true;
+};
+
+template< class Element >
+struct MakeSigned< ArrayElements< Element > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef ArrayElements< SignedElement > T;
+  static const Type::Enum E = Type::OTHER;
+  static const bool B = true;
+};
+
+template< class Element, int Dims >
+struct MakeSigned< CountPtr< Array< Element, Dims > > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef CountPtr< Array< SignedElement, Dims > > T;
+  static const Type::Enum E = Type::ARRAY;
+  static const bool B = true;
+};
+
+template< class Element >
+struct MakeSigned< CountPtr< ArrayElements< Element > > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef CountPtr< ArrayElements< SignedElement > > T;
+  static const Type::Enum E = Type::ARRAY;
+  static const bool B = true;
+};
+
 } // namespace RPGML
 
 namespace std {
