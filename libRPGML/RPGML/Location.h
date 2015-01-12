@@ -54,6 +54,9 @@ public:
     , const Location *_parent=0
     );
 
+  explicit
+  Location( const Location *copy_location, const Location *_parent );
+
   virtual ~Location( void );
 
   std::ostream &print( std::ostream &o, bool with_filename=true, bool is_parent=false ) const;

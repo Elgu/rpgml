@@ -31,6 +31,13 @@ Location::Location(
 , parent( _parent )
 {}
 
+Location::Location( const Location *copy_location, const Location *_parent )
+: filename( copy_location->filename )
+, begin( copy_location->begin )
+, end( copy_location->end )
+, parent( _parent )
+{}
+
 Location::~Location( void )
 {}
 
