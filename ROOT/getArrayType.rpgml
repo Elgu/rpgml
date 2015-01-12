@@ -1,0 +1,5 @@
+
+Function getArrayType( x )
+{
+  return get( x, "type" );
+}

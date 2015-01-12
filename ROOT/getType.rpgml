@@ -1,0 +1,6 @@
+
+Function getType( x )
+{
+  return get( x, "type" );
+}
+

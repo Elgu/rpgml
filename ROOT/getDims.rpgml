@@ -1,0 +1,5 @@
+
+Function getDims( x )
+{
+  return get( x, "dims" );
+}
