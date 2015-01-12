@@ -55,13 +55,19 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
   }
   const String &what_str = what.getString();
 
+  if( what_str == "type" )
+  {
+    ret = Value( scope->unify( in.getTypeName() ) );
+    return true;
+  }
+
   if( in.isOutput() )
   {
     CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".Get" ) ) );
 
     in.getOutput()->connect( node->getInput( "in" ) );
 
-    if( what_str == "type" )
+    if( what_str == "array_type" )
     {
       ret = Value( node->getOutput( String::Static( "type" ) ) );
       return true;
@@ -89,9 +95,9 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
   {
     const ArrayBase *const in_array = in.getArray();
 
-    if( what_str == "type" )
+    if( what_str == "array_type" )
     {
-      ret = Value( in_array->getTypeName() );
+      ret = Value( scope->unify( in_array->getTypeName() ) );
       return true;
     }
 
@@ -128,8 +134,27 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
   }
   else
   {
+    if( what_str == "array_type" )
+    {
+      throw Exception()
+        << "Type of 'in' must be Output or Array for 'array_type', is " << in.getTypeName()
+        ;
+    }
+
+    if( what_str == "dims" )
+    {
+      ret = Value( int( 0 ) );
+      return true;
+    }
+
+    if( what_str == "size" )
+    {
+      ret = Value( new Array< index_t, 1 >( getGC() ) );
+      return true;
+    }
+
     throw Exception()
-      << "Type of 'in' must be Array or Output, is " << in.getType()
+      << "Unknown 'what'-string '" << what_str << "'"
       ;
   }
 
