@@ -39,7 +39,7 @@ Function_TEMPLATE::~Function_TEMPLATE( void )
 
 const char *Function_TEMPLATE::getName( void ) const
 {
-  return "TEMPLATE";
+  return "TEMPLATE_NAME";
 }
 
 void Function_TEMPLATE::gc_clear( void )

@@ -21,6 +21,7 @@
 #include <RPGML/Function.h>
 
 namespace RPGML {
+ADDITIONAL_NAMESPACES_BEGIN
 
 class Function_TEMPLATE : public Function
 {
@@ -47,6 +48,7 @@ private:
   CountPtr< Args > genDeclArgs( void );
 };
 
+ADDITIONAL_NAMESPACES_END
 } // namespace RPGML
 
 #endif
