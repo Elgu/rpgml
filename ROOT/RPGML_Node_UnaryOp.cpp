@@ -62,12 +62,12 @@ void UnaryOp::set_op( const Value &value, index_t, int, const index_t* )
 namespace UnaryOp_impl {
 
 template< class T, UOP OP > struct op_impl {};
-template< class T > struct op_impl< T, UOP_MINUS   > { typedef T    Ret; static Ret doit( const T &x ) { return  x; } };
-template< class T > struct op_impl< T, UOP_PLUS    > { typedef T    Ret; static Ret doit( const T &x ) { return -x; } };
-template< class T > struct op_impl< T, UOP_LOG_NOT > { typedef bool Ret; static Ret doit( const T &x ) { return !x; } };
-template< class T > struct op_impl< T, UOP_BIT_NOT > { typedef T    Ret; static Ret doit( const T &x ) { return ~x; } };
+template< class T > struct op_impl< T, UOP_MINUS   > { typedef T    Ret; Ret operator()( const T &x ) const { return  x; } };
+template< class T > struct op_impl< T, UOP_PLUS    > { typedef T    Ret; Ret operator()( const T &x ) const { return -x; } };
+template< class T > struct op_impl< T, UOP_LOG_NOT > { typedef bool Ret; Ret operator()( const T &x ) const { return !x; } };
+template< class T > struct op_impl< T, UOP_BIT_NOT > { typedef T    Ret; Ret operator()( const T &x ) const { return ~x; } };
 
-template<> struct op_impl< float, UOP_BIT_NOT > { static float doit( const float & ) { throw UnaryOp::Exception( "binary not not supported for floating point types" ); return float(); } };
+template<> struct op_impl< float, UOP_BIT_NOT > { float operator()( const float & ) const { throw UnaryOp::Exception( "binary not not supported for floating point types" ); } };
 
 template< class T, UOP OP >
 struct impl
@@ -75,15 +75,15 @@ struct impl
   typedef op_impl< T, OP > Op;
   typedef typename Op::Ret Ret;
 
-  static
-  bool doit( const ArrayElements< T > *in, ArrayElements< Ret > *out )
+  bool operator()( const ArrayElements< T > *in, ArrayElements< Ret > *out ) const
   {
+    const Op op;
     typename ArrayElements< Ret >::iterator o_iter = out->begin();
     typename ArrayElements< T >::const_iterator i_iter = in->begin();
     const index_t n = in->size();
     for( index_t i=0; i<n; ++i, ++i_iter, ++o_iter )
     {
-      (*o_iter) = Op::doit( (*i_iter) );
+      (*o_iter) = op( (*i_iter) );
     }
 
     return true;
@@ -100,6 +100,7 @@ bool UnaryOp::tick2( const ArrayBase *in_base )
 
   typedef impl< T, OP > Impl;
   typedef typename Impl::Ret Ret;
+  const Impl impl;
 
   const ArrayElements< T > *in = 0;
   if( !in_base->getAs( in ) ) throw GetAsFailed( getInput( INPUT_IN ), in );
@@ -113,7 +114,7 @@ bool UnaryOp::tick2( const ArrayBase *in_base )
   ArrayElements< Ret > *out = 0;
   if( !output->getData()->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
 
-  return Impl::doit( in, out );
+  return impl( in, out );
 }
 
 template< UOP OP >
