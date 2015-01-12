@@ -452,6 +452,18 @@ template< typename T > struct IsPrimitive
   static const bool B = ( _E >= Type::BOOL && _E <= Type::STRING );
 };
 
+template< typename T > struct IsInteger
+{
+  static const Type::Enum _E = TypeOf< T >::E;
+  static const bool B = ( _E >= Type::BOOL && _E < Type::FLOAT );
+};
+
+template< typename T > struct IsFloatingPoint
+{
+  static const Type::Enum _E = TypeOf< T >::E;
+  static const bool B = ( _E >= Type::FLOAT && _E <= Type::DOUBLE );
+};
+
 template< typename T > struct MakeSigned { static const Type::Enum E = Type::NIL; static const bool B = false; };
 
 template<> struct MakeSigned< uint8_t  >{ typedef int8_t  T; static const Type::Enum E = Type::INT8  ; static const bool B = true; };
@@ -503,6 +515,27 @@ struct RetType
     );
 
   typedef typename EnumType< E >::T T;
+};
+
+template< class IN >
+struct AppropFloat
+{
+  static const Type::Enum IN_E = TypeOf< IN >::E;
+
+  static const int is_scalar = IsScalar< IN >::B;
+
+  static const Type::Enum ScalarE =
+    ( IN_E < Type::UINT64
+    ? Type::FLOAT // integers with less than 64 bit
+    : ( IN_E == Type::FLOAT
+      ? Type::FLOAT // float
+      : Type::DOUBLE // double and 64 bit integers and others
+      )
+    );
+  typedef typename EnumType< ScalarE >::T ScalarT;
+
+  typedef typename SelectType< is_scalar, IN, ScalarT >::T T;
+  static const Type::Enum E = TypeOf< T >::E;
 };
 
 template< class T >
