@@ -24,7 +24,8 @@ namespace RPGML {
 
 enum BOP
 {
-    BOP_LEFT
+    BOP_UNDEFINED
+  , BOP_LEFT
   , BOP_RIGHT
   , BOP_LT
   , BOP_LE
@@ -43,7 +44,6 @@ enum BOP
   , BOP_ADD
   , BOP_SUB
   , BOP_MOD
-  , BOP_UNDEFINED
 };
 
 static inline
@@ -52,7 +52,8 @@ const char *getBOPStr( BOP bop )
   static
   const char *const op[] =
   {
-      "<<", ">>"
+      "undefined"
+    , "<<", ">>"
     , "<", "<="
     , ">", ">="
     , "==" , "!="
@@ -60,7 +61,6 @@ const char *getBOPStr( BOP bop )
     , "&", "|", "^"
     , "*", "/", "+", "-"
     , "%"
-    , "undefined"
   };
   return op[ bop ];
 }
@@ -76,7 +76,6 @@ BOP getBOP( const char *const bop )
         case '\0': return BOP_LT;
         case  '<': return BOP_LEFT;
         case  '=': return BOP_LE;
-        default: goto fail;
       }
       break;
     case '>':
@@ -85,21 +84,18 @@ BOP getBOP( const char *const bop )
         case '\0': return BOP_GT;
         case  '>': return BOP_RIGHT;
         case  '=': return BOP_GE;
-        default: goto fail;
       }
       break;
     case '=':
       switch( bop[ 1 ] )
       {
         case  '=': return BOP_EQ;
-        default: goto fail;
       }
       break;
     case '!':
       switch( bop[ 1 ] )
       {
         case  '=': return BOP_NE;
-        default: goto fail;
       }
       break;
     case '&':
@@ -107,7 +103,6 @@ BOP getBOP( const char *const bop )
       {
         case '\0': return BOP_BIT_AND;
         case  '&': return BOP_LOG_AND;
-        default: goto fail;
       }
       break;
     case '|':
@@ -115,7 +110,6 @@ BOP getBOP( const char *const bop )
       {
         case '\0': return BOP_BIT_OR;
         case  '|': return BOP_LOG_OR;
-        default: goto fail;
       }
       break;
     case '^':
@@ -123,59 +117,50 @@ BOP getBOP( const char *const bop )
       {
         case '\0': return BOP_BIT_XOR;
         case  '^': return BOP_LOG_XOR;
-        default: goto fail;
       }
       break;
     case '*':
       switch( bop[ 1 ] )
       {
         case '\0': return BOP_MUL;
-        default: goto fail;
       }
       break;
     case '/':
       switch( bop[ 1 ] )
       {
         case '\0': return BOP_DIV;
-        default: goto fail;
       }
       break;
     case '+':
       switch( bop[ 1 ] )
       {
         case '\0': return BOP_ADD;
-        default: goto fail;
       }
       break;
     case '-':
       switch( bop[ 1 ] )
       {
         case '\0': return BOP_SUB;
-        default: goto fail;
       }
       break;
     case '%':
       switch( bop[ 1 ] )
       {
         case '\0': return BOP_MOD;
-        default: goto fail;
       }
       break;
-    default:
-      goto fail;
   }
 
-fail:
-  throw Exception() << "undefined binary op";
+  throw Exception() << "Invalid binary op '" << bop << "'";
 }
 
 enum UOP
 {
-    UOP_MINUS
+    UOP_UNDEFINED
+  , UOP_MINUS
   , UOP_PLUS
   , UOP_LOG_NOT
   , UOP_BIT_NOT
-  , UOP_UNDEFINED
 };
 
 static inline
@@ -183,7 +168,10 @@ const char *getUOPStr( UOP uop )
 {
   static
   const char *const op[] =
-  { "-", "+", "!", "~", "undefined" };
+  {
+      "undefined"
+    , "-", "+", "!", "~"
+  };
   return op[ uop ];
 }
 
@@ -198,11 +186,10 @@ UOP getUOP( const char *uop )
     case '+': return UOP_PLUS;
     case '!': return UOP_LOG_NOT;
     case '~': return UOP_BIT_NOT;
-    default: goto fail;
   }
 
 fail:
-  throw Exception() << "undefined unary op";
+  throw Exception() << "Invalid unary op '" << uop << "'";
 }
 
 enum ASSIGN
