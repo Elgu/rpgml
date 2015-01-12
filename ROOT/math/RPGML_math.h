@@ -119,14 +119,14 @@ MOP1 getMOP1( const char *op )
   throw Exception() << "Invalid math op '" << op << "'";
 };
 
-template< class _T, MOP1 op > struct MathOp1 {};
+template< class _T, MOP1 op > struct MathOp1 { typedef _T T, Ret; };
 
 template< class _T >
 struct MathOp1< _T, MOP1_MINUS >
 {
   typedef _T T;
   typedef typename MakeSigned< _T >::T Ret;
-  Ret operator()( const T &x ) const { return -Ret( x ); }
+  Ret operator()( const T &x ) const { return Ret( -Ret( x ) ); }
 };
 
 template< class _T >
@@ -145,10 +145,10 @@ struct MathOp1< _T, MOP1_LOG_NOT >
 };
 
 template< class _T >
-struct MathOp1< _T, MOP1_BIN_NOT >
+struct MathOp1< _T, MOP1_BIT_NOT >
 {
   typedef _T T;
-  typedef SelectType< int( IsInteger< T >::B ), uint8_t, T >::T Ret;
+  typedef typename SelectType< int( IsInteger< T >::B ), uint8_t, T >::T Ret;
   Ret operator()( const T &x ) const
   {
     if( !IsInteger< T >::B )
@@ -157,19 +157,19 @@ struct MathOp1< _T, MOP1_BIN_NOT >
         << "Operator '~' only supported for integer types, is " << getTypeName< T >()
         ;
     }
-    return ~Ret( x );
+    return Ret( ~Ret( x ) );
   }
 };
 
 #define DEFINE_FLOAT_MATHOP1( mop1, func ) \
-  template<> \
-  struct MathOp1< _T, mpo1 > \
+  template< class _T > \
+  struct MathOp1< _T, mop1 > \
   { \
     typedef _T T; \
     typedef typename AppropFloat< T >::T Ret; \
-    Ret f( float x ) { return func ## f( x ); } \
-    Ret f( double x ) { return func( x ); } \
-    Ret operator()( const T &x ) const { return f( Ret( x ); } \
+    Ret f( float x ) const { return func ## f( x ); } \
+    Ret f( double x ) const { return func( x ); } \
+    Ret operator()( const T &x ) const { return f( Ret( x ) ); } \
   }
 
 DEFINE_FLOAT_MATHOP1( MOP1_SIN  , sin   );
@@ -303,7 +303,7 @@ struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >
 {
   typedef const ArrayBase *T;
   static const MOP1 op = _op;
-  typedef MathOp1< Element, op > ElementOp;
+  typedef mathOp1_t< Element, op > ElementOp;
   typedef typename ElementOp::Ret RetElement;
   typedef CountPtr< ArrayElements< RetElement > > Ret;
 
