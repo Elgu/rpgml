@@ -57,6 +57,8 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 private:
+  template< class T >
+  void addGlobal( const char *static_identifier, const T &value );
   CountPtr< Frame > m_root;
   CountPtr< StringUnifier > m_unifier;
   std::vector< String > m_searchPaths;

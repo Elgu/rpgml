@@ -23,6 +23,7 @@
 #include "StringUnifier.h"
 
 #include <string>
+#include <cmath>
 
 namespace RPGML {
 
@@ -33,7 +34,25 @@ Context::Context( GarbageCollector *_gc, StringUnifier *unifier, const String &s
 {
   m_root = new Frame( getGC() );
   setSearchPath( searchPath );
-  m_root->push_back( String::Static( "@needed" ), Value( new Array< CountPtr< Node >, 1 >( getGC() ) ) );
+  addGlobal( "@needed", new Array< CountPtr< Node >, 1 >( getGC() ) );
+  addGlobal( "M_E"       , M_E        );
+  addGlobal( "M_LOG10E"  , M_LOG10E   );
+  addGlobal( "M_LN2"     , M_LN2      );
+  addGlobal( "M_LN10"    , M_LN10     );
+  addGlobal( "M_PI"      , M_PI       );
+  addGlobal( "M_PI_2"    , M_PI_2     );
+  addGlobal( "M_PI_4"    , M_PI_4     );
+  addGlobal( "M_1_PI"    , M_1_PI     );
+  addGlobal( "M_2_PI"    , M_2_PI     );
+  addGlobal( "M_2_SQRTPI", M_2_SQRTPI );
+  addGlobal( "M_SQRT2"   , M_SQRT2	  );
+  addGlobal( "M_SQRT1_2" , M_SQRT1_2  );
+}
+
+template< class T >
+void Context::addGlobal( const char *static_identifier, const T &value )
+{
+  m_root->push_back( String::Static( static_identifier ), Value( value ) );
 }
 
 Context::~Context( void )
