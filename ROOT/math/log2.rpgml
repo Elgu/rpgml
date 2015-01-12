@@ -1,0 +1,5 @@
+
+Function log2( x )
+{
+  return math.mathOp1( "log2", x );
+}

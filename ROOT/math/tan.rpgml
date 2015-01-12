@@ -1,0 +1,5 @@
+
+Function tan( x )
+{
+  return math.mathOp1( "tan", x );
+}

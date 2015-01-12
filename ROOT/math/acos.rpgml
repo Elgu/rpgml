@@ -1,0 +1,5 @@
+
+Function acos( x )
+{
+  return math.mathOp1( "acos", x );
+}

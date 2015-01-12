@@ -1,0 +1,5 @@
+
+Function sqrt( x )
+{
+  return math.mathOp1( "sqrt", x );
+}

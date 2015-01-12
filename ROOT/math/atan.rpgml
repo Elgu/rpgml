@@ -1,0 +1,5 @@
+
+Function atan( x )
+{
+  return math.mathOp1( "atan", x );
+}

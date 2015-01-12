@@ -1,0 +1,5 @@
+
+Function cos( x )
+{
+  return math.mathOp1( "cos", x );
+}

@@ -1,0 +1,5 @@
+
+Function asin( x )
+{
+  return math.mathOp1( "asin", x );
+}

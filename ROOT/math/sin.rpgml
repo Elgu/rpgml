@@ -1,0 +1,5 @@
+
+Function sin( x )
+{
+  return math.mathOp1( "sin", x );
+}

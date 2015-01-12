@@ -1,0 +1,5 @@
+
+Function exp10( x )
+{
+  return math.mathOp1( "exp10", x );
+}
