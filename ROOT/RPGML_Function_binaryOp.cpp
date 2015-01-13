@@ -206,13 +206,13 @@ bool Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth,
 {
   using namespace binaryOp_impl;
 
-  if( n_args != NUM_ARGS ) throw "wrong number of arguments.";
+  if( n_args != NUM_ARGS ) throw Exception() << "Function 'binaryOp' requires 2 arguments, specified " << n_args;
 
   const Value &op_v  = args[ ARG_OP   ];
   const Value &left  = args[ ARG_LEFT ];
   const Value &right = args[ ARG_RIGHT ];
 
-  if( !op_v.isString() ) throw "'op' argument must be string";
+  if( !op_v.isString() ) throw Exception() << "Argument 'op' must be string, is " << op_v.getType();
 
   if( left.isOutput() || right.isOutput() )
   {
@@ -225,7 +225,7 @@ bool Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth,
     node->getParam( "op"  )->set( op_v );
     node->getInput( "in2" )->connect( right_output );
 
-    ret = *node->getVariable( "out" );
+    ret = Value( node->getOutput( "out" ) );
     return true;
   }
 
