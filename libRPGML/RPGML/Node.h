@@ -215,7 +215,7 @@ public:
 
   void setChanged( bool changed=true );
 
-  void setData( ArrayBase *data );
+  void setData( CountPtr< ArrayBase > data );
   ArrayBase *getData( void );
   const ArrayBase *getData( void ) const;
 

@@ -142,9 +142,9 @@ Output::~Output( void )
   disconnect();
 }
 
-void Output::setData( ArrayBase *data )
+void Output::setData( CountPtr< ArrayBase > data )
 {
-  m_data = data;
+  m_data.swap( data );
 }
 
 ArrayBase *Output::getData( void )
