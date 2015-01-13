@@ -464,13 +464,15 @@ Frame::Ref Frame::load( const String &identifier, const Scope *scope )
   Frame *curr_frame = this;
   size_t dot_pos = 0;
   size_t identifier_begin = 0;
-  while( String::npos != ( dot_pos = identifier.find( '.', dot_pos ) ) )
+  while( String::npos != ( dot_pos = identifier.find( '.', identifier_begin ) ) )
   {
     const String frame_identifier = identifier.mid( identifier_begin, dot_pos-1 );
     if( frame_identifier.empty() )
     {
       throw Exception()
         << "Identifier '" << identifier << "' contains an empty frame identifier between two '.'"
+        << ": identifier_begin = " << identifier_begin
+        << ", dot_pos = " << dot_pos
         ;
     }
 
@@ -497,7 +499,9 @@ Frame::Ref Frame::load( const String &identifier, const Scope *scope )
     identifier_begin = dot_pos+1;
   }
 
-  const index_t index = curr_frame->getIndex( identifier );
+  String load_identifier( identifier_begin > 0 ? identifier.mid( identifier_begin ) : identifier );
+
+  const index_t index = curr_frame->getIndex( load_identifier );
   if( index != unknown )
   {
     return Ref( curr_frame, index );
@@ -509,11 +513,11 @@ Frame::Ref Frame::load( const String &identifier, const Scope *scope )
   {
     if( is_root )
     {
-      return curr_frame->load_global( identifier, scope );
+      return curr_frame->load_global( load_identifier, scope );
     }
     else
     {
-      return curr_frame->load_local( identifier, scope );
+      return curr_frame->load_local( load_identifier, scope );
     }
   }
 
