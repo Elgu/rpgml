@@ -1,0 +1,17 @@
+*.o
+*.o.LDFLAGS
+*.o.CXXFLAGS
+.*.dep
+.depend
+.*.swp
+*.so
+core
+/libRPGML/utest/utest_main
+/rpgml/rpgml
+.parser_files
+/libRPGML/RPGML/location.hh
+/libRPGML/RPGML/position.hh
+/libRPGML/RPGML/rpgml.output
+/libRPGML/RPGML/rpgml.tab.cc
+/libRPGML/RPGML/rpgml.tab.hh
+/libRPGML/RPGML/stack.hh
