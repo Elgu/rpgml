@@ -119,10 +119,10 @@ MOP1 getMOP1( const char *op )
   throw Exception() << "Invalid math op '" << op << "'";
 };
 
-template< class _T, MOP1 op > struct MathOp1 { typedef _T T, Ret; };
+template< class _T, MOP1 op > struct MathOp1_op { typedef _T T, Ret; };
 
 template< class _T >
-struct MathOp1< _T, MOP1_MINUS >
+struct MathOp1_op< _T, MOP1_MINUS >
 {
   typedef _T T;
   typedef typename MakeSigned< _T >::T Ret;
@@ -130,14 +130,14 @@ struct MathOp1< _T, MOP1_MINUS >
 };
 
 template< class _T >
-struct  MathOp1< _T, MOP1_PLUS >
+struct  MathOp1_op< _T, MOP1_PLUS >
 {
   typedef _T T, Ret;
   Ret operator()( const T &x ) const { return x; }
 };
 
 template< class _T >
-struct MathOp1< _T, MOP1_LOG_NOT >
+struct MathOp1_op< _T, MOP1_LOG_NOT >
 {
   typedef _T T;
   typedef bool Ret;
@@ -145,7 +145,7 @@ struct MathOp1< _T, MOP1_LOG_NOT >
 };
 
 template< class _T >
-struct MathOp1< _T, MOP1_BIT_NOT >
+struct MathOp1_op< _T, MOP1_BIT_NOT >
 {
   typedef _T T;
   typedef typename SelectType< int( IsInteger< T >::B ), uint8_t, T >::T Ret;
@@ -163,7 +163,7 @@ struct MathOp1< _T, MOP1_BIT_NOT >
 
 #define DEFINE_FLOAT_MATHOP1( mop1, func ) \
   template< class _T > \
-  struct MathOp1< _T, mop1 > \
+  struct MathOp1_op< _T, mop1 > \
   { \
     typedef _T T; \
     typedef typename AppropFloat< T >::T Ret; \
@@ -193,7 +193,7 @@ struct mathOp1_t
 {
   typedef _T T;
   static const MOP1 op = _op;
-  typedef MathOp1< T, op > Op;
+  typedef MathOp1_op< T, op > Op;
   typedef typename Op::Ret Ret;
 
   Ret operator()( const T &x ) const
@@ -203,9 +203,15 @@ struct mathOp1_t
 };
 
 template< MOP1 _op > struct mathOp1_t< Value, _op >;
+template< MOP1 _op > struct mathOp1_t< const ArrayBase*, _op >;
 template< MOP1 _op > struct mathOp1_t< CountPtr< ArrayBase >, _op >;
+template< MOP1 _op > struct mathOp1_t< CountPtr< const ArrayBase >, _op >;
+template< MOP1 _op > struct mathOp1_t< const ArrayElements< Value >*, _op >;
 template< MOP1 _op > struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >;
-template< MOP1 _op, class ArrayType > struct mathOp1_t< CountPtr< ArrayElements< ArrayType > >, _op >;
+template< MOP1 _op > struct mathOp1_t< CountPtr< const ArrayElements< Value > >, _op >;
+template< MOP1 _op, class Element > struct mathOp1_t< const ArrayElements< Element >*, _op >;
+template< MOP1 _op, class Element > struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >;
+template< MOP1 _op, class Element > struct mathOp1_t< CountPtr< const ArrayElements< Element > >, _op >;
 
 template< MOP1 _op >
 struct mathOp1_t< Value, _op >
@@ -229,7 +235,7 @@ struct mathOp1_t< Value, _op >
       case Type::INT64 : return Value( mathOp1_t< int64_t , op >()( x.getInt64 () ) );
       case Type::FLOAT : return Value( mathOp1_t< float   , op >()( x.getFloat () ) );
       case Type::DOUBLE: return Value( mathOp1_t< double  , op >()( x.getDouble() ) );
-      case Type::ARRAY : return Value( mathOp1_t< CountPtr< ArrayBase >, op >()( x.getArray() ) );
+      case Type::ARRAY : return Value( mathOp1_t< const ArrayBase*, op >()( x.getArray() ) );
       default:
         throw Exception() << "Unsupported Type";
     }
@@ -237,7 +243,7 @@ struct mathOp1_t< Value, _op >
 };
 
 template< MOP1 _op >
-struct mathOp1_t< CountPtr< ArrayBase >, _op >
+struct mathOp1_t< const ArrayBase*, _op >
 {
   typedef const ArrayBase *T;
   static const MOP1 op = _op;
@@ -270,7 +276,33 @@ struct mathOp1_t< CountPtr< ArrayBase >, _op >
 };
 
 template< MOP1 _op >
-struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >
+struct mathOp1_t< CountPtr< ArrayBase >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef CountPtr< ArrayBase > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayBase*, _op >()( x );
+  }
+};
+
+template< MOP1 _op >
+struct mathOp1_t< CountPtr< const ArrayBase >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef CountPtr< ArrayBase > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayBase*, _op >()( x );
+  }
+};
+
+template< MOP1 _op >
+struct mathOp1_t< const ArrayElements< Value >*, _op >
 {
   typedef const ArrayBase *T;
   static const MOP1 op = _op;
@@ -298,8 +330,34 @@ struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >
   }
 };
 
+template< MOP1 _op >
+struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef CountPtr< ArrayElements< Value > > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayElements< Value >*, _op >()( x );
+  }
+};
+
+template< MOP1 _op >
+struct mathOp1_t< CountPtr< const ArrayElements< Value > >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef CountPtr< ArrayElements< Value > > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayElements< Value >*, _op >()( x );
+  }
+};
+
 template< MOP1 _op, class Element >
-struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >
+struct mathOp1_t< const ArrayElements< Element >*, _op >
 {
   typedef const ArrayBase *T;
   static const MOP1 op = _op;
@@ -337,9 +395,39 @@ struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >
   }
 };
 
-template< class T >
+template< MOP1 _op, class Element >
+struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef mathOp1_t< Element, op > ElementOp;
+  typedef typename ElementOp::Ret RetElement;
+  typedef CountPtr< ArrayElements< RetElement > > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayElements< Element >*, _op >()( x );
+  }
+};
+
+template< MOP1 _op, class Element >
+struct mathOp1_t< CountPtr< const ArrayElements< Element > >, _op >
+{
+  typedef const ArrayBase *T;
+  static const MOP1 op = _op;
+  typedef mathOp1_t< Element, op > ElementOp;
+  typedef typename ElementOp::Ret RetElement;
+  typedef CountPtr< ArrayElements< RetElement > > Ret;
+
+  Ret operator()( const T &x ) const
+  {
+    return mathOp1_t< const ArrayElements< Element >*, _op >()( x );
+  }
+};
+
+template< class T, class Ret=T >
 static
-typename MathOp1< T, MOP1_UNDEFINED >::Ret mathOp1( MOP1 op, const T &x )
+Ret mathOp1( MOP1 op, const T &x )
 {
   switch( op )
   {
