@@ -39,6 +39,16 @@ class Param   ;
 class Sequence;
 class Collectable;
 
+#if 1
+#define Value_assert assert
+#else
+static inline
+void Value_assert( bool b )
+{
+  if( !b ) throw Exception() << "Assertion failed";
+}
+#endif
+
 class Value
 {
 public:
@@ -199,26 +209,26 @@ public:
   bool isInteger( void ) const { return getType().isInteger(); }
   bool isPrimitive( void ) const { return getType().isPrimitive(); }
 
-  bool            getBool     ( void ) const { assert( isBool  () ); return b   ; }
-  uint8_t         getUInt8    ( void ) const { assert( isUInt8 () ); return ui8 ; }
-  int8_t          getInt8     ( void ) const { assert( isInt8  () ); return  i8 ; }
-  uint16_t        getUInt16   ( void ) const { assert( isUInt16() ); return ui16; }
-  int16_t         getInt16    ( void ) const { assert( isInt16 () ); return  i16; }
-  uint32_t        getUInt32   ( void ) const { assert( isUInt32() ); return ui32; }
-  int32_t         getInt32    ( void ) const { assert( isInt32 () ); return  i32; }
-  uint64_t        getUInt64   ( void ) const { assert( isUInt64() ); return ui64; }
-  int64_t         getInt64    ( void ) const { assert( isInt64 () ); return  i64; }
-  float           getFloat    ( void ) const { assert( isFloat () ); return f   ; }
-  double          getDouble   ( void ) const { assert( isDouble() ); return d   ; }
-  String          getString  ( void ) const { assert( isString  () ); return String( str ); }
-  ArrayBase      *getArray   ( void ) const { assert( isArray   () ); return arr ; }
-  Frame          *getFrame   ( void ) const { assert( isFrame   () ); return frame; }
-  Function       *getFunction( void ) const { assert( isFunction() ); return func; }
-  Node           *getNode    ( void ) const { assert( isNode    () ); return node; }
-  Output         *getOutput  ( void ) const { assert( isOutput  () ); return out ; }
-  Input          *getInput   ( void ) const { assert( isInput   () ); return in  ; }
-  Param          *getParam   ( void ) const { assert( isParam   () ); return param  ; }
-  Sequence const *getSequence( void ) const { assert( isSequence() ); return seq ; }
+  bool            getBool     ( void ) const { Value_assert( isBool  () ); return b   ; }
+  uint8_t         getUInt8    ( void ) const { Value_assert( isUInt8 () ); return ui8 ; }
+  int8_t          getInt8     ( void ) const { Value_assert( isInt8  () ); return  i8 ; }
+  uint16_t        getUInt16   ( void ) const { Value_assert( isUInt16() ); return ui16; }
+  int16_t         getInt16    ( void ) const { Value_assert( isInt16 () ); return  i16; }
+  uint32_t        getUInt32   ( void ) const { Value_assert( isUInt32() ); return ui32; }
+  int32_t         getInt32    ( void ) const { Value_assert( isInt32 () ); return  i32; }
+  uint64_t        getUInt64   ( void ) const { Value_assert( isUInt64() ); return ui64; }
+  int64_t         getInt64    ( void ) const { Value_assert( isInt64 () ); return  i64; }
+  float           getFloat    ( void ) const { Value_assert( isFloat () ); return f   ; }
+  double          getDouble   ( void ) const { Value_assert( isDouble() ); return d   ; }
+  String          getString  ( void ) const { Value_assert( isString  () ); return String( str ); }
+  ArrayBase      *getArray   ( void ) const { Value_assert( isArray   () ); return arr ; }
+  Frame          *getFrame   ( void ) const { Value_assert( isFrame   () ); return frame; }
+  Function       *getFunction( void ) const { Value_assert( isFunction() ); return func; }
+  Node           *getNode    ( void ) const { Value_assert( isNode    () ); return node; }
+  Output         *getOutput  ( void ) const { Value_assert( isOutput  () ); return out ; }
+  Input          *getInput   ( void ) const { Value_assert( isInput   () ); return in  ; }
+  Param          *getParam   ( void ) const { Value_assert( isParam   () ); return param  ; }
+  Sequence const *getSequence( void ) const { Value_assert( isSequence() ); return seq ; }
 
   int             getInt     ( void ) const { return getInt32(); }
 

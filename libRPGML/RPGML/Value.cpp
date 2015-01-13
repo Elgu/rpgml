@@ -24,6 +24,7 @@
 #include "Node.h"
 #include "Sequence.h"
 #include "StringUnifier.h"
+#include "ParseException.h"
 
 #include <sstream>
 #include <cmath>
@@ -550,7 +551,7 @@ bool Value::operator< ( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () < r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() < r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -561,14 +562,12 @@ bool Value::operator< ( const Value &right ) const
   {
     return ( left.getP() < right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      << " directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '<': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator<=( const Value &right ) const
@@ -595,7 +594,7 @@ bool Value::operator<=( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () <= r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() <= r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -606,14 +605,12 @@ bool Value::operator<=( const Value &right ) const
   {
     return ( left.getP() <= right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      << " directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '<=': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator> ( const Value &right ) const
@@ -640,7 +637,7 @@ bool Value::operator> ( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () > r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() > r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -651,14 +648,12 @@ bool Value::operator> ( const Value &right ) const
   {
     return ( left.getP() > right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      <<" directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '>': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator>=( const Value &right ) const
@@ -685,7 +680,7 @@ bool Value::operator>=( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () >= r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() >= r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -696,14 +691,12 @@ bool Value::operator>=( const Value &right ) const
   {
     return ( left.getP() >= right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      << " directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '>=': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator==( const Value &right ) const
@@ -730,7 +723,7 @@ bool Value::operator==( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () == r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() == r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -741,14 +734,12 @@ bool Value::operator==( const Value &right ) const
   {
     return ( left.getP() == right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      << " directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '==': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator!=( const Value &right ) const
@@ -775,7 +766,7 @@ bool Value::operator!=( const Value &right ) const
       case Type::FLOAT : return ( l.getFloat () != r.getFloat () );
       case Type::DOUBLE: return ( l.getDouble() != r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isString() )
@@ -786,14 +777,12 @@ bool Value::operator!=( const Value &right ) const
   {
     return ( left.getP() != right.getP() );
   }
-  else
-  {
-    throw Exception()
-      << "Cannot compare " << left.getTypeName()
-      << " and " << right.getTypeName()
-      << " directly"
-      ;
-  }
+
+  throw Exception()
+    << "Operator '!=': Cannot compare " << left.getTypeName()
+    << " and " << right.getTypeName()
+    << " directly"
+    ;
 }
 
 bool Value::operator&&( const Value &right ) const
@@ -805,18 +794,12 @@ bool Value::operator&&( const Value &right ) const
     const Value r = right.to( Type::BOOL );
     return ( l && r );
   }
-  else if( !left.isScalar() )
-  {
-    throw Exception( "left must be scalar" );
-  }
-  else if( !right.isScalar() )
-  {
-    throw Exception( "right must be scalar" );
-  }
-  else
-  {
-    throw Exception( "left and right must be scalar" );
-  }
+
+  throw Exception()
+    << "Operator '&&': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 bool Value::operator||( const Value &right ) const
@@ -828,18 +811,12 @@ bool Value::operator||( const Value &right ) const
     const Value r = right.to( Type::BOOL );
     return ( l || r );
   }
-  else if( !left.isScalar() )
-  {
-    throw Exception( "left must be scalar" );
-  }
-  else if( !right.isScalar() )
-  {
-    throw Exception( "right must be scalar" );
-  }
-  else
-  {
-    throw Exception( "left and right must be scalar" );
-  }
+
+  throw Exception()
+    << "Operator '||': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 bool Value::log_xor   ( const Value &right ) const
@@ -851,152 +828,182 @@ bool Value::log_xor   ( const Value &right ) const
     const Value r = right.to( Type::BOOL );
     return ( l.getBool() ^ r.getBool() );
   }
-  else if( !left.isScalar() )
-  {
-    throw Exception( "left must be scalar" );
-  }
-  else if( !right.isScalar() )
-  {
-    throw Exception( "right must be scalar" );
-  }
-  else
-  {
-    throw Exception( "left and right must be scalar" );
-  }
+
+  throw Exception()
+    << "Operator '^^': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator<<( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw Exception( "left must be integer" );
-  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value r = right.to( Type::INT );
-
-  switch( left.getType().getEnum() )
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL  : return Value( left.getBool  () << r.getInt() );
-    case Type::UINT8 : return Value( left.getUInt8 () << r.getInt() );
-    case Type::INT8  : return Value( left.getInt8  () << r.getInt() );
-    case Type::UINT16: return Value( left.getUInt16() << r.getInt() );
-    case Type::INT16 : return Value( left.getInt16 () << r.getInt() );
-    case Type::UINT32: return Value( left.getUInt32() << r.getInt() );
-    case Type::INT32 : return Value( left.getInt32 () << r.getInt() );
-    case Type::UINT64: return Value( left.getUInt64() << r.getInt() );
-    case Type::INT64 : return Value( left.getInt64 () << r.getInt() );
-    default:
-      throw Exception( "Internal: Unhandled case" );
+    const Value r = right.to( Type::INT );
+
+    switch( left.getType().getEnum() )
+    {
+      case Type::BOOL  : return Value( left.getBool  () << r.getInt() );
+      case Type::UINT8 : return Value( left.getUInt8 () << r.getInt() );
+      case Type::INT8  : return Value( left.getInt8  () << r.getInt() );
+      case Type::UINT16: return Value( left.getUInt16() << r.getInt() );
+      case Type::INT16 : return Value( left.getInt16 () << r.getInt() );
+      case Type::UINT32: return Value( left.getUInt32() << r.getInt() );
+      case Type::INT32 : return Value( left.getInt32 () << r.getInt() );
+      case Type::UINT64: return Value( left.getUInt64() << r.getInt() );
+      case Type::INT64 : return Value( left.getInt64 () << r.getInt() );
+      default:
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
+    }
   }
+
+  throw Exception()
+    << "Operator '<<': left and right must be integer"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator>>( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw Exception( "left must be integer" );
-  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Value r = right.to( Type::INT );
-
-  switch( left.getType().getEnum() )
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL  : return Value( left.getBool  () >> r.getInt() );
-    case Type::UINT8 : return Value( left.getUInt8 () >> r.getInt() );
-    case Type::INT8  : return Value( left.getInt8  () >> r.getInt() );
-    case Type::UINT16: return Value( left.getUInt16() >> r.getInt() );
-    case Type::INT16 : return Value( left.getInt16 () >> r.getInt() );
-    case Type::UINT32: return Value( left.getUInt32() >> r.getInt() );
-    case Type::INT32 : return Value( left.getInt32 () >> r.getInt() );
-    case Type::UINT64: return Value( left.getUInt64() >> r.getInt() );
-    case Type::INT64 : return Value( left.getInt64 () >> r.getInt() );
-    default:
-      throw Exception( "Internal: Unhandled case" );
+    const Value r = right.to( Type::INT );
+
+    switch( left.getType().getEnum() )
+    {
+      case Type::BOOL  : return Value( left.getBool  () >> r.getInt() );
+      case Type::UINT8 : return Value( left.getUInt8 () >> r.getInt() );
+      case Type::INT8  : return Value( left.getInt8  () >> r.getInt() );
+      case Type::UINT16: return Value( left.getUInt16() >> r.getInt() );
+      case Type::INT16 : return Value( left.getInt16 () >> r.getInt() );
+      case Type::UINT32: return Value( left.getUInt32() >> r.getInt() );
+      case Type::INT32 : return Value( left.getInt32 () >> r.getInt() );
+      case Type::UINT64: return Value( left.getUInt64() >> r.getInt() );
+      case Type::INT64 : return Value( left.getInt64 () >> r.getInt() );
+      default:
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
+    }
   }
+
+  throw Exception()
+    << "Operator '>>': left and right must be integer"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator& ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw Exception( "left must be integer" );
-  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Type ret_type = Type::Ret( left.getType(), right.getType() );
-
-  const Value r = right.to( ret_type );
-  const Value l = left .to( ret_type );
-
-  switch( ret_type.getEnum() )
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL  : return Value( l.getBool  () & r.getBool  () );
-    case Type::UINT8 : return Value( l.getUInt8 () & r.getUInt8 () );
-    case Type::INT8  : return Value( l.getInt8  () & r.getInt8  () );
-    case Type::UINT16: return Value( l.getUInt16() & r.getUInt16() );
-    case Type::INT16 : return Value( l.getInt16 () & r.getInt16 () );
-    case Type::UINT32: return Value( l.getUInt32() & r.getUInt32() );
-    case Type::INT32 : return Value( l.getInt32 () & r.getInt32 () );
-    case Type::UINT64: return Value( l.getUInt64() & r.getUInt64() );
-    case Type::INT64 : return Value( l.getInt64 () & r.getInt64 () );
-    default:
-      throw Exception( "Internal: Unhandled case" );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
+
+    const Value r = right.to( ret_type );
+    const Value l = left .to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL  : return Value( l.getBool  () & r.getBool  () );
+      case Type::UINT8 : return Value( l.getUInt8 () & r.getUInt8 () );
+      case Type::INT8  : return Value( l.getInt8  () & r.getInt8  () );
+      case Type::UINT16: return Value( l.getUInt16() & r.getUInt16() );
+      case Type::INT16 : return Value( l.getInt16 () & r.getInt16 () );
+      case Type::UINT32: return Value( l.getUInt32() & r.getUInt32() );
+      case Type::INT32 : return Value( l.getInt32 () & r.getInt32 () );
+      case Type::UINT64: return Value( l.getUInt64() & r.getUInt64() );
+      case Type::INT64 : return Value( l.getInt64 () & r.getInt64 () );
+      default:
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
+    }
   }
+
+  throw Exception()
+    << "Operator '&': left and right must be integer"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator| ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw Exception( "left must be integer" );
-  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Type ret_type = Type::Ret( left.getType(), right.getType() );
-
-  const Value r = right.to( ret_type );
-  const Value l = left .to( ret_type );
-
-  switch( ret_type.getEnum() )
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL  : return Value( l.getBool  () | r.getBool  () );
-    case Type::UINT8 : return Value( l.getUInt8 () | r.getUInt8 () );
-    case Type::INT8  : return Value( l.getInt8  () | r.getInt8  () );
-    case Type::UINT16: return Value( l.getUInt16() | r.getUInt16() );
-    case Type::INT16 : return Value( l.getInt16 () | r.getInt16 () );
-    case Type::UINT32: return Value( l.getUInt32() | r.getUInt32() );
-    case Type::INT32 : return Value( l.getInt32 () | r.getInt32 () );
-    case Type::UINT64: return Value( l.getUInt64() | r.getUInt64() );
-    case Type::INT64 : return Value( l.getInt64 () | r.getInt64 () );
-    default:
-      throw Exception( "Internal: Unhandled case" );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
+
+    const Value r = right.to( ret_type );
+    const Value l = left .to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL  : return Value( l.getBool  () | r.getBool  () );
+      case Type::UINT8 : return Value( l.getUInt8 () | r.getUInt8 () );
+      case Type::INT8  : return Value( l.getInt8  () | r.getInt8  () );
+      case Type::UINT16: return Value( l.getUInt16() | r.getUInt16() );
+      case Type::INT16 : return Value( l.getInt16 () | r.getInt16 () );
+      case Type::UINT32: return Value( l.getUInt32() | r.getUInt32() );
+      case Type::INT32 : return Value( l.getInt32 () | r.getInt32 () );
+      case Type::UINT64: return Value( l.getUInt64() | r.getUInt64() );
+      case Type::INT64 : return Value( l.getInt64 () | r.getInt64 () );
+      default:
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
+    }
   }
+
+  throw Exception()
+    << "Operator '|': left and right must be integer"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator^ ( const Value &right ) const
 {
   const Value &left = (*this);
-  if( !left.isInteger() ) throw Exception( "left must be integer" );
-  if( !right.isInteger() ) throw Exception( "right must be integer" );
 
-  const Type ret_type = Type::Ret( left.getType(), right.getType() );
-
-  const Value r = right.to( ret_type );
-  const Value l = left .to( ret_type );
-
-  switch( ret_type.getEnum() )
+  if( left.isInteger() && right.isInteger() )
   {
-    case Type::BOOL  : return Value( l.getBool  () ^ r.getBool  () );
-    case Type::UINT8 : return Value( l.getUInt8 () ^ r.getUInt8 () );
-    case Type::INT8  : return Value( l.getInt8  () ^ r.getInt8  () );
-    case Type::UINT16: return Value( l.getUInt16() ^ r.getUInt16() );
-    case Type::INT16 : return Value( l.getInt16 () ^ r.getInt16 () );
-    case Type::UINT32: return Value( l.getUInt32() ^ r.getUInt32() );
-    case Type::INT32 : return Value( l.getInt32 () ^ r.getInt32 () );
-    case Type::UINT64: return Value( l.getUInt64() ^ r.getUInt64() );
-    case Type::INT64 : return Value( l.getInt64 () ^ r.getInt64 () );
-    default:
-      throw Exception( "Internal: Unhandled case" );
+    const Type ret_type = Type::Ret( left.getType(), right.getType() );
+
+    const Value r = right.to( ret_type );
+    const Value l = left .to( ret_type );
+
+    switch( ret_type.getEnum() )
+    {
+      case Type::BOOL  : return Value( l.getBool  () ^ r.getBool  () );
+      case Type::UINT8 : return Value( l.getUInt8 () ^ r.getUInt8 () );
+      case Type::INT8  : return Value( l.getInt8  () ^ r.getInt8  () );
+      case Type::UINT16: return Value( l.getUInt16() ^ r.getUInt16() );
+      case Type::INT16 : return Value( l.getInt16 () ^ r.getInt16 () );
+      case Type::UINT32: return Value( l.getUInt32() ^ r.getUInt32() );
+      case Type::INT32 : return Value( l.getInt32 () ^ r.getInt32 () );
+      case Type::UINT64: return Value( l.getUInt64() ^ r.getUInt64() );
+      case Type::INT64 : return Value( l.getInt64 () ^ r.getInt64 () );
+      default:
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
+    }
   }
+
+  throw Exception()
+    << "Operator '^': left and right must be integer"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator* ( const Value &right ) const
 {
   const Value &left = (*this);
+
   if( left.isScalar() && right.isScalar() )
   {
     const Type ret_type = Type::Ret( left.getType(), right.getType() );
@@ -1018,13 +1025,15 @@ Value Value::operator* ( const Value &right ) const
       case Type::FLOAT  : return Value( l.getFloat () * r.getFloat () );
       case Type::DOUBLE : return Value( l.getDouble() * r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
-  else
-  {
-    throw Exception( "left and right must be scalar" );
-  }
+
+  throw Exception()
+    << "Operator '*': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator/ ( const Value &right ) const
@@ -1051,13 +1060,15 @@ Value Value::operator/ ( const Value &right ) const
       case Type::FLOAT  : if( r.getFloat ()  ) return Value( l.getFloat ()  / r.getFloat () ); else throw DivisionByZero();
       case Type::DOUBLE : if( r.getDouble()  ) return Value( l.getDouble()  / r.getDouble() ); else throw DivisionByZero();
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
-  else
-  {
-    throw Exception( "left and right must be scalar." );
-  }
+
+  throw Exception()
+    << "Operator '/': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator+ ( const Value &right ) const
@@ -1084,7 +1095,7 @@ Value Value::operator+ ( const Value &right ) const
       case Type::FLOAT  : return Value( l.getFloat () + r.getFloat () );
       case Type::DOUBLE : return Value( l.getDouble() + r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
   else if( left.isString() && right.isPrimitive() )
@@ -1099,15 +1110,18 @@ Value Value::operator+ ( const Value &right ) const
     const Value &r = right;
     return Value( l.getString() + r.getString() );
   }
-  else
-  {
-    throw Exception( "left and right must be scalar or string" );
-  }
+
+  throw Exception()
+    << "Operator '+': left and right must be scalar or string"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 Value Value::operator- ( const Value &right ) const
 {
   const Value &left = (*this);
+
   if( left.isScalar() && right.isScalar() )
   {
     const Type ret_type = Type::Ret( left.getType(), right.getType() );
@@ -1129,13 +1143,15 @@ Value Value::operator- ( const Value &right ) const
       case Type::FLOAT  : return Value( l.getFloat () - r.getFloat () );
       case Type::DOUBLE : return Value( l.getDouble() - r.getDouble() );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
   }
-  else
-  {
-    throw Exception( "left and right must be scalar" );
-  }
+
+  throw Exception()
+    << "Operator '*': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 namespace Value_impl {
@@ -1197,7 +1213,11 @@ Value Value::operator% ( const Value &right ) const
     }
   }
 
-  throw Exception( "left and right must be scalar" );
+  throw Exception()
+    << "Operator '%': left and right must be scalar"
+    << ": left is " << left.getType()
+    << ", right is " << right.getType()
+    ;
 }
 
 namespace Value_impl {
