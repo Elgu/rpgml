@@ -68,16 +68,25 @@ bool Function_mathOp1::call_impl( const Location *loc, index_t recursion_depth, 
   if( n_args != NUM_ARGS ) throw ParseException( loc ) << "Function mathOp1 requires " << NUM_ARGS << " arguments.";
 
   const Value &op_v = args[ ARG_OP ];
+  const Value &in_v = args[ ARG_IN ];
 
   if( !op_v.isString() )
   {
     throw ParseException( loc ) << "Argument 'op' must be string, is " << op_v.getType();
   }
 
+  if( in_v.isOutput() )
+  {
+    CountPtr< Node > node = scope->createNode( loc, recursion_depth+1, String::Static( ".math.MathOp1" ) );
+    node->getParam( "op" )->set( op_v );
+    node->getInput( "in" )->connect( in_v.getOutput() );
+    ret = Value( node->getOutput( "out" ) );
+    return true;
+  }
+
   try
   {
     const MOP1 op = getMOP1( op_v.getString() );
-    const Value &in_v = args[ ARG_IN ];
     ret = mathOp1( op, in_v );
   }
   catch( const RPGML::Exception &e )
