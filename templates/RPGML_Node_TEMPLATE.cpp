@@ -53,7 +53,7 @@ void TEMPLATE::gc_getChildren( Children &children ) const
   Base::gc_getChildren( children );
 }
 
-void TEMPLATE::set_foo( const Value &value, index_t )
+void TEMPLATE::set_foo( const Value &value, index_t, int, const index_t* )
 {
   if( value.getType() != Type::String() )
   {
