@@ -30,6 +30,14 @@ CountPtr< WaitLock::Token > WaitLock::getToken( void )
   return new Token( this );
 }
 
+void WaitLock::Token::destroy( void )
+{
+  if( !this ) return;
+  if( !m_lock ) return;
+  --m_lock->m_num_waiting;
+  m_lock = 0;
+}
+
 WaitLock::Token::Token( WaitLock *lock )
 : m_lock( lock )
 {

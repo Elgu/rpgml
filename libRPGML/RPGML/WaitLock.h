@@ -23,6 +23,7 @@ public:
   public:
     virtual ~Token( void );
     void wait( void );
+    void destroy( void );
   private:
     friend class WaitLock;
     WaitLock *m_lock;
