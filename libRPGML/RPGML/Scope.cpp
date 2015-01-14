@@ -31,13 +31,15 @@ using namespace std;
 
 namespace RPGML {
 
-Scope::Scope( Context *context )
-: m_context( context )
+Scope::Scope( GarbageCollector *_gc, Context *context )
+: Collectable( _gc )
+, m_context( context )
 , m_curr( context->getRoot() )
 {}
 
-Scope::Scope( const Scope *other, Frame *curr )
-: m_context( other->getContext() )
+Scope::Scope( GarbageCollector *_gc, const Scope *other, Frame *curr )
+: Collectable( _gc )
+, m_context( other->getContext() )
 , m_curr( m_context->getRoot() )
 {
   Frame *root = getContext()->getRoot();
@@ -62,6 +64,18 @@ Scope::Scope( const Scope *other, Frame *curr )
 
 Scope::~Scope( void )
 {}
+
+void Scope::gc_clear( void )
+{
+  m_context.reset();
+  m_curr.reset();
+}
+
+void Scope::gc_getChildren( Children &children ) const
+{
+  children.add( m_context );
+  children.add( m_curr );
+}
 
 GarbageCollector *Scope::getGC( void ) const
 {

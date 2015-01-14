@@ -59,14 +59,18 @@ public:
     size_t getReturnValue( void ) const;
 
     //! For waiting once on a Job, get one before addJob()
-    class Token : public Refcounted
+    class Token : public Collectable
     {
+      typedef Collectable Base;
     private:
       explicit
-      Token( Job *job );
+      Token( GarbageCollector *_gc, Job *job );
     public:
       virtual ~Token( void );
+      virtual void gc_clear( void );
+      virtual void gc_getChildren( Children &children ) const;
       size_t wait( void );
+      void destroy( void );
     private:
       friend class Job;
       Token( const Token & );

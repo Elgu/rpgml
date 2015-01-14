@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -39,15 +39,15 @@ bool InterpretingFunction::call_impl( const Location *, index_t recursion_depth,
 
   Scope::EnterLeaveGuard guard( scope, frame );
 
-  InterpretingASTVisitor interpreter( scope, recursion_depth+1 );
-  if( !m_body->invite( &interpreter ) ) return false;
+  CountPtr< InterpretingASTVisitor > interpreter = new InterpretingASTVisitor( getGC(), scope, recursion_depth+1 );
+  if( !m_body->invite( interpreter.get() ) ) return false;
 
-  if( !interpreter.get_return_encountered() )
+  if( !interpreter->get_return_encountered() )
   {
     throw "No return statement";
   }
 
-  ret = interpreter.get_return_value();
+  ret = interpreter->get_return_value();
   return true;
 }
 

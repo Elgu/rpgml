@@ -107,7 +107,7 @@ const std::vector< String > &Context::getSearchPaths( void ) const
 
 CountPtr< Scope > Context::createScope( void )
 {
-  return new Scope( this );
+  return new Scope( getGC(), this );
 }
 
 CountPtr< Graph > Context::createGraph( void ) const

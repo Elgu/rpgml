@@ -146,11 +146,12 @@ void JobQueue::Job::gc_getChildren( Children &children ) const
 
 CountPtr< JobQueue::Job::Token > JobQueue::Job::getToken( void )
 {
-  return new Token( this );
+  return new Token( getGC(), this );
 }
 
-JobQueue::Job::Token::Token( Job *job )
-: m_job( job )
+JobQueue::Job::Token::Token( GarbageCollector *_gc, Job *job )
+: Collectable( _gc )
+, m_job( job )
 , m_return_value( 0 )
 {
   if( !m_job.isNull() )
@@ -162,6 +163,16 @@ JobQueue::Job::Token::Token( Job *job )
 JobQueue::Job::Token::~Token( void )
 {}
 
+void JobQueue::Job::Token::gc_clear( void )
+{
+  destroy();
+}
+
+void JobQueue::Job::Token::gc_getChildren( Children &children ) const
+{
+  children.add( m_job );
+}
+
 size_t JobQueue::Job::Token::wait( void )
 {
   if( !m_token.isNull() )
@@ -171,6 +182,16 @@ size_t JobQueue::Job::Token::wait( void )
     m_return_value = m_job->getReturnValue();
   }
   return m_return_value;
+}
+
+void JobQueue::Job::Token::destroy( void )
+{
+  if( !m_token.isNull() )
+  {
+    m_token->destroy();
+    m_token.reset();
+  }
+  m_job.reset();
 }
 
 JobQueue::EndJob::EndJob( GarbageCollector *_gc )

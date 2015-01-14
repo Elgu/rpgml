@@ -646,8 +646,8 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
     if( rpgml_p )
     {
       CountPtr< Source > source = new FileSource( rpgml_p );
-      CountPtr< Scope > new_scope = new Scope( scope, this );
-      CountPtr< InterpretingParser > parser = new InterpretingParser( new_scope, source );
+      CountPtr< Scope > new_scope = new Scope( getGC(), scope, this );
+      CountPtr< InterpretingParser > parser = new InterpretingParser( getGC(), new_scope, source );
 
       parser->setFilename( rpgml );
       parser->parse();

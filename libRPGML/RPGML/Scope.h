@@ -18,7 +18,7 @@
 #ifndef RPGML_Scope_h
 #define RPGML_Scope_h
 
-#include "Refcounted.h"
+#include "GarbageCollector.h"
 #include "Function.h"
 #include "Frame.h"
 #include "Exception.h"
@@ -34,18 +34,21 @@ class String;
 class StringData;
 class StringUnifier;
 
-class Scope : public Refcounted
+class Scope : public Collectable
 {
 public:
   EXCEPTION_BASE( Exception );
 
   explicit
-  Scope( Context *context );
+  Scope( GarbageCollector *_gc, Context *context );
 
   explicit
-  Scope( const Scope *other, Frame *curr=0 );
+  Scope( GarbageCollector *_gc, const Scope *other, Frame *curr=0 );
 
   virtual ~Scope( void );
+
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children ) const;
 
   Frame *getCurr( void ) const { return m_curr; }
   Frame *getRoot( void ) const;

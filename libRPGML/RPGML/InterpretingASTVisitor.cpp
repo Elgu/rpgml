@@ -202,14 +202,31 @@ namespace InterpretingASTVisitor_impl {
 
 using namespace InterpretingASTVisitor_impl;
 
-InterpretingASTVisitor::InterpretingASTVisitor( Scope *_scope, index_t _recursion_depth )
-: AST::Visitor( _recursion_depth )
+InterpretingASTVisitor::InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, index_t _recursion_depth )
+: Collectable( _gc )
+, AST::Visitor( _recursion_depth )
 , scope( _scope )
 , return_encountered( false )
 {}
 
 InterpretingASTVisitor::~InterpretingASTVisitor( void )
 {}
+
+void InterpretingASTVisitor::gc_clear( void )
+{
+  scope.reset();
+  return_value_type_descr.reset();
+  return_value_dims.reset();
+  return_value.clear();
+}
+
+void InterpretingASTVisitor::gc_getChildren( Children &children ) const
+{
+  children.add( scope );
+//  children.add( return_value_type_descr );
+  children.add( return_value_dims );
+  children.add( return_value.getCollectable() );
+}
 
 bool InterpretingASTVisitor::visit( const AST::ConstantExpression           *node )
 {
@@ -621,19 +638,32 @@ bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
 
 bool InterpretingASTVisitor::visit( const AST::TypeExpression               *node )
 {
-  CountPtr< TypeDescr > ret( new TypeDescr );
   if( !node->of.isNull() )
   {
     if( !node->of->invite( this ) ) return false;
-    swap( ret->of, return_value_type_descr );
   }
+  else
+  {
+    return_value_type_descr.reset();
+  }
+
   if( !node->dims.isNull() )
   {
     if( !node->dims->invite( this ) ) return false;
-    swap( ret->dims, return_value_dims );
   }
-  ret->type = node->type;
-  swap( return_value_type_descr, ret );
+  else
+  {
+    return_value_dims.reset();
+  }
+
+  return_value_type_descr =
+    new TypeDescr(
+        return_value_type_descr
+      , return_value_dims
+      , node->type
+      );
+  return_value_dims.reset();
+
   return true;
 }
 

@@ -58,7 +58,7 @@ private:
   AST::PrettyPrinter m_printer;
 };
 
-static GarbageCollector gc;
+static GarbageCollector gc( 5 );
 
 int main( int argc, char **argv )
 {
@@ -94,13 +94,14 @@ int main( int argc, char **argv )
     CountPtr< Scope > scope = context->createScope();
 
   //  PrettyPrintingParser parser( unifier, source, &std::cerr );
-    InterpretingParser parser( scope, source );
-    parser.setFilename( filename );
+    CountPtr< InterpretingParser >  parser = new InterpretingParser( &gc, scope, source );
+    parser->setFilename( filename );
 
-    parser.parse();
+    parser->parse();
 
     std::cerr << "Parsing done." << std::endl;
 
+    parser.reset();
     source.reset();
     scope.reset();
 

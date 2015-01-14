@@ -20,18 +20,22 @@
 
 #include "AST.h"
 #include "Array.h"
+#include "GarbageCollector.h"
 
 namespace RPGML {
 
 class Scope;
 
-class InterpretingASTVisitor : public AST::Visitor, public Refcounted
+class InterpretingASTVisitor : public Collectable, public AST::Visitor
 {
 public:
   explicit
-  InterpretingASTVisitor( Scope *_scope, index_t recursion_depth=0 );
+  InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, index_t recursion_depth=0 );
 
   virtual ~InterpretingASTVisitor( void );
+
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children ) const;
 
   virtual bool visit( const AST::ConstantExpression           *node );
   virtual bool visit( const AST::ThisExpression               *node );
@@ -71,11 +75,18 @@ public:
   class TypeDescr : public Refcounted
   {
   public:
-    TypeDescr( void ) {}
+    TypeDescr(
+        CountPtr< const TypeDescr > _of
+      , CountPtr< const Array< Value, 1 > > _dims
+      , Type _type
+      )
+    : of( _of ), dims( _dims ), type( _type )
+    {}
+
     virtual ~TypeDescr( void ) {}
 
-    CountPtr< TypeDescr > of;
-    CountPtr< Array< Value, 1 > > dims;
+    const CountPtr< const TypeDescr > of;
+    const CountPtr< const Array< Value, 1 > > dims;
     Type type;
   };
 
