@@ -257,7 +257,7 @@ Collectable &Collectable::operator=( const Collectable & )
   return (*this);
 }
 
-~Collectable::Collectable( void )
+Collectable::~Collectable( void )
 {
   if( gc ) gc->remove( this );
 #ifdef GC_DEBUG
