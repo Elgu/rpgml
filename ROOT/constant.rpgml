@@ -1,7 +1,0 @@
-
-Function constant( value )
-{
-  Constant ret( value=value );
-  return ret.out;
-}
-
