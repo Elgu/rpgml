@@ -41,7 +41,7 @@ public:
   class Arg;
   class Args;
 
-  Function( GarbageCollector *gc, Frame *parent, const Args *decl_args, const SharedObject *so=0 );
+  Function( GarbageCollector *gc, Frame *parent, const Args *decl_args, bool is_method=false, const SharedObject *so=0 );
   virtual ~Function( void );
 
   Frame *getParent( void ) const;
@@ -49,6 +49,8 @@ public:
   const SharedObject *getSO( void ) const;
 
   size_t getNumArgs( void ) const;
+
+  bool isMethod( void ) const;
 
   //! Must at least be getNumArgs() (default impl)
   virtual size_t getFrameSize( void ) const;
@@ -104,6 +106,7 @@ private:
   CountPtr< Frame > m_parent;
   CountPtr< const Args > m_decl;
   CountPtr< const SharedObject > m_so;
+  bool m_is_method;
 };
 
 } // namespace RPGML

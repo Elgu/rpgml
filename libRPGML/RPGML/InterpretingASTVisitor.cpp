@@ -722,7 +722,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     }
   }
 
-  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), node->identifier, decl_args, node->body ) );
+  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), node->identifier, decl_args, node->body, node->is_method ) );
 
   if( !scope->create_unified( node->identifier, function ) ) return false;
 

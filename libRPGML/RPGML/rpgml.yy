@@ -129,6 +129,7 @@ namespace RPGML
 %token  <type_enum>    ARRAY        "Array";
 %token  <type_enum>    FRAME        "Frame";
 %token  <type_enum>    FUNCTION     "Function";
+%token  <type_enum>    METHOD       "Method";
 %token  <type_enum>    OUTPUT       "Output";
 %token  <type_enum>    INPUT        "Input";
 %token  <type_enum>    NODE         "Node";
@@ -681,6 +682,18 @@ function_definition_statement
   | FUNCTION identifier '=' expression ';'
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4) );
+    }
+  | METHOD identifier '(' ')' compound_statement
+    {
+      ($5)->own_frame = false;
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5), true );
+      (void)($1);
+    }
+  | METHOD identifier '(' function_argument_decl_list ')' compound_statement
+    {
+      ($6)->own_frame = false;
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), ($4), ($6), true );
+      (void)($1);
     }
   ;
 

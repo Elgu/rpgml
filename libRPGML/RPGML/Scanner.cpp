@@ -170,6 +170,7 @@ const Keyword keywords[] =
   { "Array"   , _Parser::token::ARRAY   , Type::ARRAY    },
   { "Frame"   , _Parser::token::FRAME   , Type::FRAME    },
   { "Function", _Parser::token::FUNCTION, Type::FUNCTION },
+  { "Method"  , _Parser::token::METHOD  , Type::FUNCTION },
   { "Output"  , _Parser::token::OUTPUT  , Type::OUTPUT   },
   { "Input"   , _Parser::token::INPUT   , Type::INPUT    },
   { "if"      , _Parser::token::IF      , Type::NIL  },

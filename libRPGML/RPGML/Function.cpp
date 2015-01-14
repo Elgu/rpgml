@@ -27,11 +27,12 @@ using namespace std;
 
 namespace RPGML {
 
-Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, const SharedObject *so )
+Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, bool is_method, const SharedObject *so )
 : Collectable( _gc )
 , m_parent( parent )
 , m_decl( decl )
 , m_so( so )
+, m_is_method( is_method )
 {
 //  {
 //    const Args &decl_args = *decl;
@@ -65,6 +66,11 @@ const SharedObject *Function::getSO( void ) const
 size_t Function::getNumArgs( void ) const
 {
   return m_decl->size();
+}
+
+bool Function::isMethod( void ) const
+{
+  return m_is_method;
 }
 
 size_t Function::getFrameSize( void ) const

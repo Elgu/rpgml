@@ -23,8 +23,8 @@
 
 namespace RPGML {
 
-InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const String &name, const Args *decl_args, const AST::CompoundStatement *body )
-: Function( _gc, parent, decl_args )
+InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const String &name, const Args *decl_args, const AST::CompoundStatement *body, bool is_method )
+: Function( _gc, parent, decl_args, is_method )
 , m_body( body )
 , m_name( name )
 {}
@@ -35,7 +35,7 @@ InterpretingFunction::~InterpretingFunction( void )
 bool InterpretingFunction::call_impl( const Location *, index_t recursion_depth, Scope *scope, Value &ret, index_t, const Value * )
 {
   CountPtr< Frame > frame = new Frame( scope->getGC(), scope->getCurr() );
-  frame->setThis( true );
+  frame->setThis( !isMethod() );
 
   Scope::EnterLeaveGuard guard( scope, frame );
 

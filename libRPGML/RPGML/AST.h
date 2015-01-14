@@ -529,11 +529,18 @@ public:
   class ArgDecl;
   class ArgDeclList;
 
-  FunctionDefinitionStatement( const Location *_loc, const String &_identifier, const ArgDeclList *_args, const CompoundStatement *_body )
+  FunctionDefinitionStatement(
+      const Location *_loc
+    , const String &_identifier
+    , const ArgDeclList *_args
+    , const CompoundStatement *_body
+    , bool _is_method = false
+    )
   : Statement( _loc )
   , identifier( _identifier )
   , args( _args )
   , body( _body )
+  , is_method( _is_method )
   {}
 
   virtual ~FunctionDefinitionStatement( void ) {}
@@ -573,6 +580,7 @@ public:
   const String identifier;
   const CountPtr< const ArgDeclList > args;
   const CountPtr< const CompoundStatement > body;
+  bool is_method;
 };
 
 class ConnectStatement : public Statement
