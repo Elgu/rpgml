@@ -36,10 +36,13 @@ class Collectable;
 class GarbageCollector
 {
 public:
-  GarbageCollector( void );
+  static const uint8_t MaxGenerations = 255;
+
+  explicit
+  GarbageCollector( uint8_t num_generations = 1 );
   ~GarbageCollector( void );
 
-  void run( void );
+  void run( uint8_t up_to_generation = MaxGenerations );
 
 protected:
   friend class Collectable;
@@ -48,11 +51,15 @@ protected:
   void setRoot( const Collectable *c );
 
 private:
-  void compact( std::vector< const Collectable* > &cs_new );
-  void sweep( std::vector< const Collectable* > &garbage );
+  typedef std::vector< const Collectable* > CollectableArray;
+  void compact( CollectableArray &cs_new, uint8_t up_to_generation );
+  void sweep( CollectableArray &garbage );
 
-  std::vector< const Collectable* > m_cs;
+  void removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new );
+
+  CollectableArray m_cs;
   Mutex m_lock;
+  uint8_t m_num_generations;
 
 private:
   GarbageCollector( const GarbageCollector &other );
@@ -64,40 +71,12 @@ class Collectable : public Refcounted
   friend class GarbageCollector;
 public:
 	explicit
-  Collectable( GarbageCollector *_gc )
-  : gc( 0 )
-  , gc_index( 0 )
-  {
-#ifdef GC_DEBUG
-    std::cerr << "create " << this << std::endl;
-#endif
-    if( _gc ) _gc->add( this );
-  }
+  Collectable( GarbageCollector *_gc );
+  Collectable( const Collectable &other );
 
-  Collectable( const Collectable &other )
-  : gc( 0 )
-  , gc_index( 0 )
-  {
-#ifdef GC_DEBUG
-    std::cerr << "create " << this << std::endl;
-#endif
-    GarbageCollector *const _gc = other.gc;
-    if( _gc ) _gc->add( this );
-  }
+  Collectable &operator=( const Collectable & );
 
-  Collectable &operator=( const Collectable & )
-  {
-    // Do nothing, keep gc and index
-    return (*this);
-  }
-
-  virtual ~Collectable( void )
-  {
-    if( gc ) gc->remove( this );
-#ifdef GC_DEBUG
-    std::cerr << "delete " << this << std::endl;
-#endif
-  }
+  virtual ~Collectable( void );
 
   GarbageCollector *getGC( void ) const
   {
@@ -131,6 +110,7 @@ public:
 private:
   mutable GarbageCollector *gc;
   mutable index_t gc_index;
+  mutable uint8_t gc_generation;
 };
 
 static inline bool isCollectable( const Collectable * ) { return true; }

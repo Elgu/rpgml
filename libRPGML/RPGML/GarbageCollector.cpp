@@ -25,8 +25,9 @@ using namespace std;
 
 namespace RPGML {
 
-GarbageCollector::GarbageCollector( void )
+GarbageCollector::GarbageCollector( uint8_t num_generations )
 : m_lock( Mutex::Recursive() )
+, m_num_generations( num_generations )
 {}
 
 GarbageCollector::~GarbageCollector( void )
@@ -45,6 +46,7 @@ void GarbageCollector::add( const Collectable *c )
 
     c->gc = this;
     c->gc_index = index_t( m_cs.size() );
+    c->gc_generation = 0;
     m_cs.push_back( c );
   } // m_lock
 
@@ -77,19 +79,29 @@ void GarbageCollector::remove( const Collectable *c )
   } // m_lock
 }
 
-void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
+void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generation )
 {
   const size_t n = m_cs.size();
   Collectable::Children children;
   children.reserve( 512 );
 
   // Find all root objects:
-  // Those who are reference from outside will have a different refcount than calculated here
+  // Those who are referenced from outside by "foreign" references
+  // will have a different refcount than calculated here
   vector< index_t > refcount( n );
   for( size_t i=0; i<n; ++i )
   {
     const Collectable *const obj = m_cs[ i ];
     if( !obj ) continue;
+
+    if( obj->gc_generation > up_to_generation )
+    {
+      // Just keep "older" objects, they will not play any role in the
+      // rest of the garbage collecting process.
+      // They will just implicitly contribute to the "foreign" references.
+      removeFromOldAddToNew( obj, cs_new );
+      continue;
+    }
 
     // Get the objects referenced by this object
     children.clear();
@@ -106,7 +118,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
     }
   }
 
-  std::vector< const Collectable* > stack;
+  CollectableArray stack;
   stack.reserve( 512 );
 
   // NOTE: This could also be done the other way, just schedule for checking,
@@ -127,9 +139,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
 #endif // GC_DEBUG
 
     // Remove from old storage, add to new
-    m_cs[ obj->gc_index ] = 0;
-    obj->gc_index = index_t( cs_new.size() );
-    cs_new.push_back( obj );
+    removeFromOldAddToNew( obj, cs_new );
 
     // Schedule root
     stack.push_back( obj );
@@ -153,9 +163,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
       if( child->gc == this && m_cs[ child->gc_index ] == child )
       {
         // Remove from old storage, add to new
-        m_cs[ child->gc_index ] = 0;
-        child->gc_index = index_t( cs_new.size() );
-        cs_new.push_back( child );
+        removeFromOldAddToNew( child, cs_new );
 
         // Schedule child
         stack.push_back( child );
@@ -164,7 +172,7 @@ void GarbageCollector::compact( std::vector< const Collectable* > &cs_new )
   }
 }
 
-void GarbageCollector::sweep( std::vector< const Collectable* > &garbage )
+void GarbageCollector::sweep( CollectableArray &garbage )
 {
   for( index_t i=0; i<garbage.size(); ++i )
   {
@@ -186,25 +194,75 @@ void GarbageCollector::sweep( std::vector< const Collectable* > &garbage )
   }
 }
 
-void GarbageCollector::run( void )
+void GarbageCollector::removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new )
+{
+  assert( obj );
+  assert( obj->gc_index < m_cs.size() );
+  assert( m_cs[ obj->gc_index ] != 0 );
+  m_cs[ obj->gc_index ] = 0;
+  obj->gc_index = index_t( cs_new.size() );
+  cs_new.push_back( obj );
+
+  if( obj->gc_generation < m_num_generations-1 )
+  {
+    ++obj->gc_generation;
+  }
+}
+
+void GarbageCollector::run( uint8_t up_to_generation )
 {
   if( m_cs.empty() ) return;
 
+  CollectableArray cs_new;
+
   { Mutex::ScopedLock lock( &m_lock );
 
-    std::vector< const Collectable* > cs_new;
-    cs_new.reserve( m_cs.size() / 2 + 1 );
-
     // compact recursively
-    compact( cs_new );
+    compact( cs_new, up_to_generation );
 
     // make new cs current
     std::swap( cs_new, m_cs );
-
-    // cs_new now contains garbage
-    sweep( cs_new );
-
   } // m_lock
+
+  // cs_new now contains garbage
+  sweep( cs_new );
+}
+
+Collectable::Collectable( GarbageCollector *_gc )
+: gc( 0 )
+, gc_index( 0 )
+, gc_generation( 0 )
+{
+#ifdef GC_DEBUG
+  std::cerr << "create " << this << std::endl;
+#endif
+  if( _gc ) _gc->add( this );
+}
+
+Collectable::Collectable( const Collectable &other )
+: gc( 0 )
+, gc_index( 0 )
+, gc_generation( 0 )
+{
+#ifdef GC_DEBUG
+  std::cerr << "create " << this << std::endl;
+#endif
+  GarbageCollector *const _gc = other.gc;
+  if( _gc ) _gc->add( this );
+}
+
+Collectable &Collectable::operator=( const Collectable & )
+{
+  // Do nothing, keep gc and index
+  return (*this);
+}
+
+~Collectable::Collectable( void )
+{
+  if( gc ) gc->remove( this );
+#ifdef GC_DEBUG
+  std::cerr << "delete " << this << std::endl;
+#endif
 }
 
 bool Collectable::Children::contains( Collectable *c ) const
