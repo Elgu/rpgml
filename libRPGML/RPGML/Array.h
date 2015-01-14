@@ -18,7 +18,6 @@
 #ifndef RPGML_Array_h
 #define RPGML_Array_h
 
-#include "Refcounted.h"
 #include "GarbageCollector.h"
 #include "Value.h"
 #include "Iterator.h"
