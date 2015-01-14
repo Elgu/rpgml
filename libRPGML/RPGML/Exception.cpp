@@ -48,7 +48,9 @@ void Exception::breakpoint( void )
 
 void Exception::print_backtrace( void ) const
 {
-  backtrace_symbols_fd( m_backtrace_buffer, m_backtrace_n, STDERR_FILENO );
+  ::backtrace_symbols_fd( m_backtrace_buffer, m_backtrace_n, STDERR_FILENO );
+  // cxxabi.h
+  // char *__cxxabiv1::__cxa_demangle (const char *__mangled_name, char *__output_buffer, size_t *__length, int *__status)
 }
 
 Exception::~Exception( void ) throw()
