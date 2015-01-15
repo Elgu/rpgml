@@ -531,12 +531,14 @@ public:
 
   FunctionDefinitionStatement(
       const Location *_loc
+    , const TypeExpression *_ret
     , const String &_identifier
     , const ArgDeclList *_args
     , const CompoundStatement *_body
     , bool _is_method = false
     )
   : Statement( _loc )
+  , ret( _ret )
   , identifier( _identifier )
   , args( _args )
   , body( _body )
@@ -577,6 +579,7 @@ public:
     }
   };
 
+  const CountPtr< const TypeExpression > ret;
   const String identifier;
   const CountPtr< const ArgDeclList > args;
   const CountPtr< const CompoundStatement > body;

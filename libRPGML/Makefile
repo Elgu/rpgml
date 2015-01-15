@@ -45,10 +45,9 @@ SOURCE=\
 	$(libRPGML_SOURCE)\
 
 PARSER_FILES=\
-	RPGML/location.hh\
-	RPGML/rpgml.output\
- 	RPGML/position.hh\
  	RPGML/rpgml.output\
+	RPGML/location.hh\
+ 	RPGML/position.hh\
  	RPGML/rpgml.tab.cc\
  	RPGML/rpgml.tab.hh\
  	RPGML/stack.hh\
@@ -58,6 +57,7 @@ PARSER_FILES=\
 	touch $@
 
 $(PARSER_FILES): .parser_files
+	@echo Parser Files generated
 
 DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 

@@ -253,7 +253,17 @@ bool PrettyPrinter::visit( const CompoundStatement            *node )
 bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << ( node->is_method ? "Method" : "Function " ) << node->identifier;
+  if( node->is_method )
+  {
+    (*o) << "Method";
+  }
+  else
+  {
+    node->ret->invite( this );
+  }
+
+  (*o) << node->identifier;
+
   if( node->args->empty() )
   {
     (*o) << "()" << std::endl;

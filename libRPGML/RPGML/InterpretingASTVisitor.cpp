@@ -702,6 +702,13 @@ bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *nod
 
 bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *node )
 {
+  if( !node->ret->type.isFunction() )
+  {
+    throw ParseException( node->ret->loc )
+      << "Expected 'Function', got type expression"
+      ;
+  }
+
   const size_t n_args = node->args->size();
   CountPtr< Function::Args > decl_args = new Function::Args( n_args );
 

@@ -2,7 +2,7 @@
 %require "2.5"
 %defines
 %define parser_class_name "_Parser"
-%define namespace "RPGML"
+%define api.namespace RPGML
 %glr-parser
 %parse-param { RPGML::Scanner &scanner }
 %lex-param { RPGML::Scanner &scanner }
@@ -42,11 +42,9 @@ namespace RPGML
 
 %union
 {
-  bool         bval;
   int64_t      ival;
   double       fval;
   Type::Enum   type_enum;
-  BOP          binop;
   UOP          uop;
   ASSIGN       assign;
   StringData const                         *str;
@@ -63,11 +61,9 @@ namespace RPGML
   DimensionsExpression                     *dims;
 }
 
-%destructor {} <bval>
 %destructor {} <ival>
 %destructor {} <fval>
 %destructor {} <type_enum>
-%destructor {} <binop>
 %destructor {} <uop>
 %destructor {} <assign>
 %destructor { if( !($$)->unref() ) delete ($$); } <str>
@@ -179,6 +175,7 @@ namespace RPGML
 %type <dims> array_dimensions_expression
 %type <dims> array_coordinates_expression
 %type <type_enum> primitive_type_expression
+%type <type_enum> basic_type_expression
 %type <type> array_type_expression
 %type <type> type_expression
 %type <stmt> statement
@@ -195,6 +192,21 @@ namespace RPGML
 %type <stmt> function_call_statement
 %type <stmt> variable_creation_statement
 %type <stmt> return_statement
+
+%left '='
+%left "||"
+%left "^^"
+%left "&&"
+%left '|'
+%left '^'
+%left '&'
+%left "==" "!="
+%left '<' '>' "<=" ">="
+%left "<<" ">>"
+%left '+' '-'
+%left '*' '/' '%'
+
+%right "then" "else"
 
 %start translation_unit;
 
@@ -486,13 +498,17 @@ primitive_type_expression
   | FLOAT 
   | DOUBLE
   | STRING
-//  | ARRAY
+  ;
+
+basic_type_expression
+  : primitive_type_expression
   | FRAME
-//  | FUNCTION
+  | FUNCTION
   | OUTPUT
   | INPUT
   | NODE
   | PARAM
+//  | ARRAY
   ;
 
 array_dimension
@@ -528,7 +544,7 @@ array_coordinates_expression
   ;
 
 type_expression
-  : primitive_type_expression
+  : basic_type_expression
     {
       ($$) = new TypeExpression( RPGML_LOC(@$), ($1) );
     }
@@ -590,7 +606,7 @@ selection_statement
     {
       ($$) = new IfStatement( RPGML_LOC(@$), ($3), ($5), ($7) );
     }
-  | IF '(' expression ')' statement
+  | IF '(' expression ')' statement %prec "then"
     {
       ($$) = new IfStatement( RPGML_LOC(@$), ($3), ($5) );
     }
@@ -667,32 +683,28 @@ function_argument_decl_list
   ;
 
 function_definition_statement
-  : FUNCTION identifier '(' ')' compound_statement
+  : type_expression identifier '(' ')' compound_statement
     {
       ($5)->own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5) );
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5) );
       (void)($1);
     }
-  | FUNCTION identifier '(' function_argument_decl_list ')' compound_statement
+  | type_expression identifier '(' function_argument_decl_list ')' compound_statement
     {
       ($6)->own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), ($4), ($6) );
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), ($4), ($6) );
       (void)($1);
-    }
-  | FUNCTION identifier '=' expression ';'
-    {
-      ($$) = new VariableCreationStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4) );
     }
   | METHOD identifier '(' ')' compound_statement
     {
       ($5)->own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5), true );
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5), true );
       (void)($1);
     }
   | METHOD identifier '(' function_argument_decl_list ')' compound_statement
     {
       ($6)->own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($2), ($4), ($6), true );
+      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4), ($6), true );
       (void)($1);
     }
   ;
