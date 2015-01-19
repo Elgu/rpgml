@@ -51,29 +51,36 @@ bool Print::tick( void )
   if( !in_base ) throw NotConnected( getInput( INPUT_IN ) );
   const index_t in_dims = in_base->getDims();
 
-  if( in_dims != 0 )
+  if( in_dims > 4 )
   {
     throw Exception()
-      << "Only scalar arguments supported at the moment, has " << in_dims << " dimensions"
+      << "Only dimensions up to 4 supported, has " << in_dims << " dimensions"
       ;
   }
-
-  switch( in_base->getType().getEnum() )
+  else if( in_dims == 0 )
   {
-    case Type::BOOL  : return tick_scalar< bool     >( in_base );
-    case Type::UINT8 : return tick_scalar< uint8_t  >( in_base );
-    case Type::INT8  : return tick_scalar< int8_t   >( in_base );
-    case Type::UINT16: return tick_scalar< uint16_t >( in_base );
-    case Type::INT16 : return tick_scalar< int16_t  >( in_base );
-    case Type::UINT32: return tick_scalar< uint32_t >( in_base );
-    case Type::INT32 : return tick_scalar< int32_t  >( in_base );
-    case Type::UINT64: return tick_scalar< uint64_t >( in_base );
-    case Type::INT64 : return tick_scalar< int64_t  >( in_base );
-    case Type::FLOAT : return tick_scalar< float    >( in_base );
-    case Type::DOUBLE: return tick_scalar< double   >( in_base );
-    case Type::STRING: return tick_scalar< String   >( in_base );
-    default:
-      throw IncompatibleOutput( getInput( INPUT_IN ) );
+    switch( in_base->getType().getEnum() )
+    {
+      case Type::BOOL  : return tick_scalar< bool     >( in_base );
+      case Type::UINT8 : return tick_scalar< uint8_t  >( in_base );
+      case Type::INT8  : return tick_scalar< int8_t   >( in_base );
+      case Type::UINT16: return tick_scalar< uint16_t >( in_base );
+      case Type::INT16 : return tick_scalar< int16_t  >( in_base );
+      case Type::UINT32: return tick_scalar< uint32_t >( in_base );
+      case Type::INT32 : return tick_scalar< int32_t  >( in_base );
+      case Type::UINT64: return tick_scalar< uint64_t >( in_base );
+      case Type::INT64 : return tick_scalar< int64_t  >( in_base );
+      case Type::FLOAT : return tick_scalar< float    >( in_base );
+      case Type::DOUBLE: return tick_scalar< double   >( in_base );
+      case Type::STRING: return tick_scalar< String   >( in_base );
+      default:
+        throw IncompatibleOutput( getInput( INPUT_IN ) );
+    }
+  }
+  else
+  {
+    const Value array( const_cast< ArrayBase* >( in_base ) );
+    array.print( std::cout );
   }
 
   return true;
