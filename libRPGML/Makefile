@@ -1,8 +1,7 @@
 include ../Makefile.defines
 include ../Makefile.rules
 
-.PHONY: all clean check undepend
-.SUFFIXES: .cpp .o .dep
+.PHONY: all clean undepend depend test check
 vpath %.cpp RPGML
 vpath %.cc RPGML
 
@@ -61,8 +60,12 @@ $(PARSER_FILES): .parser_files
 
 DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 
-test:
-	@echo DEP_FILES=$(DEP_FILES)
+utest:
+	$(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C utest test
+
+stest:
+	@touch .rerun_stest
+	$(MAKE) $(STEST_RESULTS)
 
 .depend: $(DEP_FILES)
 	@cat $(DEP_FILES) > .depend
@@ -83,8 +86,7 @@ clean:
 	rm -f libRPGML.so $(libRPGML_OBJECTS)
 	rm -f $(foreach so, $(SOs), RPGML_$(so).o libRPGML_$(so).so )
 
-check: rpgml.output
-	~/bin/gramdiag rpgml.output
+include ../Makefile.stest
 
 include .depend
 
