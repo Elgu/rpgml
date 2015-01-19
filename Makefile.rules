@@ -37,11 +37,11 @@ libRPGML_%.so: RPGML_%.o RPGML_%.o.LDFLAGS RPGML_%.o.CXXFLAGS
 
 %.pretty: %.rpgml .rerun_stest $(PRETTYPRINTER) Makefile
 	@echo "Prettyprinting $<"
-	@$(PRETTYPRINTER) $< > $@
+	@cd ./$(dirname $@) && RPGML_PATH="$(RPGML_SRC_ROOT)/ROOT:." $(PRETTYPRINTER) $(notdir $<) > $(notdir $@)
 
 %.output: %.pretty %.expected .rerun_stest $(RPGML) Makefile
 	@echo "Running $<"
-	@$(RPGML) $< > $@
+	@cd ./$(dirname $@) && RPGML_PATH="$(RPGML_SRC_ROOT)/ROOT:." $(RPGML) $(notdir $<) > $(notdir $@)
 	@diff -udab $@ $(<:.pretty=.expected)
 
 
