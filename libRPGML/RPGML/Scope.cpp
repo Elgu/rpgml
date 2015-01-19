@@ -23,9 +23,9 @@
 #include "StringUnifier.h"
 #include "Node.h"
 #include "ParseException.h"
+#include "make_printable.h"
 
 #include <iostream>
-#include <ctype.h>
 
 using namespace std;
 
@@ -385,39 +385,6 @@ String Scope::genGlobalName( const String &node_name, const Location *loc ) cons
       + "@" + toString( loc->withoutFilename() )
       + "#" + toString( getNr() )
       );
-}
-
-String Scope::make_printable( const String &s )
-{
-  std::string ret;
-
-  for( const char *c = s.c_str(); (*c) != '\0'; ++c )
-  {
-    switch( (*c) )
-    {
-      case '\a': ret += "\\a"; break;
-      case '\b': ret += "\\b"; break;
-      case '\f': ret += "\\f"; break;
-      case '\n': ret += "\\n"; break;
-      case '\r': ret += "\\r"; break;
-      case '\t': ret += "\\t"; break;
-      case '\v': ret += "\\v"; break;
-      default:
-        if( ::isprint( (*c) ) )
-        {
-          ret += (*c);
-        }
-        else
-        {
-          ret += "\\x";
-          ret += char( '0' + char(((*c)&0xF0)>>4) );
-          ret += char( '0' + char( (*c)&0x0F)   );
-        }
-        break;
-    }
-  }
-
-  return String::MoveFrom( ret );
 }
 
 size_t Scope::getNr( void ) const
