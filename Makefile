@@ -2,16 +2,25 @@
 include Makefile.defines
 include Makefile.rules
 
+.SUFFIXES: .all .clean .undepend .depend
+
 SUBDIRS=\
 	libRPGML\
 	rpgml\
 	ROOT\
 
-all:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) all && ) true
+.%.all: %
+	$(MAKE) -C $< all
 
-clean:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) clean && ) true
+.%.clean: %
+	$(MAKE) -C $< clean
+
+.%.undepend: %
+	$(MAKE) -C $< undepened
+
+all: $(foreach subdir, $(SUBDIRS), .$(subdir).all )
+
+clean: $(foreach subdir, $(SUBDIRS), .$(subdir).clean )
 	rm -f $(STEST_SCRIPTS:.rpgml=.output) $(STEST_SCRIPTS:.rpgml=.pretty)
 	find . -name ".rerun_stest" -exec rm {} \;
 	find . -name "*.o.CXXFLAGS" -exec rm {} \;
@@ -19,8 +28,7 @@ clean:
 	find . -name ".*.dep" -exec rm {} \;
 	find . -name ".depend" -exec rm {} \;
 
-undepend:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) undepend && ) true
+undepend: $(foreach subdir, $(SUBDIRS), .$(subdir).undepend )
 
 utest:
 	$(MAKE) -C libRPGML/utest test
