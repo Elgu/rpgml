@@ -812,16 +812,9 @@ private:
     , m_size( array->getSize() )
     , m_coord( array->getDims()+1, index_t( 0 ) )
     {
+      // so done() will return true
       const int dims = m_size.getDims();
-      for( int d = 0; d < dims; ++d )
-      {
-        if( 0 == m_size[ d ] )
-        {
-          // dims, not d, so done() will return true
-          m_coord[ dims ] = 1;
-          break;
-        }
-      }
+      if( array->empty() ) m_coord[ dims ] = 1;
     }
     virtual ~_CoordinatesIterator( void ) {}
 
