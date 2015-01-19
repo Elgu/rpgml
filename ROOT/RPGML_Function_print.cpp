@@ -35,26 +35,23 @@ Function_print::~Function_print( void )
 
 bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
 {
-  if( n_args != 1 ) throw "Function_print requires 1 argument.";
-  const Value &in = args[ 0 ];
+  if( n_args != 1 ) throw Exception() << "Function 'print' requires 1 argument, specified " << n_args;
+  const Value &in = args[ ARG_IN ];
 
   switch( in.getType().getEnum() )
   {
-    case Type::BOOL  : std::cout << in.getBool  (); break;
-    case Type::INT   : std::cout << in.getInt   (); break;
-    case Type::FLOAT : std::cout << in.getFloat (); break;
-    case Type::STRING: std::cout << in.getString(); break;
     case Type::OUTPUT:
       {
         CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".Print" ) ) );
 
-        scope->toOutput( loc, recursion_depth+1, in )->connect( node->getInput( "in" ) );
+        in.getOutput()->connect( node->getInput( "in" ) );
         scope->call( loc, recursion_depth+1, String::Static( ".needing" ), ret, Value( node.get() ) );
 
         ret = Value( true );
         return true;
       }
       break;
+
     default:
       std::cout << in;
       break;
@@ -67,8 +64,8 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
 
 CountPtr< Function::Args > Function_print::genDeclArgs( void )
 {
-  CountPtr< Args > args = new Args( 1 );
-  args->at( 0 ) = Arg( String::Static( "in" ) );
+  CountPtr< Args > args = new Args( NUM_ARGS );
+  args->at( ARG_IN ) = Arg( String::Static( "in" ) );
   return args;
 }
 
