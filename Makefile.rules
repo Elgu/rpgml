@@ -32,3 +32,16 @@
 libRPGML_%.so: RPGML_%.o RPGML_%.o.LDFLAGS RPGML_%.o.CXXFLAGS
 	g++ -shared $< $(LDFLAGS) $(shell cat $<.LDFLAGS) $(CXXFLAGS) $(shell cat $<.CXXFLAGS) -lRPGML -o $@
 
+.rerun_stest:
+	@touch $@
+
+%.pretty: %.rpgml .rerun_stest $(PRETTYPRINTER) Makefile
+	@echo "Prettyprinting $<"
+	@$(PRETTYPRINTER) $< > $@
+
+%.output: %.pretty %.expected .rerun_stest $(RPGML) Makefile
+	@echo "Running $<"
+	@$(RPGML) $< > $@
+	@diff -udab $@ $(<:.pretty=.expected)
+
+

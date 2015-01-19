@@ -1,5 +1,7 @@
 
-.SUFFIXES: .o .cpp .cc .hh .yy .dep
+RPGML_SRC_ROOT=$(shell while [ ! -d "ROOT" -a `pwd` != "/" ]; do cd .. ; done && echo `pwd` )
+
+.SUFFIXES: .o .cpp .cc .hh .yy .dep .output .expected .rpgml
 
 CFLAGS=\
 	-std=c++11\
@@ -30,4 +32,15 @@ LDFLAGS=\
 	-rdynamic\
 	-lpthread\
 	-L$(RPGML_SRC_ROOT)/libRPGML\
+
+STEST_SCRIPTS=$(shell find . -name "stest_*.rpgml" -type f )
+
+STEST_RESULTS=\
+	$(STEST_SCRIPTS:.rpgml=.output)\
+# 	$(STEST_SCRIPTS:.rpgml=.pretty)\
+
+TIMEOUT_SECONDS=1
+
+RPGML=$(RPGML_SRC_ROOT)/rpgml/rpgml
+PRETTYPRINTER=$(RPGML_SRC_ROOT)/rpgml/prettyprinter
 

@@ -1,5 +1,6 @@
 
-RPGML_SRC_ROOT=$(shell pwd)
+include Makefile.defines
+include Makefile.rules
 
 SUBDIRS=\
 	libRPGML\
@@ -7,16 +8,25 @@ SUBDIRS=\
 	ROOT\
 
 all:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C $(subdir) all && ) true
+	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) all && ) true
 
 clean:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C $(subdir) clean && ) true
+	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) clean && ) true
+	rm -f $(STEST_SCRIPTS:.rpgml=.output) $(STEST_SCRIPTS:.rpgml=.pretty)
+	find . -name ".rerun_stest" -exec rm {} \;
+	find . -name "*.o.CXXFLAGS" -exec rm {} \;
+	find . -name "*.o.LDFLAGS" -exec rm {} \;
+	find . -name ".*.dep" -exec rm {} \;
+	find . -name ".depend" -exec rm {} \;
 
 undepend:
-	$(foreach subdir, $(SUBDIRS), $(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C $(subdir) undepend && ) true
+	$(foreach subdir, $(SUBDIRS), $(MAKE) -C $(subdir) undepend && ) true
 
-test:
-	$(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C libRPGML/utest test
+utest:
+	$(MAKE) -C libRPGML/utest test
 
 print:
 	@echo "RPGML_SRC_ROOT='$(RPGML_SRC_ROOT)'"
+
+include Makefile.stest
+
