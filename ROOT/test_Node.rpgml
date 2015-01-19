@@ -1,4 +1,0 @@
-
-UnaryOp u( op="-" );
-
-u.op = "-";
