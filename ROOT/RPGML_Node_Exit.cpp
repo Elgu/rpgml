@@ -43,8 +43,6 @@ const char *Exit::getName( void ) const
 
 bool Exit::tick( void )
 {
-  if( !hasAnyInputChanged() ) return true;
-
   const Input *const input_condition = getInput( INPUT_CONDITION );
   const ArrayBase *const condition_base = input_condition->getData();
 
