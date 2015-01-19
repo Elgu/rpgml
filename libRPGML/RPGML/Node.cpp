@@ -116,8 +116,11 @@ void Input::connect( Output *output )
   if( output != m_output )
   {
     disconnect();
-    m_output.reset( output );
-    output->connect( this );
+    if( output )
+    {
+      m_output.reset( output );
+      output->connect( this );
+    }
   }
 }
 
@@ -199,6 +202,13 @@ void Output::disconnect( Input *input )
 
 void Output::connect( Input *input )
 {
+  if( !input ) return;
+  if( !this )
+  {
+    input->disconnect();
+    return;
+  }
+
   CountPtr< Input > *free_pos = 0;
   for( inputs_t::reverse_iterator i( m_inputs->rbegin() ), end( m_inputs->rend() ); i != end; ++i )
   {
@@ -212,6 +222,7 @@ void Output::connect( Input *input )
     {
       // store there
       free_pos = &(*i);
+      break;
     }
   }
 
