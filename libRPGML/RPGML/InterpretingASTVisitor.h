@@ -65,8 +65,9 @@ public:
   virtual bool visit( const AST::NOPStatement                 *node );
   virtual bool visit( const AST::ForSequenceStatement         *node );
   virtual bool visit( const AST::ForContainerStatement        *node );
-  virtual bool visit( const AST::FunctionCallStatement        *node );
+  virtual bool visit( const AST::ExpressionStatement          *node );
   virtual bool visit( const AST::VariableCreationStatement    *node );
+  virtual bool visit( const AST::VariableConstructionStatement*node );
   virtual bool visit( const AST::ReturnStatement              *node );
 
   bool get_return_encountered( void ) const { return return_encountered; }
@@ -92,7 +93,10 @@ public:
 
 private:
   bool dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value );
-  bool assign_impl( const AST::AssignmentStatement *node, Value *lvalue );
+  bool assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue );
+
+  void determine_size( const ArrayBase *array, int dims, index_t *size, int dim );
+  void fill_array( const ArrayBase *array, const ArrayBase::Size &size, Value *dest, int dim );
 
   CountPtr< Scope > scope;
   CountPtr< TypeDescr > return_value_type_descr;

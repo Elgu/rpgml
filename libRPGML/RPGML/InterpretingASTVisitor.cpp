@@ -47,8 +47,8 @@ namespace InterpretingASTVisitor_impl {
 
     // to Array
 
-    if( !to->dims ) throw Exception() << "No array dimensions specified in TypeDescr";
-    if( !to->of ) throw Exception() << "No array 'of'-type specified in TypeDescr";
+    if( !to->dims ) throw Exception() << "Internal: No array dimensions specified in TypeDescr";
+    if( !to->of ) throw Exception() << "Internal: No array 'of'-type specified in TypeDescr";
 
     // Get Array dimensions and size
 
@@ -68,13 +68,22 @@ namespace InterpretingASTVisitor_impl {
       else if( dims_d.isInteger() )
       {
         const int64_t dims_d_i = save_cast( dims_d, Type::Int64() ).getInt64();
-        if( dims_d_i < 0 ) throw Exception() << "Array size must not be negative.";
+        if( dims_d_i < 0 )
+        {
+          throw Exception()
+            << "Array size must not be negative"
+            << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d_i
+            ;
+        }
         to_size[ d ] = index_t( dims_d_i );
         to_size_known[ d ] = true;
       }
       else
       {
-        throw Exception() << "Array dimension must be of an integer type";
+        throw Exception()
+          << "Array dimension must be of an integer type"
+          << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d.getType()
+          ;
       }
     }
 
@@ -91,7 +100,11 @@ namespace InterpretingASTVisitor_impl {
 
       if( x_base->getDims() != to_dims )
       {
-        throw Exception() << "Number of Array dimensions do not match";
+        throw Exception()
+          << "Number of Array dimensions do not match"
+          << ": Expected " << to_dims
+          << ", got " << x_base->getDims()
+          ;
       }
 
       const ArrayBase::Size x_size = x_base->getSize();
@@ -103,7 +116,11 @@ namespace InterpretingASTVisitor_impl {
 
         if( x_size[ d ] != to_size[ d ] )
         {
-          throw Exception() << "Dimension size does not match the specified size";
+          throw Exception()
+            << "Dimension " << ("xyzt"[ d ]) << "-size does not match the specified size"
+            << ": Expected " << to_size[ d ]
+            << ", is " << x_size[ d ]
+            ;
         }
       }
 
@@ -173,7 +190,7 @@ namespace InterpretingASTVisitor_impl {
         }
         else
         {
-          throw Exception() << "Assigning Array with different dimension not supported yet";
+          throw Exception() << "Assigning Array with different dimension not supported (yet?)";
         }
       }
       else
@@ -250,26 +267,221 @@ bool InterpretingASTVisitor::visit( const AST::ThisExpression           * )
   return false;
 }
 
+void InterpretingASTVisitor::determine_size( const ArrayBase *array, int dims, index_t *size, int dim )
+{
+  if( dim <= 1 )
+  {
+    const AST::ArrayConstantExpression::SequenceExpressionArray *seq_array = 0;
+    if( !array->getAs( seq_array ) )
+    {
+      throw Exception()
+        << "Could not get seq_array"
+        << ": dims = " << dims
+        << ", array_base->getType() = " << array->getType()
+        << ", array_base->getSize() = " << array->getSize()
+        << ", dim = " << dim
+        ;
+    }
+    const index_t seq_array_size = seq_array->size();
+
+    if( dims == 1 )
+    {
+      if( seq_array_size == 1 )
+      {
+        size[ 0 ] = seq_array->at( 0 )->length();
+        if( unknown == size[ 0 ] )
+        {
+          seq_array->at( 0 )->invite( this );
+          Value sequence; sequence.swap( return_value );
+          size[ 0 ] = sequence.getSequence()->length();
+        }
+      }
+      else if( seq_array_size == 0 )
+      {
+        size[ 0 ] = 0;
+      }
+      else
+      {
+        throw Exception()
+          << "ArrayConstantExpression specified dims = 1"
+          << ", but seq_array->size() = " << seq_array_size
+          ;
+      }
+      return;
+    }
+    else
+    {
+      if( seq_array_size == 0 )
+      {
+        size[ 0 ] = 0;
+      }
+      else
+      {
+        size[ 0 ] = seq_array->at( 0 )->length();
+        if( unknown == size[ 0 ] )
+        {
+          seq_array->at( 0 )->invite( this );
+          Value sequence; sequence.swap( return_value );
+          size[ 0 ] = sequence.getSequence()->length();
+        }
+      }
+      size[ 1 ] = seq_array_size;
+      return;
+    }
+  }
+  else
+  {
+    const AST::ArrayConstantExpression::ArrayBaseArray *array_array = 0;
+    if( !array->getAs( array_array ) )
+    {
+      throw Exception()
+        << "Could not get array_array"
+        << ": dims = " << dims
+        << ", array_base->getType() = " << array->getType()
+        << ", array_base->getSize() = " << array->getSize()
+        << ", dim = " << dim
+        ;
+    }
+
+    const index_t array_array_size = array_array->size();
+    size[ dim ] = array_array_size;
+
+    if( array_array_size > 0 )
+    {
+      determine_size( array_array->at( 0 ), dims, size, dim-1 );
+    }
+  }
+}
+
+void InterpretingASTVisitor::fill_array( const ArrayBase *array, const ArrayBase::Size &size, Value *dest, int dim )
+{
+  const int dims = size.getDims();
+
+  if( dim <= 1 )
+  {
+    const AST::ArrayConstantExpression::SequenceExpressionArray *seq_array = 0;
+    if( !array->getAs( seq_array ) )
+    {
+      throw Exception()
+        << "Could not get seq_array"
+        << ": dim = " << dim
+        << ", array_base->getType() = " << array->getType()
+        << ", array_base->getSize() = " << array->getSize()
+        ;
+    }
+    const index_t seq_array_size = seq_array->size();
+
+    if( dims == 1 && seq_array_size > 1 )
+    {
+      throw Exception()
+        << "ArrayConstantExpression specified dims = 1"
+        << ", but seq_array->size() = " << seq_array_size
+        ;
+    }
+
+//    cerr << "size = " << size << endl;
+
+    typedef AST::ArrayConstantExpression::SequenceExpressionArray::ConstElements E;
+    const index_t sizeX = size[ 0 ];
+    index_t y = 0;
+    for( CountPtr< E > e( seq_array->getElements() ); !e->done(); e->next(), ++y )
+    {
+      if( y >= size[ 1 ] ) goto not_equal_sides;
+
+      const AST::SequenceExpression *const seq = e->get();
+
+      seq->invite( this );
+      Value sequence; sequence.swap( return_value );
+      if( !sequence.isSequence() )
+      {
+        throw ParseException( seq->loc )
+          << "Is not a Sequence, is a " << sequence.getType()
+          ;
+      }
+
+      typedef Sequence::Iter I;
+      index_t x = 0;
+      for( CountPtr< I > i = sequence.getSequence()->getIter(); !i->done(); i->next(), ++x )
+      {
+        if( x >= size[ 0 ] ) goto not_equal_sides;
+        dest[ y*sizeX + x ] = i->get();
+      }
+      if( x != size[ 0 ] ) goto not_equal_sides;
+    }
+    if( dims > 1 && y != size[ 1 ] ) goto not_equal_sides;
+    return;
+  }
+  else
+  {
+    index_t stride = 1;
+    for( int d=0; d<dim; ++d )
+    {
+      stride *= size[ d ];
+    }
+
+    const AST::ArrayConstantExpression::ArrayBaseArray *array_array = 0;
+    if( !array->getAs( array_array ) )
+    {
+      throw Exception()
+        << "Could not get array_array"
+        << ": dims = " << dims
+        << ", array_base->getType() = " << array->getType()
+        << ", array_base->getSize() = " << array->getSize()
+        ;
+    }
+
+    const index_t array_array_size = array_array->size();
+//    cerr << "array_array_size " << dim << " = " << array_array_size << ", size = " << size << endl;
+    if( array_array_size != size[ dim ] ) goto not_equal_sides;
+
+    typedef AST::ArrayConstantExpression::ArrayBaseArray::ConstElements I;
+    index_t s = 0;
+    for( CountPtr< I > i( array_array->getElements() ); !i->done(); i->next(), ++s )
+    {
+      fill_array( i->get(), size, dest + s*stride, dim-1 );
+    }
+  }
+
+  return;
+
+not_equal_sides:
+  throw Exception()
+    << "Not all rows or columns etc. have the same length"
+    ;
+}
+
 bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *node )
 {
-  if( !node->sequence->invite( this ) ) return false;
-  Value sequence; sequence.swap( return_value );
+  const ArrayBase *const array = node->descr_array;
 
-  if( !sequence.isSequence() )
+  const int dims = node->dims;
+  index_t size_array[ dims ];
+  fill( size_array, size_array+dims, index_t( 0 ) );
+
+  determine_size( array, dims, size_array, dims-1 );
+
+  const ArrayBase::Size size( dims, size_array );
+
+//  cerr << "ArrayConstantExpression" << ": determined size " << size << endl ;
+
+  CountPtr< ValueArrayElements > ret;
+
+  switch( node->dims )
   {
-    throw ParseException( node->sequence->loc )
-      << "Array definition content is not a Sequence, is " << sequence.getTypeName()
-      ;
+    case 1: ret = new ValueArray1D( getGC(), size ); break;
+    case 2: ret = new ValueArray2D( getGC(), size ); break;
+    case 3: ret = new ValueArray3D( getGC(), size ); break;
+    case 4: ret = new ValueArray4D( getGC(), size ); break;
+    default:
+      throw Exception()
+        << "Internal: ArrayConstantExpression's dims is supposed to be at least 1 and at most 4"
+        << ", is " << node->dims
+        ;
   }
 
-  CountPtr< Array< Value, 1 > > array = new Array< Value, 1 >( scope->getGC() );
+  fill_array( array, size, ret->elements(), dims-1 );
 
-  for( CountPtr< Sequence::Iter > i = sequence.getSequence()->getIter(); !i->done(); i->next() )
-  {
-    array->push_back( i->get() );
-  }
-
-  return_value = Value( array.get() );
+  return_value = Value( ret.get() );
   return true;
 }
 
@@ -356,7 +568,13 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
 
 bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *node )
 {
-  const Value *const value = scope->lookup( node->identifier );
+  const String identifier =
+    ( node->at_root
+    ? "." + node->identifier
+    : node->identifier
+    );
+
+  const Value *const value = scope->lookup( identifier );
   if( value )
   {
 //    cerr << "AST::LookupVariableExpression( '" << node->identifier << "' ): value = '" << (*value) << "'" << endl;
@@ -366,7 +584,7 @@ bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *nod
   else
   {
     return_value.clear();
-    throw Exception() << "Identifier '" << node->identifier << "' not found";
+    throw Exception() << "Identifier '" << identifier << "' not found";
   }
 }
 
@@ -589,7 +807,7 @@ bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *nod
   if( !node->arg->invite( this ) ) return false;
   args[ 1 ].swap( return_value );
 
-  return scope->call( node->loc, getRD()+1, String::Static( ".unaryOp" ), return_value, 2, args );
+  return scope->call( node->loc, getRD()+1, String::Static( ".math.mathOp1" ), return_value, 2, args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
@@ -766,7 +984,7 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
   return true;
 }
 
-bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatement *node, Value *lvalue )
+bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue )
 {
   using namespace InterpretingASTVisitor_impl;
 
@@ -1058,19 +1276,32 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
       if( return_encountered ) break;
     }
   }
+  else if( container.isFrame() )
+  {
+    const Frame *const frame = container.getFrame();
+
+    for( CountPtr< Frame::Iterator > i( frame->getIterator() ); !i->done(); i->next() )
+    {
+      (*for_variable) = i->get().second;
+
+      if( !node->body->invite( this ) ) return false;
+
+      if( return_encountered ) break;
+    }
+  }
   else
   {
     throw ParseException( node->container->loc )
-      << "Invalid type '" << container.getTypeName() << "' for container after 'in'"
+      << "Invalid type '" << container.getType() << "' for container after 'in'"
       ;
   }
 
   return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::FunctionCallStatement        *node )
+bool InterpretingASTVisitor::visit( const AST::ExpressionStatement        *node )
 {
-  return node->call->invite( this );
+  return node->expr->invite( this );
 }
 
 bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
@@ -1096,6 +1327,20 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   {
     value = save_cast( value, expected_type, scope->getGC() );
   }
+
+  if( !scope->create_unified( identifier, value ) )
+  {
+    throw Exception() << "Could not create variable '" << identifier << "'";
+  }
+  return true;
+}
+
+bool InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *node )
+{
+  if( !node->value->invite( this ) ) return false;
+  Value value; value.swap( return_value );
+
+  const String &identifier = node->identifier;
 
   if( !scope->create_unified( identifier, value ) )
   {
