@@ -38,6 +38,8 @@ public:
 
   virtual CountPtr< Sequence > clone( void ) const = 0;
   virtual CountPtr< Iter > getIter( void ) const = 0;
+
+  virtual index_t length( void ) const = 0;
 private:
 };
 
@@ -55,6 +57,7 @@ public:
   virtual CountPtr< Sequence > clone( void ) const;
   virtual CountPtr< Iter > getIter( void ) const;
 
+  virtual index_t length( void ) const;
 private:
   class IteratorValueArray : public Iter
   {

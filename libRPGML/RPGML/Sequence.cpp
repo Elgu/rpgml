@@ -79,6 +79,17 @@ namespace Sequence_impl {
       return new IteratorFromToStep( m_from, m_to, m_step );
     }
 
+    index_t length( void ) const
+    {
+      // dum version
+      index_t ret = 0;
+      for( CountPtr< Iter > i( getIter() ); !i->done(); i->next() )
+      {
+        ++ret;
+      }
+      return ret;
+    }
+
   private:
     class IteratorFromToStep : public Iter
     {
@@ -89,7 +100,7 @@ namespace Sequence_impl {
       , m_step( step )
       {
   //      std::cerr << "IteratorFromToStep( " << curr << ", " << to << ", " << step << " )" << std::endl;
-        assert( step != 0 );
+        if( step == 0 ) throw Exception() << "step must not be 0";
       }
 
       virtual ~IteratorFromToStep( void )
@@ -185,6 +196,11 @@ CountPtr< Sequence > SequenceValueArray::clone( void ) const
 CountPtr< Sequence::Iter > SequenceValueArray::getIter( void ) const
 {
   return m_array->getValueIterator();
+}
+
+index_t SequenceValueArray::length( void ) const
+{
+  return m_array->size();
 }
 
 SequenceValueArray::IteratorValueArray
