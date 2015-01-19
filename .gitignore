@@ -15,3 +15,6 @@ core
 /libRPGML/RPGML/rpgml.tab.cc
 /libRPGML/RPGML/rpgml.tab.hh
 /libRPGML/RPGML/stack.hh
+.rerun_stest
+test_*.pretty
+test_*.output
