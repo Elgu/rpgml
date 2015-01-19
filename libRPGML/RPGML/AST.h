@@ -22,6 +22,7 @@
 #include "String.h"
 #include "ParserEnums.h"
 #include "Value.h"
+#include "Array.h"
 #include "Location.h"
 #include "ParseException.h"
 
@@ -54,21 +55,25 @@ class TypeExpression;
 class DimensionsExpression;
 typedef DimensionsExpression CoordinatesExpression;
 
-class Statement;
 class CompoundStatement;
-class FunctionDefinitionStatement;
-class ConnectStatement;
-class AssignmentStatement;
+class AssignmentStatementBase;
 class AssignIdentifierStatement;
 class AssignDotStatement;
 class AssignBracketStatement;
+
+// maybe expression
+class FunctionDefinitionStatement;
+class VariableCreationStatement;
+class VariableConstructionStatement;
+
+class Statement;
+class ExpressionStatement;
+class ConnectStatement;
 class IfStatement;
 class NOPStatement;
 class ForStatement;
 class ForSequenceStatement;
 class ForContainerStatement;
-class FunctionCallStatement;
-class VariableCreationStatement;
 class ReturnStatement;
 
 class Node : public Refcounted
@@ -130,8 +135,9 @@ public:
   virtual bool visit( const NOPStatement                 *node ) = 0;
   virtual bool visit( const ForSequenceStatement         *node ) = 0;
   virtual bool visit( const ForContainerStatement        *node ) = 0;
-  virtual bool visit( const FunctionCallStatement        *node ) = 0;
+  virtual bool visit( const ExpressionStatement          *node ) = 0;
   virtual bool visit( const VariableCreationStatement    *node ) = 0;
+  virtual bool visit( const VariableConstructionStatement*node ) = 0;
   virtual bool visit( const ReturnStatement              *node ) = 0;
 
   template< class NodeType >
@@ -156,6 +162,10 @@ public:
     catch( const char *e )
     {
       throw ParseException( node->loc, e );
+    }
+    catch( const std::exception &e )
+    {
+      throw ParseException( node->loc ) << e.what();
     }
     catch( ... )
     {
@@ -203,17 +213,22 @@ public:
 class ArrayConstantExpression : public Expression
 {
 public:
+  typedef Array< CountPtr< const SequenceExpression >, 1 > SequenceExpressionArray;
+  typedef Array< CountPtr< const ArrayBase          >, 1 > ArrayBaseArray;
+
   explicit
-  ArrayConstantExpression( const Location *_loc, const SequenceExpression *_sequence=0 )
+  ArrayConstantExpression( const Location *_loc, const ArrayBase *_descr_array, int _dims )
   : Expression( _loc )
-  , sequence( _sequence )
+  , descr_array( _descr_array )
+  , dims( _dims )
   {}
 
   virtual ~ArrayConstantExpression( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const SequenceExpression > sequence;
+  const CountPtr< const ArrayBase > descr_array;
+  int dims;
 };
 
 class FrameConstantExpression : public Expression
@@ -239,6 +254,8 @@ public:
   {}
   virtual ~SequenceExpression( void ) {}
   virtual SequenceExpression *getSequenceExpression( void ) { return this; }
+  virtual index_t length( void ) const = 0;
+  virtual const Expression *first( void ) const = 0;
 };
 
 class ExpressionSequenceExpression : public SequenceExpression
@@ -254,6 +271,20 @@ public:
   void append( const Expression *expression )
   {
     expressions.push_back( expression );
+  }
+
+  virtual index_t length( void ) const { return index_t( expressions.size() ); }
+
+  virtual const Expression *first( void ) const
+  {
+    if( expressions.empty() )
+    {
+      return 0;
+    }
+    else
+    {
+      return expressions.front();
+    }
   }
 
   std::vector< CountPtr< const Expression > > expressions;
@@ -273,6 +304,13 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
+  virtual index_t length( void ) const { return unknown; }
+
+  virtual const Expression *first( void ) const
+  {
+    return from;
+  }
+
   const CountPtr< const Expression > from;
   const CountPtr< const Expression > to;
   const CountPtr< const Expression > step;
@@ -289,21 +327,30 @@ public:
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
+  virtual index_t length( void ) const { return sequence->length(); }
+
+  virtual const Expression *first( void ) const
+  {
+    return sequence->first();
+  }
+
   const CountPtr< const SequenceExpression > sequence;
 };
 
 class LookupVariableExpression : public Expression
 {
 public:
-  LookupVariableExpression( const Location *_loc, const String &_identifier )
+  LookupVariableExpression( const Location *_loc, const String &_identifier, bool _at_root = false )
   : Expression( _loc )
   , identifier( _identifier )
+  , at_root( _at_root )
   {}
   virtual ~LookupVariableExpression( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
   const String identifier;
+  bool at_root;
 };
 
 class FunctionCallExpression : public Expression
@@ -324,7 +371,7 @@ public:
   {
   public:
     explicit
-    Arg( const Location *_loc, Expression *_value, const String &_identifier = String() )
+    Arg( const Location *_loc, const Expression *_value, const String &_identifier = String() )
     : loc( _loc )
     , value( _value )
     , identifier( _identifier )
@@ -332,7 +379,7 @@ public:
     virtual ~Arg( void ) {}
 
     CountPtr< const Location > loc;
-    CountPtr< Expression > value;
+    CountPtr< const Expression > value;
     const String identifier;
   };
 
@@ -602,15 +649,15 @@ public:
   const CountPtr< const Expression > input;
 };
 
-class AssignmentStatement : public Statement
+class AssignmentStatementBase : public Statement
 {
 public:
-  AssignmentStatement( const Location *_loc, ASSIGN _op, const Expression *_value )
+  AssignmentStatementBase( const Location *_loc, ASSIGN _op, const Expression *_value )
   : Statement( _loc )
   , value( _value )
   , op( _op )
   {}
-  virtual ~AssignmentStatement( void ) {}
+  virtual ~AssignmentStatementBase( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
@@ -618,11 +665,11 @@ public:
   const ASSIGN op;
 };
 
-class AssignIdentifierStatement : public AssignmentStatement
+class AssignIdentifierStatement : public AssignmentStatementBase
 {
 public:
   AssignIdentifierStatement( const Location *_loc, const String &_identifier, ASSIGN _op, const Expression *_value )
-  : AssignmentStatement( _loc, _op, _value )
+  : AssignmentStatementBase( _loc, _op, _value )
   , identifier( _identifier )
   {}
   virtual ~AssignIdentifierStatement( void ) {}
@@ -632,11 +679,11 @@ public:
   const String identifier;
 };
 
-class AssignDotStatement : public AssignmentStatement
+class AssignDotStatement : public AssignmentStatementBase
 {
 public:
-  AssignDotStatement( const Location *_loc, Expression *_left, const String &_identifier, ASSIGN _op, const Expression *_value )
-  : AssignmentStatement( _loc, _op, _value )
+  AssignDotStatement( const Location *_loc, const Expression *_left, const String &_identifier, ASSIGN _op, const Expression *_value )
+  : AssignmentStatementBase( _loc, _op, _value )
   , left( _left )
   , identifier( _identifier )
   {}
@@ -648,11 +695,11 @@ public:
   const String identifier;
 };
 
-class AssignBracketStatement : public AssignmentStatement
+class AssignBracketStatement : public AssignmentStatementBase
 {
 public:
   AssignBracketStatement( const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord, ASSIGN _op, const Expression *_value )
-  : AssignmentStatement( _loc, _op, _value )
+  : AssignmentStatementBase( _loc, _op, _value )
   , left( _left )
   , coord( _coord )
   {}
@@ -737,19 +784,19 @@ public:
   const CountPtr< const Expression > container;
 };
 
-class FunctionCallStatement : public Statement
+class ExpressionStatement : public Statement
 {
 public:
   explicit
-  FunctionCallStatement( const Location *_loc, const Expression *_call )
+  ExpressionStatement( const Location *_loc, const Expression *_expr )
   : Statement( _loc )
-  , call( _call )
+  , expr( _expr )
   {}
-  virtual ~FunctionCallStatement( void ) {}
+  virtual ~ExpressionStatement( void ) {}
 
   virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > call;
+  const CountPtr< const Expression > expr;
 };
 
 class VariableCreationStatement : public Statement
@@ -768,6 +815,22 @@ public:
   const String identifier;
   const CountPtr< const Expression > value;
   const CountPtr< const TypeExpression > type;
+};
+
+class VariableConstructionStatement : public Statement
+{
+public:
+  VariableConstructionStatement( const Location *_loc, const String &_identifier, const FunctionCallExpression *_value )
+  : Statement( _loc )
+  , identifier( _identifier )
+  , value( _value )
+  {}
+  virtual ~VariableConstructionStatement( void ) {}
+
+  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+
+  const String identifier;
+  const CountPtr< const FunctionCallExpression > value;
 };
 
 class ReturnStatement : public Statement
