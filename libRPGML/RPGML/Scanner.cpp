@@ -18,6 +18,8 @@
 #include "Scanner.h"
 
 #include <RPGML/rpgml.tab.hh>
+#include "toLocation.h"
+#include "ParseException.h"
 
 #include <ctype.h>
 #include <iostream>
@@ -87,9 +89,10 @@ char Source::trackLocation( char c, location_type *loc )
   return c;
 }
 
-Scanner::Scanner( StringUnifier *unifier, Source *source )
+Scanner::Scanner( GarbageCollector *_gc, StringUnifier *unifier, Source *source )
 : m_source( source )
 , m_unifier( unifier )
+, m_gc( _gc )
 {
   setFilename( "" );
 }
@@ -130,6 +133,16 @@ Scanner &Scanner::setFilename( const String &_filename )
   m_filename = _filename;
   filename = &m_filename;
   return (*this);
+}
+
+const String &Scanner::getFilename( void ) const
+{
+  return unified_filename;
+}
+
+GarbageCollector *Scanner::getScannerGC( void ) const
+{
+  return m_gc;
 }
 
 static
@@ -173,6 +186,8 @@ const Keyword keywords[] =
   { "Method"  , _Parser::token::METHOD  , Type::FUNCTION },
   { "Output"  , _Parser::token::OUTPUT  , Type::OUTPUT   },
   { "Input"   , _Parser::token::INPUT   , Type::INPUT    },
+  { "Node"    , _Parser::token::NODE    , Type::NODE     },
+  { "Param"   , _Parser::token::PARAM   , Type::PARAM    },
   { "if"      , _Parser::token::IF      , Type::NIL  },
   { "else"    , _Parser::token::ELSE    , Type::NIL  },
   { "for"     , _Parser::token::FOR     , Type::NIL  },
@@ -269,6 +284,7 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
   bool has_exp_sign = false;
   bool is_float = false;
   bool is_hex = false;
+  bool is_signed = ( '-' == c );
 
   for(;;)
   {
@@ -301,6 +317,14 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
       has_exp = true;
       is_float = true;
     }
+    else if( 'x' == c )
+    {
+      if( str.length() != 1 || str[ 0 ] != '0' )
+      {
+        throw "hex numbers must begin with '0x', no further 'x' allowed.";
+      }
+      is_hex = true;
+    }
     else if( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) )
     {
       if( !is_hex )
@@ -313,14 +337,6 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
       if( has_dot ) throw "Invalid float with two dots";
       has_dot = true;
       is_float = true;
-    }
-    else if( 'x' == c )
-    {
-      if( str.length() != 1 || str[ 0 ] != '0' )
-      {
-        throw "hex numbers must begin with '0x', no further 'x' allowed.";
-      }
-      is_hex = true;
     }
     else if( '+' == c || '-' == c )
     {
@@ -353,11 +369,18 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
     token->fval = f;
     return _Parser::token::F_CONSTANT;
   }
-  else
+  else if( is_signed )
   {
     const int base = ( is_hex ? 16 : 10 );
     const int64_t i = int64_t( strtoll( str.c_str(), 0, base ) );
     token->ival = i;
+    return _Parser::token::I_CONSTANT;
+  }
+  else
+  {
+    const int base = ( is_hex ? 16 : 10 );
+    const uint64_t u = uint64_t( strtoull( str.c_str(), 0, base ) );
+    token->uval = u;
     return _Parser::token::I_CONSTANT;
   }
 }
@@ -410,7 +433,7 @@ int parse_string( char c, Source *s, StringUnifier *u, semantic_type *token, loc
 }
 
 static
-int parse_minus( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_minus( char c, Source *s, StringUnifier *u, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -429,8 +452,16 @@ int parse_minus( char c, Source *s, StringUnifier *, semantic_type *token, locat
        break;
 
     default:
-      s->putBackChar();
-      ret = c;
+      if( isdigit( c ) )
+      {
+        s->putBackChar();
+        ret = parse_number( '-', s, u, token, loc );
+      }
+      else
+      {
+        s->putBackChar();
+        ret = c;
+      }
       break;
   }
 
@@ -769,6 +800,52 @@ int parse_dot( char c, Source *s, StringUnifier *, semantic_type *, location_typ
   return ret;
 }
 
+static
+int parse_semi( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+{
+  int ret = 0;
+
+  s->tokenBegin( loc );
+
+  const char second = s->next( loc );
+
+  switch( second )
+  {
+    case ';':
+      {
+        const char third = s->next( loc );
+        if( ';' == third )
+        {
+          const char fourth = s->next( loc );
+          if( ';' == fourth )
+          {
+            ret = _Parser::token::QUAD_SEMI;
+          }
+          else
+          {
+            s->putBackChar();
+            ret = _Parser::token::TRI_SEMI;
+          }
+        }
+        else
+        {
+          s->putBackChar();
+          ret = _Parser::token::DOUBLE_SEMI;
+        }
+      }
+      break;
+
+    default:
+      s->putBackChar();
+      ret = c;
+      break;
+  }
+
+  s->tokenEnd( loc );
+
+  return ret;
+}
+
 int Scanner::yylex( semantic_type *token, location_type *loc )
 {
   Source *const s = m_source.get();
@@ -780,74 +857,85 @@ int Scanner::yylex( semantic_type *token, location_type *loc )
   {
     const char c = waste_whitespace( s, loc );
 
-    if( isalpha( c ) || '_' == c )
+    try
     {
-      ret = parse_identifier( c, s, u, token, loc );
+      if( isalpha( c ) || '_' == c )
+      {
+        ret = parse_identifier( c, s, u, token, loc );
+      }
+      else if( isdigit( c ) )
+      {
+        ret = parse_number( c, s, u, token, loc );
+      }
+      else if( '\'' == c || '\"' == c )
+      {
+        ret = parse_string( c, s, u, token, loc );
+      }
+      else if( '-' == c )
+      {
+        ret = parse_minus( c, s, u, token, loc );
+      }
+      else if( '+' == c )
+      {
+        ret = parse_plus( c, s, u, token, loc );
+      }
+      else if( '<' == c )
+      {
+        ret = parse_lt( c, s, u, token, loc );
+      }
+      else if( '>' == c )
+      {
+        ret = parse_gt( c, s, u, token, loc );
+      }
+      else if( '=' == c )
+      {
+        ret = parse_eq( c, s, u, token, loc );
+      }
+      else if( '!' == c )
+      {
+        ret = parse_excl( c, s, u, token, loc );
+      }
+      else if( '&' == c )
+      {
+        ret = parse_amp( c, s, u, token, loc );
+      }
+      else if( '^' == c )
+      {
+        ret = parse_hat( c, s, u, token, loc );
+      }
+      else if( '|' == c )
+      {
+        ret = parse_pipe( c, s, u, token, loc );
+      }
+      else if( '/' == c )
+      {
+        ret = parse_slash( c, s, u, token, loc );
+      }
+      else if( '.' == c )
+      {
+        ret = parse_dot( c, s, u, token, loc );
+      }
+      else if( ';' == c )
+      {
+        ret = parse_semi( c, s, u, token, loc );
+      }
+      else if( '#' == c )
+      {
+        ret = parse_line_comment( c, s, u, token, loc );
+      }
+      else if( '\0' == c )
+      {
+  //      std::cerr << "Encountered 0" << std::endl;
+        ret = c;
+      }
+      else
+      {
+        ret = c;
+      }
     }
-    else if( isdigit( c ) )
+    catch( const char *e )
     {
-      ret = parse_number( c, s, u, token, loc );
-    }
-    else if( '\'' == c || '\"' == c )
-    {
-      ret = parse_string( c, s, u, token, loc );
-    }
-    else if( '-' == c )
-    {
-      ret = parse_minus( c, s, u, token, loc );
-    }
-    else if( '+' == c )
-    {
-      ret = parse_plus( c, s, u, token, loc );
-    }
-    else if( '<' == c )
-    {
-      ret = parse_lt( c, s, u, token, loc );
-    }
-    else if( '>' == c )
-    {
-      ret = parse_gt( c, s, u, token, loc );
-    }
-    else if( '=' == c )
-    {
-      ret = parse_eq( c, s, u, token, loc );
-    }
-    else if( '!' == c )
-    {
-      ret = parse_excl( c, s, u, token, loc );
-    }
-    else if( '&' == c )
-    {
-      ret = parse_amp( c, s, u, token, loc );
-    }
-    else if( '^' == c )
-    {
-      ret = parse_hat( c, s, u, token, loc );
-    }
-    else if( '|' == c )
-    {
-      ret = parse_pipe( c, s, u, token, loc );
-    }
-    else if( '/' == c )
-    {
-      ret = parse_slash( c, s, u, token, loc );
-    }
-    else if( '.' == c )
-    {
-      ret = parse_dot( c, s, u, token, loc );
-    }
-    else if( '#' == c )
-    {
-      ret = parse_line_comment( c, s, u, token, loc );
-    }
-    else if( '\0' == c )
-    {
-//      std::cerr << "Encountered 0" << std::endl;
-      ret = c;
-    }
-    else
-    {
-      ret = c;
+      throw ParseException( toLocation( getFilename(), *loc ) ) << e;
     }
   }
   while( ret < 0 );

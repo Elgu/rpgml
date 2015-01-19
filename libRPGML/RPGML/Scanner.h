@@ -23,6 +23,8 @@
 
 namespace RPGML {
 
+class GarbageCollector;
+
 class Source : public Refcounted
 {
 public:
@@ -55,7 +57,7 @@ public:
   typedef _Parser::semantic_type semantic_type;
 
   explicit
-  Scanner( StringUnifier *unifier, Source *source=0 );
+  Scanner( GarbageCollector *_gc, StringUnifier *unifier, Source *source=0 );
   ~Scanner( void );
 
   Scanner &getScanner( void );
@@ -64,6 +66,9 @@ public:
   Scanner &setFilename( const char *filename );
   Scanner &setFilename( const std::string &filename );
   Scanner &setFilename( const String &filename );
+  const String &getFilename( void ) const;
+
+  GarbageCollector *getScannerGC( void ) const;
 
   int yylex( semantic_type *yylval, location_type *yylloc );
 
@@ -72,6 +77,7 @@ public:
 private:
   CountPtr< Source > m_source;
   CountPtr< StringUnifier > m_unifier;
+  GarbageCollector *m_gc;
 
   std::string m_filename;
 public:
