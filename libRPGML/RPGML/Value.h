@@ -38,6 +38,8 @@ class Input   ;
 class Param   ;
 class Sequence;
 class Collectable;
+template< class Elements > class ArrayElements;
+template< class Elements, int Dims > class Array;
 
 #if 1
 #define Value_assert assert
@@ -366,6 +368,13 @@ template<> struct CreateValue< CountPtr< Input          > >{ static Value doit( 
 template<> struct CreateValue< CountPtr< Param          > >{ static Value doit( const CountPtr< Param          > &x ) { return Value( x ); } };
 template<> struct CreateValue< CountPtr< const Sequence > >{ static Value doit( const CountPtr< const Sequence > &x ) { return Value( x ); } };
 template<> struct CreateValue< CountPtr< ArrayBase      > >{ static Value doit( const CountPtr< ArrayBase      > &x ) { return Value( x ); } };
+
+typedef ArrayElements< Value > ValueArrayElements;
+typedef Array< Value, 0 > ValueArray0D;
+typedef Array< Value, 1 > ValueArray1D;
+typedef Array< Value, 2 > ValueArray2D;
+typedef Array< Value, 3 > ValueArray3D;
+typedef Array< Value, 4 > ValueArray4D;
 
 } // namespace RPGML
 

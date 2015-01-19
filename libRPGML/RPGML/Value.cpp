@@ -25,6 +25,7 @@
 #include "Sequence.h"
 #include "StringUnifier.h"
 #include "ParseException.h"
+#include "make_printable.h"
 
 #include <sstream>
 #include <cmath>
@@ -80,15 +81,15 @@ Value::Value( const Value &other )
     case Type::INT64   : break;
     case Type::FLOAT   : break;
     case Type::DOUBLE  : break;
-    case Type::STRING  : str ->ref(); break;
-    case Type::ARRAY   : arr ->ref(); break;
-    case Type::FRAME   : frame->ref(); break;
-    case Type::FUNCTION: func->ref(); break;
-    case Type::NODE    : node->ref(); break;
-    case Type::OUTPUT  : out ->ref(); break;
-    case Type::INPUT   : in  ->ref(); break;
-    case Type::PARAM   : param->ref(); break;
-    case Type::SEQUENCE: seq ->ref(); break;
+    case Type::STRING  : if( str   ) str  ->ref(); break;
+    case Type::ARRAY   : if( arr   ) arr  ->ref(); break;
+    case Type::FRAME   : if( frame ) frame->ref(); break;
+    case Type::FUNCTION: if( func  ) func ->ref(); break;
+    case Type::NODE    : if( node  ) node ->ref(); break;
+    case Type::OUTPUT  : if( out   ) out  ->ref(); break;
+    case Type::INPUT   : if( in    ) in   ->ref(); break;
+    case Type::PARAM   : if( param ) param->ref(); break;
+    case Type::SEQUENCE: if( seq   ) seq  ->ref(); break;
     case Type::OTHER   : break;
   }
 }
@@ -107,15 +108,15 @@ Value::Value( double   _x ) : m_type( Type::DOUBLE ) { d    = _x; }
 Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { CountPtr< const StringData > s( _str.getData() ); str = s.get(); str->ref(); }
-Value::Value( StringData  const *_str  ) : m_type( Type::STRING   ) { str = _str; str->ref(); }
-Value::Value( ArrayBase      *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; arr  ->ref(); }
-Value::Value( Frame          *_frame ) : m_type( Type::FRAME    ) { frame = _frame; frame->ref(); }
-Value::Value( Function       *_func  ) : m_type( Type::FUNCTION ) { func  = _func ; func ->ref(); }
-Value::Value( Node           *_node  ) : m_type( Type::NODE     ) { node  = _node ; node ->ref(); }
-Value::Value( Output         *_out   ) : m_type( Type::OUTPUT   ) { out   = _out  ; out  ->ref(); }
-Value::Value( Input          *_in    ) : m_type( Type::INPUT    ) { in    = _in   ; in   ->ref(); }
-Value::Value( Param          *_param ) : m_type( Type::PARAM    ) { param = _param; param->ref(); }
-Value::Value( Sequence const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; seq  ->ref(); }
+Value::Value( StringData  const *_str   ) : m_type( Type::STRING   ) { str   = _str  ; if( str   ) str  ->ref(); }
+Value::Value( ArrayBase         *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; if( arr   ) arr  ->ref(); }
+Value::Value( Frame             *_frame ) : m_type( Type::FRAME    ) { frame = _frame; if( frame ) frame->ref(); }
+Value::Value( Function          *_func  ) : m_type( Type::FUNCTION ) { func  = _func ; if( func  ) func ->ref(); }
+Value::Value( Node              *_node  ) : m_type( Type::NODE     ) { node  = _node ; if( node  ) node ->ref(); }
+Value::Value( Output            *_out   ) : m_type( Type::OUTPUT   ) { out   = _out  ; if( out   ) out  ->ref(); }
+Value::Value( Input             *_in    ) : m_type( Type::INPUT    ) { in    = _in   ; if( in    ) in   ->ref(); }
+Value::Value( Param             *_param ) : m_type( Type::PARAM    ) { param = _param; if( param ) param->ref(); }
+Value::Value( Sequence    const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; if( seq   ) seq  ->ref(); }
 
 Value &Value::set( bool               _x    ) { return (*this) = Value( _x ); }
 Value &Value::set( uint8_t            _x    ) { return (*this) = Value( _x ); }
@@ -203,15 +204,15 @@ void Value::clear( void )
     case Type::INT64   : break;
     case Type::FLOAT   : break;
     case Type::DOUBLE  : break;
-    case Type::STRING  : if( !str ->unref() ) delete str ; break;
-    case Type::ARRAY   : if( !arr ->unref() ) delete arr ; break;
-    case Type::FRAME   : if( !frame->unref() ) delete frame ; break;
-    case Type::FUNCTION: if( !func->unref() ) delete func; break;
-    case Type::NODE    : if( !node->unref() ) delete node; break;
-    case Type::OUTPUT  : if( !out ->unref() ) delete out ; break;
-    case Type::INPUT   : if( !in  ->unref() ) delete in  ; break;
-    case Type::PARAM   : if( !param->unref() ) delete param; break;
-    case Type::SEQUENCE: if( !seq ->unref() ) delete seq ; break;
+    case Type::STRING  : if( str   && !str  ->unref() ) delete str  ; break;
+    case Type::ARRAY   : if( arr   && !arr  ->unref() ) delete arr  ; break;
+    case Type::FRAME   : if( frame && !frame->unref() ) delete frame; break;
+    case Type::FUNCTION: if( func  && !func ->unref() ) delete func ; break;
+    case Type::NODE    : if( node  && !node ->unref() ) delete node ; break;
+    case Type::OUTPUT  : if( out   && !out  ->unref() ) delete out  ; break;
+    case Type::INPUT   : if( in    && !in   ->unref() ) delete in   ; break;
+    case Type::PARAM   : if( param && !param->unref() ) delete param; break;
+    case Type::SEQUENCE: if( seq   && !seq  ->unref() ) delete seq  ; break;
     case Type::OTHER   : break;
   }
   p = 0;
@@ -266,6 +267,7 @@ Value Value::to( Type type ) const
     case Type::BOOL  :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( false );
         case Type::BOOL   : return Value( bool( getBool  () ) );
         case Type::UINT8  : return Value( bool( getUInt8 () ) );
         case Type::INT8   : return Value( bool( getInt8  () ) );
@@ -284,6 +286,7 @@ Value Value::to( Type type ) const
     case Type::UINT8   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( uint8_t( 0 ) );
         case Type::BOOL   : return Value( uint8_t( getBool  () ) );
         case Type::UINT8  : return Value( uint8_t( getUInt8 () ) );
         case Type::INT8   : return Value( uint8_t( getInt8  () ) );
@@ -303,6 +306,7 @@ Value Value::to( Type type ) const
     case Type::INT8   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( int8_t( 0 ) );
         case Type::BOOL   : return Value( int8_t( getBool  () ) );
         case Type::UINT8  : return Value( int8_t( getUInt8 () ) );
         case Type::INT8   : return Value( int8_t( getInt8  () ) );
@@ -322,6 +326,7 @@ Value Value::to( Type type ) const
     case Type::UINT16   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( uint16_t( 0 ) );
         case Type::BOOL   : return Value( uint16_t( getBool  () ) );
         case Type::UINT8  : return Value( uint16_t( getUInt8 () ) );
         case Type::INT8   : return Value( uint16_t( getInt8  () ) );
@@ -341,6 +346,7 @@ Value Value::to( Type type ) const
     case Type::INT16   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( int16_t( 0 ) );
         case Type::BOOL   : return Value( int16_t( getBool  () ) );
         case Type::UINT8  : return Value( int16_t( getUInt8 () ) );
         case Type::INT8   : return Value( int16_t( getInt8  () ) );
@@ -360,6 +366,7 @@ Value Value::to( Type type ) const
     case Type::UINT32   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( uint32_t( 0 ) );
         case Type::BOOL   : return Value( uint32_t( getBool  () ) );
         case Type::UINT8  : return Value( uint32_t( getUInt8 () ) );
         case Type::INT8   : return Value( uint32_t( getInt8  () ) );
@@ -379,6 +386,7 @@ Value Value::to( Type type ) const
     case Type::INT32   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( int32_t( 0 ) );
         case Type::BOOL   : return Value( int32_t( getBool  () ) );
         case Type::UINT8  : return Value( int32_t( getUInt8 () ) );
         case Type::INT8   : return Value( int32_t( getInt8  () ) );
@@ -398,6 +406,7 @@ Value Value::to( Type type ) const
     case Type::UINT64   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( uint64_t( 0 ) );
         case Type::BOOL   : return Value( uint64_t( getBool  () ) );
         case Type::UINT8  : return Value( uint64_t( getUInt8 () ) );
         case Type::INT8   : return Value( uint64_t( getInt8  () ) );
@@ -417,6 +426,7 @@ Value Value::to( Type type ) const
     case Type::INT64   :
       switch( x.getEnum() )
       {
+        case Type::NIL    : return Value( int64_t( 0 ) );
         case Type::BOOL   : return Value( int64_t( getBool  () ) );
         case Type::UINT8  : return Value( int64_t( getUInt8 () ) );
         case Type::INT8   : return Value( int64_t( getInt8  () ) );
@@ -436,6 +446,7 @@ Value Value::to( Type type ) const
     case Type::FLOAT :
       switch( x.getEnum() )
       {
+        case Type::NIL   : return Value( float( 0 ) );
         case Type::BOOL  : return Value( float( getBool() ) );
         case Type::UINT8 : return Value( float( getUInt8 () ) );
         case Type::INT8  : return Value( float( getInt8  () ) );
@@ -455,6 +466,7 @@ Value Value::to( Type type ) const
     case Type::DOUBLE :
       switch( x.getEnum() )
       {
+        case Type::NIL   : return Value( double( 0 ) );
         case Type::BOOL  : return Value( double( getBool() ) );
         case Type::UINT8 : return Value( double( getUInt8 () ) );
         case Type::INT8  : return Value( double( getInt8  () ) );
@@ -477,6 +489,7 @@ Value Value::to( Type type ) const
 
         switch( x.getEnum() )
         {
+          case Type::NIL    : return Value( String::Static() );
           case Type::BOOL   : s << getBool  (); break;
           case Type::UINT8  : s << getUInt8 (); break;
           case Type::INT8   : s << getInt8  (); break;
@@ -493,6 +506,14 @@ Value Value::to( Type type ) const
         }
 
         return Value( String( s.str() ) );
+      }
+
+    case Type::OUTPUT:
+      switch( x.getEnum() )
+      {
+        case Type::NIL   : return Value( (Output*)( 0 ) );
+        default:
+          throw CastFailed( x.getType(), type );
       }
 
     default:
@@ -1267,14 +1288,73 @@ int Value::compare_exactly( const Value &other ) const
   }
 }
 
+namespace Value_impl {
+
+  static
+  std::ostream &print( std::ostream &o, const ArrayBase *array )
+  {
+    const ArrayBase::Size size = array->getSize();
+    const index_t dims = size.getDims();
+
+    typedef ArrayBase::Coordinates X;
+    typedef ArrayBase::CoordinatesIterator C;
+    typedef ArrayBase::ValueIterator I;
+
+    CountPtr< I > i( array->getValueIterator() );
+    CountPtr< C > c( array->getCoordinatesIterator() );
+
+    index_t last_p[ dims ];
+    X last( dims, last_p );
+    std::fill( last_p, last_p + dims, 0 );
+
+    for( ; !i->done() && !c->done(); i->next(), c->next() )
+    {
+      const X x = c->get();
+
+      // Check, which coordinate changed (highest)
+      // print separator accordingly
+      for( int d = dims-1; d >= 0; --d )
+      {
+        if( x[ d ] != last[ d ] )
+        {
+          if( 0 == d )
+          {
+            o << ", ";
+          }
+          else
+          {
+            if( d > 1 ) o << std::endl;
+            for( int s=0; s<d; ++s )
+            {
+              o << ";";
+            }
+            o << std::endl;
+          }
+          break;
+        }
+      }
+
+      const Value v = i->get();
+      v.print( o );
+
+      std::copy( &x[ 0 ], &x[ 0 ] + dims, last_p );
+    }
+
+    return o;
+  }
+
+} // namespace Value_impl
+
 std::ostream &Value::print( std::ostream &o ) const
 {
+  using namespace Value_impl;
+
   switch( getType().getEnum() )
   {
     case Type::NIL     : o << "nil"; break;
     case Type::BOOL    : o << ( getBool() ? "true" : "false" ); break;
-    case Type::UINT8   : o << getUInt8 (); break;
-    case Type::INT8    : o << getInt8  (); break;
+    case Type::UINT8   : o << int( getUInt8 () ); break;
+    case Type::INT8    : o << int( getInt8  () ); break;
     case Type::UINT16  : o << getUInt16(); break;
     case Type::INT16   : o << getInt16 (); break;
     case Type::UINT32  : o << getUInt32(); break;
@@ -1283,21 +1363,20 @@ std::ostream &Value::print( std::ostream &o ) const
     case Type::INT64   : o << getInt64 (); break;
     case Type::FLOAT   : o << getFloat (); break;
     case Type::DOUBLE  : o << getDouble(); break;
-    case Type::STRING  : o << "\"" << getString() << "\""; break;
+    case Type::STRING  : o << getString(); break;
 
     case Type::ARRAY   :
       {
-        o << "[ TODO: print Array ]";
-        /*
-        const Array &a = *getArray();
+        const ArrayBase *const a = getArray();
+        const int dims = a->getDims();
+
         o << "[ ";
-        for( index_t j( 0 ), end( a.size() ); j < end; ++j )
-        {
-          if( j > 0 ) o << ", ";
-          o << a[ j ];
-        }
+        if( dims > 1 ) o << std::endl;
+
+        Value_impl::print( o, a );
+
+        if( dims > 1 ) o << std::endl;
         o << " ]";
-        */
       }
       break;
 
@@ -1308,14 +1387,28 @@ std::ostream &Value::print( std::ostream &o ) const
         for( CountPtr< RPGML::Frame::Iterator > j( m->getIterator() ); !j->done(); j->next() )
         {
           const Frame::Iterator::Type v( j->get() );
-          o << " " << v.second.getTypeName() << " " << v.first << " = " << v.second << ";";
+          o
+            << " " << v.second.getTypeName()
+            << " " << v.first
+            << " = ";
+
+          if( v.second.isString() )
+          {
+            o << "\"" << make_printable( v.second.getString() ) << "\"";
+          }
+          else
+          {
+            o << v.second;
+          }
+
+          o << ";";
         }
         o << " }";
       }
       break;
 
-    case Type::FUNCTION: o << "Function( '" << getFunction()->getName() << "' (" << (void*)getFunction() << ") )"; break;
-    case Type::NODE    : o << "Node( " << getNode()->getName() << ", " << getNode()->getIdentifier() << " )"; break;
+    case Type::FUNCTION: o << "Function( '" << getFunction()->getName() << "' )"; break;
+    case Type::NODE    : o << "Node( '" << getNode()->getName() << "', '" << getNode()->getIdentifier() << "' )"; break;
 
     case Type::OUTPUT  :
       {
@@ -1331,8 +1424,8 @@ std::ostream &Value::print( std::ostream &o ) const
       {
         const Input *const input = getInput();
         o
-          << "Input( " << input->getParent()->getIdentifier()
-          << ", " << input->getIdentifier() << " )"
+          << "Input( '" << input->getParent()->getIdentifier() << "'"
+          << ", '" << input->getIdentifier() << "' )"
           ;
       }
       break;
@@ -1341,8 +1434,8 @@ std::ostream &Value::print( std::ostream &o ) const
       {
         const Param *const pm = getParam();
         o
-          << "Param( " << pm->getParent()->getIdentifier()
-          << ", " << pm->getIdentifier() << " )"
+          << "Param( '" << pm->getParent()->getIdentifier() << "'"
+          << ", '" << pm->getIdentifier() << "' )"
           ;
       }
       break;
