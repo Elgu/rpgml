@@ -35,7 +35,7 @@ public:
   explicit
   InterpretingParser( GarbageCollector *_gc, Scope *scope, Source *source )
   : Collectable( _gc )
-  , Parser( scope->getUnifier(), source )
+  , Parser( _gc, scope->getUnifier(), source )
   , interpreter( new InterpretingASTVisitor( _gc, scope ) )
   {}
 
