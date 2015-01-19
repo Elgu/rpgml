@@ -17,6 +17,10 @@
  */
 #include "AST_PrettyPrinter.h"
 
+#include "make_printable.h"
+
+using namespace std;
+
 namespace RPGML {
 namespace AST {
 
@@ -24,12 +28,11 @@ bool PrettyPrinter::visit( const ConstantExpression           *node )
 {
   switch( node->value.getEnum() )
   {
-    case Type::BOOL  : (*o) << ( node->value.getBool() ? "true" : "false" ); break;
-    case Type::INT   : (*o) << node->value.getInt(); break;
-    case Type::FLOAT : (*o) << node->value.getFloat(); break;
-    case Type::STRING: (*o) << "\"" << node->value.getString() << "\""; break;
-    default          : (*o) << "(unexpected '" << node->value.getTypeName() << "' constant)"; break;
-
+    case Type::STRING:
+      (*o) << "\"" << make_printable( node->value.getString() ) << "\"";
+      break;
+    default          :
+      node->value.print( (*o) );
   }
   return true;
 }
@@ -40,24 +43,113 @@ bool PrettyPrinter::visit( const ThisExpression           * )
   return true;
 }
 
-bool PrettyPrinter::visit( const ArrayConstantExpression      *node )
+void PrettyPrinter::print( const ArrayConstantExpression::SequenceExpressionArray *seq_array )
 {
-  if( node->sequence  )
+  typedef ArrayConstantExpression::SequenceExpressionArray::ConstElements I;
+
+  bool first = true;
+  for( CountPtr< I > i( seq_array->getElements() ); !i->done(); i->next() )
   {
-    (*o) << "[ ";
-    node->sequence->invite( this );
-    (*o) << " ]";
+    if( first )
+    {
+      first = false;
+    }
+    else
+    {
+      (*o) << ";" << endl;
+      indent();
+    }
+    i->get()->invite( this );
+  }
+}
+
+void PrettyPrinter::print( const ArrayBase *array_base, int dims )
+{
+  if( dims <= 2 )
+  {
+    const ArrayConstantExpression::SequenceExpressionArray *seq_array = 0;
+    if( !array_base->getAs( seq_array ) )
+    {
+      throw Exception()
+        << "Could not get seq_array"
+        << ": dims = " << dims
+        << ", array_base->getType() = " << array_base->getType()
+        << ", array_base->getSize() = " << array_base->getSize()
+        ;
+    }
+    if( dims == 1 && seq_array->size() > 1 )
+    {
+      throw Exception()
+        << "ArrayConstantExpression specified dims = 1"
+        << ", but seq_array->size() = " << seq_array->size()
+        ;
+    }
+
+    print( seq_array );
   }
   else
   {
-    (*o) << "[]";
+    const ArrayConstantExpression::ArrayBaseArray *array_array = 0;
+    if( !array_base->getAs( array_array ) )
+    {
+      throw Exception()
+        << "Could not get array_array"
+        << ": dims = " << dims
+        << ", array_base->getType() = " << array_base->getType()
+        << ", array_base->getSize() = " << array_base->getSize()
+        ;
+    }
+
+    typedef ArrayConstantExpression::ArrayBaseArray::ConstElements I;
+
+    bool first = true;
+    for( CountPtr< I > i( array_array->getElements() ); !i->done(); i->next() )
+    {
+      if( first )
+      {
+        first = false;
+      }
+      else
+      {
+        (*o) << endl;
+        indent();
+        for( int d=0; d<dims-1; ++d ) (*o) << ";";
+        (*o) << endl;
+        indent();
+      }
+      ++depth; (*o) << "  ";
+      print( i->get(), dims-1 );
+      --depth;
+    }
   }
+}
+
+bool PrettyPrinter::visit( const ArrayConstantExpression      *node )
+{
+  (*o) << "[ ";
+  if( node->dims > 1 )
+  {
+    (*o) << endl;
+    ++depth;
+    indent();
+  }
+
+  print( node->descr_array, node->dims );
+
+  if( node->dims > 1 )
+  {
+    (*o) << endl;
+    --depth;
+    indent();
+  }
+  (*o) << " ]";
 
   return true;
 }
 
 bool PrettyPrinter::visit( const FrameConstantExpression        *node )
 {
+  (*o) << "Frame";
   node->body->invite( this );
   return true;
 }
@@ -106,23 +198,22 @@ bool PrettyPrinter::visit( const FromToStepSequenceExpression *node )
 
 bool PrettyPrinter::visit( const LookupVariableExpression     *node )
 {
+  if( node->at_root ) (*o) << ".";
   (*o) << node->identifier;
   return true;
 }
 
-bool PrettyPrinter::visit( const FunctionCallExpression       *node )
+void PrettyPrinter::print( const FunctionCallExpression::Args *args )
 {
-  node->function->invite( this );
-
-  const size_t n = node->args->size();
+  const size_t n = args->size();
   if( n > 0 )
   {
     (*o) << "( ";
     for( size_t i=0; i<n; ++i )
     {
       if( i > 0 ) (*o) << ", ";
-      const FunctionCallExpression::Arg *const arg = node->args->at( i );
-      if( arg->identifier )
+      const FunctionCallExpression::Arg *const arg = args->at( i );
+      if( !arg->identifier.empty() )
       {
         (*o) << arg->identifier;
         (*o) << "=";
@@ -135,6 +226,13 @@ bool PrettyPrinter::visit( const FunctionCallExpression       *node )
   {
     (*o) << "()";
   }
+}
+
+bool PrettyPrinter::visit( const FunctionCallExpression       *node )
+{
+  node->function->invite( this );
+
+  print( node->args );
 
   return true;
 }
@@ -196,7 +294,7 @@ bool PrettyPrinter::visit( const IfThenElseExpression         *node )
 
 bool PrettyPrinter::visit( const TypeExpression               *node )
 {
-  if( node->type == Type::Array() )
+  if( node->type.isArray() )
   {
     node->of->invite( this );
     (*o) << "[ ";
@@ -262,7 +360,7 @@ bool PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
     node->ret->invite( this );
   }
 
-  (*o) << node->identifier;
+  (*o) << " " << node->identifier;
 
   if( node->args->empty() )
   {
@@ -398,10 +496,10 @@ bool PrettyPrinter::visit( const ForContainerStatement        *node )
   return true;
 }
 
-bool PrettyPrinter::visit( const FunctionCallStatement        *node )
+bool PrettyPrinter::visit( const ExpressionStatement        *node )
 {
   // indent() must have been called, if neccessary
-  node->call->invite( this );
+  node->expr->invite( this );
   (*o) << ";";
   return true;
 }
@@ -409,8 +507,18 @@ bool PrettyPrinter::visit( const FunctionCallStatement        *node )
 bool PrettyPrinter::visit( const VariableCreationStatement    *node )
 {
   // indent() must have been called, if neccessary
-  (*o) << node->type->type.getTypeName() << " " << node->identifier << " = ";
+  node->type->invite( this );
+  (*o) << " " << node->identifier << " = ";
   node->value->invite( this );
+  (*o) << ";";
+  return true;
+}
+
+bool PrettyPrinter::visit( const VariableConstructionStatement *node )
+{
+  node->value->function->invite( this );
+  (*o) << " " << node->identifier;
+  print( node->value->args );
   (*o) << ";";
   return true;
 }
