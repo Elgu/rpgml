@@ -1,0 +1,5 @@
+
+stest:
+	@touch .rerun_stest
+	$(MAKE) $(STEST_RESULTS)
+
