@@ -1,0 +1,36 @@
+
+int i = 23;
+print( i );
+print( "\n" );
+
+Function f()
+{
+  return i;
+}
+
+{
+  int i = 42;
+  print( i );
+  print( "\n" );
+  print( .i );
+  print( "\n" );
+
+  print( f() );
+  print( "\n" );
+}
+
+print( test_dir.s );
+print( "\n" );
+
+{
+  Frame test_dir = Frame{ string s = "foo"; };
+
+  print( test_dir.s );
+  print( "\n" );
+
+  print( .test_dir.s );
+  print( "\n" );
+}
+
+
+

@@ -1,0 +1,15 @@
+
+Function _exit_if( condition=nil )
+{
+  Exit e();
+  condition -> e.condition;
+  needing( e );
+  return condition;
+}
+
+Output i = counter();
+print( i );
+
+_exit_if( i == 9 );
+_exit_if();
+

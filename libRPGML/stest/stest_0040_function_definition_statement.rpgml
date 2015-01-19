@@ -1,0 +1,43 @@
+
+Function f1()
+{
+  return 23;
+}
+print( f1() );
+print( "\n" );
+
+Function f2( d )
+{
+  return d;
+}
+print( f2( 0.75 ) );
+print( "\n" );
+
+Function f3( a, b, c="foo", d="bar" )
+{
+  print( a );
+  print( " " );
+  print( b );
+  print( " " );
+  print( c );
+  print( " " );
+  print( d );
+  print( "\n" );
+  return "42\n";
+}
+print( f3( 1, 2 ) );
+print( f3( 1, 2, 3 ) );
+print( f3( 1, 2, 3, 4 ) );
+print( f3( c=1, a=2, d=3, b=4 ) );
+
+Function F4( text="" )
+{
+  string text = text;
+  Method getText() { return text; }
+  Method setText( text ) { this.text = text; return this; }
+  return this;
+}
+print( F4( "f4\n" ).getText() );
+print( F4().setText( "bar\n" ).getText() );
+
+

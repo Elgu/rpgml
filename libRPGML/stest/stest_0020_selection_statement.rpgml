@@ -1,0 +1,62 @@
+if( false )
+{
+  print( "0\n" );
+}
+
+if( true )
+{
+  print( "1\n" );
+}
+
+if( true )
+{
+  print( "2\n" );
+}
+else
+{
+  print( "3\n" );
+}
+
+if( false )
+{
+  print( "4\n" );
+}
+else
+{
+  print( "5\n" );
+}
+
+if( false )
+{
+  print( "6\n" );
+}
+else if( true )
+{
+  print( "7\n" );
+}
+else
+{
+  print( "8\n" );
+}
+
+if( false )
+{
+  print( "9\n" );
+}
+else if( false )
+{
+  print( "10\n" );
+}
+else if( true )
+{
+  print( "11\n" );
+}
+else if( true )
+{
+  print( "12\n" );
+}
+else
+{
+  print( "13\n" );
+}
+

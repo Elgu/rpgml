@@ -1,0 +1,72 @@
+bool      b_1 = true;
+bool      b_2 = false;
+uint8   ui8_1 = 0;
+uint8   ui8_2 = 255;
+int8     i8_1 = -128;
+int8     i8_2 = 127;
+uint16 ui16_1 = 0;
+uint16 ui16_2 = 65535;
+int16   i16_1 = -32768;
+int16   i16_2 = 32767;
+uint32 ui32_1 = 0;
+uint32 ui32_2 = 0xFfffFfff;
+int32   i32_1 = -0x80000000;
+int32   i32_2 =  0x7fffFfff;
+uint64 ui64_1 = 0;
+uint64 ui64_2 = 0xFfffFfffFfffFfff;
+int64   i64_1 = -0x8000000000000000;
+int64   i64_2 =  0x7fffFfffFfffFfff;
+float     f_1 = -3.40282e+38;
+float     f_2 =  3.40282e+38;
+double    d_1 = -1.79769e+308;
+double    d_2 =  1.79769e+308;
+string    s_1 = "";
+string    s_2 = "foo\nbar";
+
+print(    b_1 ); print( "\n" );
+print(    b_2 ); print( "\n" );
+print(  ui8_1 ); print( "\n" );
+print(  ui8_2 ); print( "\n" );
+print(   i8_1 ); print( "\n" );
+print(   i8_2 ); print( "\n" );
+print( ui16_1 ); print( "\n" );
+print( ui16_2 ); print( "\n" );
+print(  i16_1 ); print( "\n" );
+print(  i16_2 ); print( "\n" );
+print( ui32_1 ); print( "\n" );
+print( ui32_2 ); print( "\n" );
+print(  i32_1 ); print( "\n" );
+print(  i32_2 ); print( "\n" );
+print( ui64_1 ); print( "\n" );
+print( ui64_2 ); print( "\n" );
+print(  i64_1 ); print( "\n" );
+print(  i64_2 ); print( "\n" );
+print(    f_1 ); print( "\n" );
+print(    f_2 ); print( "\n" );
+print(    d_1 ); print( "\n" );
+print(    d_2 ); print( "\n" );
+print(    s_1 ); print( "\n" );
+print(    s_2 ); print( "\n" );
+
+Function func() { return "f"; }
+BinaryOp node( op="-" );
+
+Function g = func;
+Node     n = node;
+Output   o = node.out;
+Input    i = node.in1;
+Param    p = node.op;
+Frame    f = Frame{ int i=0; };
+
+Output o2 = nil;
+o2 -> node.in1;
+nil -> node.in2;
+
+#print( g ); print( "\n" );
+#print( n ); print( "\n" );
+#print( o ); print( "\n" );
+#print( i ); print( "\n" );
+#print( p ); print( "\n" );
+#print( f ); print( "\n" );
+
+

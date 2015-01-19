@@ -1,0 +1,8 @@
+
+Output i = counter();
+print( i );
+
+Exit e1();
+( i == 9 ) -> e1.condition;
+needing( e1 );
+
