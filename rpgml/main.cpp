@@ -36,28 +36,6 @@
 
 using namespace RPGML;
 
-class PrettyPrintingParser : public Parser
-{
-public:
-  explicit
-  PrettyPrintingParser( StringUnifier *unifier, Source *source, std::ostream *o )
-  : Parser( unifier, source )
-  , m_printer( o )
-  {}
-
-  virtual ~PrettyPrintingParser( void )
-  {}
-
-  virtual void append( CountPtr< Statement > statement )
-  {
-    statement->invite( &m_printer );
-    m_printer.getStream() << std::endl;
-  }
-
-private:
-  AST::PrettyPrinter m_printer;
-};
-
 static GarbageCollector gc( 5 );
 
 int main( int argc, char **argv )
@@ -93,13 +71,12 @@ int main( int argc, char **argv )
     CountPtr< Context > context = new Context( &gc, unifier, searchPath );
     CountPtr< Scope > scope = context->createScope();
 
-  //  PrettyPrintingParser parser( unifier, source, &std::cerr );
     CountPtr< InterpretingParser >  parser = new InterpretingParser( &gc, scope, source );
     parser->setFilename( filename );
 
     parser->parse();
 
-    std::cerr << "Parsing done." << std::endl;
+//    std::cerr << "Parsing done." << std::endl;
 
     parser.reset();
     source.reset();
@@ -115,14 +92,14 @@ int main( int argc, char **argv )
 
     CountPtr< ThreadPool > pool = new ThreadPool( &gc, num_threads );
 
-    std::cerr << "executing ..." << std::endl;
+//    std::cerr << "executing ..." << std::endl;
     graph->setEverythingChanged( true );
     for(;;)
     {
       graph->execute( pool->getQueue() );
       if( graph->hasErrors() )
       {
-        std::cerr << "execution done" << std::endl;
+//        std::cerr << "execution done" << std::endl;
         graph->printErrors( std::cerr );
         return 1;
       }
