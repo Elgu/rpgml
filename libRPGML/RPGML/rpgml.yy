@@ -13,6 +13,7 @@
 #include "AST.h"
 #include "String.h"
 #include "Value.h"
+#include "Array.h"
 #include "Function.h"
 #include "ParserEnums.h"
 #include "toLocation.h"
@@ -43,6 +44,7 @@ namespace RPGML
 %union
 {
   int64_t      ival;
+  uint64_t     uval;
   double       fval;
   Type::Enum   type_enum;
   UOP          uop;
@@ -50,7 +52,7 @@ namespace RPGML
   StringData const                         *str;
   Statement                                *stmt;
   CompoundStatement                        *comp;
-  Expression                               *expr;
+  const Expression                         *expr;
   SequenceExpression                       *seq;
   ExpressionSequenceExpression             *expr_seq;
   FunctionDefinitionStatement::ArgDecl     *fad;
@@ -59,14 +61,17 @@ namespace RPGML
   FunctionCallExpression::Args             *args;
   TypeExpression                           *type;
   DimensionsExpression                     *dims;
+  Array< CountPtr< const SequenceExpression>, 1 > *seq_array;
+  Array< CountPtr< const ArrayBase >, 1 >  *array_array;
 }
 
 %destructor {} <ival>
+%destructor {} <uval>
 %destructor {} <fval>
 %destructor {} <type_enum>
 %destructor {} <uop>
 %destructor {} <assign>
-%destructor { if( !($$)->unref() ) delete ($$); } <str>
+%destructor { /* is unified */ } <str>
 %destructor { if( !($$)->unref() ) delete ($$); } <stmt>
 %destructor { if( !($$)->unref() ) delete ($$); } <comp>
 %destructor { if( !($$)->unref() ) delete ($$); } <expr>
@@ -78,12 +83,15 @@ namespace RPGML
 %destructor { if( !($$)->unref() ) delete ($$); } <args>
 %destructor { if( !($$)->unref() ) delete ($$); } <type>
 %destructor { if( !($$)->unref() ) delete ($$); } <dims>
+%destructor { if( !($$)->unref() ) delete ($$); } <seq_array>
+%destructor { if( !($$)->unref() ) delete ($$); } <array_array>
 
 
 %token            END          0 "end of file";
 %token            FLUSH        "flush evaluaton";
 %token  <str>     IDENTIFIER   "identifier";
 %token  <ival>    I_CONSTANT   "integer constant";
+%token  <uval>    U_CONSTANT   "unsigned integer constant";
 %token  <fval>    F_CONSTANT   "floating point constant";
 %token  <str>     S_CONSTANT   "string constant";
 %token            NIL          "nil";
@@ -142,14 +150,20 @@ namespace RPGML
 %token            FALSE        "false";
 %token            THIS         "this";
 %token            RETURN       "return";
+%token            DOUBLE_SEMI  ";;";
+%token            TRI_SEMI     ";;;";
+%token            QUAD_SEMI    ";;;;";
 
 %type <str> identifier
 %type <expr> array_constant
+%type <seq>  array_constant_line
+%type <seq_array> array_constant_slice
+%type <array_array> array_constant_volume
+%type <array_array> array_constant_hyper
 %type <expr> frame_constant
-%type <expr> function_expression
+%type <expr> callable_expression
 %type <expr> primary_expression
 %type <expr> constant
-%type <expr> function_call_expression
 %type <expr> postfix_expression
 %type <arg> argument_expression
 %type <args> argument_expression_list
@@ -182,18 +196,17 @@ namespace RPGML
 %type <comp> statements
 %type <comp> compound_statement
 %type <stmt> selection_statement
-%type <expr_seq> expression_sequence_expression
-%type <seq> sequence_expression
+%type <expr_seq> expression_sequence
+%type <expr> sequence_expression
 %type <seq> sequence
 %type <stmt> iteration_statement
 %type <fad> function_argument_decl
 %type <fadl> function_argument_decl_list
 %type <stmt> function_definition_statement
-%type <stmt> function_call_statement
 %type <stmt> variable_creation_statement
 %type <stmt> return_statement
+%type <stmt> expression_statement
 
-%left '='
 %left "||"
 %left "^^"
 %left "&&"
@@ -202,7 +215,7 @@ namespace RPGML
 %left '&'
 %left "==" "!="
 %left '<' '>' "<=" ">="
-%left "<<" ">>"
+%left LEFT_OP RIGHT_OP
 %left '+' '-'
 %left '*' '/' '%'
 
@@ -212,6 +225,13 @@ namespace RPGML
 
 %%
 
+semicolon
+  : ';'
+  | DOUBLE_SEMI
+  | TRI_SEMI
+  | QUAD_SEMI
+  ;
+
 identifier
   : IDENTIFIER { ($$) = ($1); }
   | IN         { ($$) = scanner.unify( "in" ); }
@@ -219,23 +239,61 @@ identifier
   | STEP       { ($$) = scanner.unify( "step" ); }
   ;
 
+array_constant_line
+  : sequence { ($$) = ($1); }
+  ;
+
+array_constant_slice
+  : array_constant_slice ';' array_constant_line { ($1)->push_back( ($3) ); ($$) = ($1); }
+  | array_constant_line { ($$) = new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  ;
+
+array_constant_volume
+  : array_constant_volume DOUBLE_SEMI array_constant_slice { ($1)->push_back( ($3) ); ($$) = ($1); }
+  | array_constant_slice { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  ;
+
+array_constant_hyper
+  : array_constant_hyper TRI_SEMI array_constant_volume { ($1)->push_back( ($3) ); ($$) = ($1); }
+  | array_constant_volume { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  ;
+
 array_constant
-  : '[' ']'          { ($$) = new ArrayConstantExpression( RPGML_LOC(@$) ); }
-  | '[' sequence ']' { ($$) = new ArrayConstantExpression( RPGML_LOC(@$), ($2) ); }
+  : '[' ']'
+    {
+      ($$) = new ArrayConstantExpression(
+          RPGML_LOC(@$)
+        , new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC() )
+        , 1
+        );
+    }
+  | '[' array_constant_hyper  ']'
+    {
+      int dims = 4;
+      CountPtr< const ArrayBase > ret = ($2);
+      while( ret->size() == 1 )
+      {
+        --dims;
+        const ArrayConstantExpression::ArrayBaseArray *arr = 0;
+        if( !ret->getAs( arr ) ) break;
+        ret = arr->at( 0 );
+      }
+      ($$) = new ArrayConstantExpression( RPGML_LOC(@$), ret, dims );
+    }
   ;
 
 frame_constant
-  : compound_statement { ($1)->own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($1) ); }
+  : FRAME compound_statement { ($1); ($2)->own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($2) ); }
   ;
 
 primary_expression
   : constant           { ($$) = ($1); }
-  | '(' expression ')' { ($$) = ($2); }
-  | '(' sequence_expression ')' { ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($2) ); }
+  | sequence_expression { ($$) = ($1); }
   ;
 
 constant
   : I_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
+  | U_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
   | F_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
   | S_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
   | TRUE       { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value( true ) ); }
@@ -247,7 +305,7 @@ constant
   ;
 
 // Expressions that can potentially be of type Function
-function_expression
+callable_expression
   : postfix_expression '[' array_coordinates_expression ']'
     {
       ($$) = new ArrayAccessExpression( RPGML_LOC(@$), ($1), ($3) );
@@ -257,22 +315,19 @@ function_expression
       ($$) = new FrameAccessExpression( RPGML_LOC(@$), ($1), ($3) );
     }
   | identifier         { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($1) ); }
-  ;
-
-function_call_expression
-  : function_expression '(' ')'
-    {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() );
-    } 
-  | function_expression '(' argument_expression_list ')'
-    {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
-    } 
+  | '.' identifier     { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($2), true ); }
   ;
 
 postfix_expression
-  : function_expression { ($$) = ($1); }
-  | function_call_expression { ($$) = ($1); }
+  : callable_expression { ($$) = ($1); }
+  | callable_expression '(' ')'
+    {
+      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() );
+    } 
+  | callable_expression '(' argument_expression_list ')'
+    {
+      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
+    } 
 //  | postfix_expression INC_OP
 //  | postfix_expression DEC_OP
   | primary_expression { ($$) = ($1); }
@@ -449,22 +504,22 @@ expression
   ;
 
 connect_statement
-  : expression ARROW expression ';'
+  : expression ARROW expression semicolon
     {
       ($$) = new ConnectStatement( RPGML_LOC(@$), ($1), ($3) );
     }
   ;
 
 assignment_statement
-  : identifier assignment_operator expression ';'
+  : identifier assignment_operator expression semicolon
     {
       ($$) = new AssignIdentifierStatement( RPGML_LOC(@$), ($1), ($2), ($3) );
     }
-  | postfix_expression '.' identifier assignment_operator expression ';'
+  | postfix_expression '.' identifier assignment_operator expression semicolon
     {
       ($$) = new AssignDotStatement( RPGML_LOC(@$), ($1), ($3), ($4), ($5) );
     }
-  | postfix_expression '[' array_coordinates_expression ']' assignment_operator expression ';'
+  | postfix_expression '[' array_coordinates_expression ']' assignment_operator expression semicolon
     {
       ($$) = new AssignBracketStatement( RPGML_LOC(@$), ($1), ($3), ($5), ($6) );
     }
@@ -502,11 +557,11 @@ primitive_type_expression
 
 basic_type_expression
   : primitive_type_expression
+  | NODE
   | FRAME
   | FUNCTION
   | OUTPUT
   | INPUT
-  | NODE
   | PARAM
 //  | ARRAY
   ;
@@ -556,13 +611,13 @@ statement
   | selection_statement
   | iteration_statement
   | function_definition_statement
-  | function_call_statement
   | assignment_statement
   | connect_statement
   | variable_creation_statement
   | return_statement
+  | expression_statement
   | FLUSH { ($$) = new NOPStatement( RPGML_LOC(@$) ); }
-  | ';'   { ($$) = new NOPStatement( RPGML_LOC(@$) ); }
+  | semicolon   { ($$) = new NOPStatement( RPGML_LOC(@$) ); }
   ;
 
 statements
@@ -576,11 +631,11 @@ statements
       ($$) = ($1);
       ($$)->append( ($2) );
     }
-  | statements error ';'
+  | statements error semicolon
     {
       ($$) = ($1);
     }
-  | error ';'
+  | error semicolon
     {
       ($$) = new CompoundStatement( RPGML_LOC(@$) );
     }
@@ -612,20 +667,27 @@ selection_statement
     }
   ;
 
-expression_sequence_expression
+expression_statement
+  : expression semicolon
+    {
+      ($$) = new ExpressionStatement( RPGML_LOC(@$), ($1) );
+    }
+  ;
+
+expression_sequence
   : expression
     {
       ($$) = new ExpressionSequenceExpression( RPGML_LOC(@$) );
       ($$)->append( ($1) );
     }
-  | expression_sequence_expression ',' expression
+  | expression_sequence ',' expression
     {
       ($$) = ($1);
       ($$)->append( ($3) );
     }
   ;
 
-sequence_expression
+sequence
   : expression TO expression
     {
       ($$) = new FromToStepSequenceExpression( RPGML_LOC(@$), ($1), ($3) );
@@ -634,16 +696,23 @@ sequence_expression
     {
       ($$) = new FromToStepSequenceExpression( RPGML_LOC(@$), ($1), ($3), ($5) );
     }
-  | expression_sequence_expression
+  | expression_sequence
     {
       ($$) = ($1);
     }
   ;
 
-sequence
-  : sequence_expression
+sequence_expression
+  : '(' sequence ')'
     {
-      ($$) = ($1);
+      if( 1 == ($2)->length() )
+      {
+        ($$) = ($2)->first();
+      }
+      else
+      {
+        ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($2) );
+      }
     }
   ;
 
@@ -709,34 +778,25 @@ function_definition_statement
     }
   ;
 
-function_call_statement
-  : function_call_expression ';'
-    {
-      ($$) = new FunctionCallStatement( RPGML_LOC(@$), ($1) );
-    }
-  ;
-
 variable_creation_statement
-  : type_expression identifier '=' expression ';'
+  : type_expression identifier '=' expression semicolon
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
     }
-  | function_expression identifier '(' ')' ';'
+  | callable_expression identifier '(' ')' semicolon
     {
       ($$) =
-        new VariableCreationStatement(
+        new VariableConstructionStatement(
             RPGML_LOC(@$)
-          , new TypeExpression( RPGML_LOC(@$), Type::Nil() )
           , ($2)
           , new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() )
           );
     }
-  | function_expression identifier '(' argument_expression_list ')' ';'
+  | callable_expression identifier '(' argument_expression_list ')' semicolon
     {
       ($$) =
-        new VariableCreationStatement(
+        new VariableConstructionStatement(
             RPGML_LOC(@$)
-          , new TypeExpression( RPGML_LOC(@$), Type::Nil() )
           , ($2)
           , new FunctionCallExpression( RPGML_LOC(@$), ($1), ($4) )
           );
@@ -744,7 +804,7 @@ variable_creation_statement
   ;
 
 return_statement
-  : RETURN expression ';'
+  : RETURN expression semicolon
     {
       ($$) = new ReturnStatement( RPGML_LOC(@$), ($2) );
     }
@@ -759,7 +819,7 @@ translation_unit_statements
     {
       scanner.append( ($2) );
     }
-  | error ';'
+  | error semicolon
   ;
 
 translation_unit
