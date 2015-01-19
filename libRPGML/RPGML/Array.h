@@ -402,6 +402,14 @@ public:
     else if( _size ) resize_v( _dims, _size );
   }
 
+  explicit
+  Array( GarbageCollector *_gc, const Size &_size )
+  : Base( _gc )
+  {
+    if( Dims == 0 ) Base::_resize( 1 );
+    else resize( _size );
+  }
+
   Array( const Array &other )
   : Base( other )
   {
@@ -725,8 +733,8 @@ public:
 
   typedef Iterator< Element& > Elements;
   typedef Iterator< const Element& > ConstElements;
-  CountPtr< Elements      > getElements( void ) { return _Elements( this ); }
-  CountPtr< ConstElements > getElements( void ) const { return _ConstElements( this ); }
+  CountPtr< Elements      > getElements( void ) { return new _Elements( this ); }
+  CountPtr< ConstElements > getElements( void ) const { return new _ConstElements( this ); }
   CountPtr< ConstElements > getElementsConst( void ) const { return getElements(); }
 
 private:
@@ -802,8 +810,19 @@ private:
     _CoordinatesIterator( const Array *array )
     : m_array( array )
     , m_size( array->getSize() )
-    , m_coord( array->getDims()+1 )
-    {}
+    , m_coord( array->getDims()+1, index_t( 0 ) )
+    {
+      const int dims = m_size.getDims();
+      for( int d = 0; d < dims; ++d )
+      {
+        if( 0 == m_size[ d ] )
+        {
+          // dims, not d, so done() will return true
+          m_coord[ dims ] = 1;
+          break;
+        }
+      }
+    }
     virtual ~_CoordinatesIterator( void ) {}
 
     virtual bool done( void )
