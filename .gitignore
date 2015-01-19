@@ -8,6 +8,7 @@
 core
 /libRPGML/utest/utest_main
 /rpgml/rpgml
+/rpgml/prettyprinter
 .parser_files
 /libRPGML/RPGML/location.hh
 /libRPGML/RPGML/position.hh
@@ -16,5 +17,5 @@ core
 /libRPGML/RPGML/rpgml.tab.hh
 /libRPGML/RPGML/stack.hh
 .rerun_stest
-test_*.pretty
-test_*.output
+stest_*.pretty
+stest_*.output
