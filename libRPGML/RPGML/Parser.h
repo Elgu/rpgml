@@ -23,11 +23,13 @@
 
 namespace RPGML {
 
+class GarbageCollector;
+
 class Parser : public Scanner, public _Parser
 {
 public:
   explicit
-  Parser( StringUnifier *unifier, Source *_source=0 );
+  Parser( GarbageCollector *_gc, StringUnifier *unifier, Source *_source=0 );
 
   virtual ~Parser( void );
 
@@ -38,8 +40,8 @@ class CompoundingParser : public Parser
 {
 public:
   explicit
-  CompoundingParser( StringUnifier *unifier, Source *_source=0 )
-  : Parser( unifier, _source )
+  CompoundingParser( GarbageCollector *_gc, StringUnifier *unifier, Source *_source=0 )
+  : Parser( _gc, unifier, _source )
   {}
 
   virtual ~CompoundingParser( void )
