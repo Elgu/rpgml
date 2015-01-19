@@ -63,10 +63,6 @@ DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 utest:
 	$(MAKE) RPGML_SRC_ROOT=$(RPGML_SRC_ROOT) -C utest test
 
-stest:
-	@touch .rerun_stest
-	$(MAKE) $(STEST_RESULTS)
-
 .depend: $(DEP_FILES)
 	@cat $(DEP_FILES) > .depend
 
