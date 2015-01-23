@@ -118,6 +118,14 @@ Value::Value( Input             *_in    ) : m_type( Type::INPUT    ) { in    = _
 Value::Value( Param             *_param ) : m_type( Type::PARAM    ) { param = _param; if( param ) param->ref(); }
 Value::Value( Sequence    const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; if( seq   ) seq  ->ref(); }
 
+Value::Value( const void * )
+{
+  throw Exception()
+    << "Internal: Tried to set a Value with a const pointer"
+    << ": Try using a cost_cast<>, but be careful, that enables possible writes"
+    ;
+}
+
 Value &Value::set( bool               _x    ) { return (*this) = Value( _x ); }
 Value &Value::set( uint8_t            _x    ) { return (*this) = Value( _x ); }
 Value &Value::set( int8_t             _x    ) { return (*this) = Value( _x ); }
@@ -142,6 +150,11 @@ Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   );
 Value &Value::set( Param             *_param) { return (*this) = Value( _param); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 Value &Value::set( const Value       &v     ) { return (*this) = v;              }
+
+Value &Value::set( const void *vp )
+{
+  return (*this) = Value( vp );
+}
 
 void Value::get( bool            &x ) const { if( isBool  () ) x = getBool  (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( uint8_t         &x ) const { if( isUInt8 () ) x = getUInt8 (); else throw GetFailed( m_type, typeOf( x ) ); }

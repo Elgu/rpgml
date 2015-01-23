@@ -139,6 +139,8 @@ public:
   explicit Value ( Param          *_param );
   explicit Value ( Sequence const *_seq  );
 
+  explicit Value ( const void * );
+
   template< class T >
   explicit Value( const CountPtr< T > &cp ) : p( 0 ) { set( cp.get() ); }
 
@@ -169,6 +171,8 @@ public:
   Value &set( Param          *_param );
   Value &set( Sequence const *_seq  );
   Value &set( const Value &v );
+
+  Value &set( const void * );
 
   template< class T >
   Value &set( const CountPtr< T > &cp ) { return set( cp.get() ); }
