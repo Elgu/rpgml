@@ -20,6 +20,8 @@
 #include "String.h"
 #include "SharedObject.h"
 
+#include <iostream>
+
 using namespace std;
 
 namespace RPGML {
@@ -158,6 +160,14 @@ ArrayBase *Output::getData( void )
 const ArrayBase *Output::getData( void ) const
 {
   return m_data;
+}
+
+void Output::resolve( void )
+{
+  if( !m_data.isNull() )
+  {
+    m_data = Node::resolve( m_data );
+  }
 }
 
 void Output::gc_clear( void )
@@ -474,11 +484,107 @@ bool Node::hasAnyInputChanged( void ) const
   return false;
 }
 
+CountPtr< const ArrayBase > Node::resolve( const CountPtr< const ArrayBase > &in_base )
+{
+  return resolve( in_base.get() );
+}
+
+CountPtr< const ArrayBase > Node::resolve( const ArrayBase *in_base )
+{
+  while( in_base && 0 == in_base->getDims()  )
+  {
+    const Type in_base_type = in_base->getType();
+    if( in_base_type.isArray() )
+    {
+      const ArrayArrayElements *e = 0;
+      if( in_base->getAs( e ) && !e->empty() )
+      {
+        in_base = e->elements()->get();
+      }
+      else
+      {
+        break;
+      }
+    }
+    else if( in_base_type.isOutput() )
+    {
+      const OutputArrayElements *e = 0;
+      if( in_base->getAs( e ) && !e->empty() )
+      {
+        in_base = e->elements()->get()->getData();
+        break;
+      }
+      else
+      {
+        break;
+      }
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  return in_base;
+}
+
+CountPtr< ArrayBase > Node::resolve( const CountPtr< ArrayBase > &in_base )
+{
+  return resolve( in_base.get() );
+}
+
+CountPtr< ArrayBase > Node::resolve( ArrayBase *in_base )
+{
+  while( in_base && 0 == in_base->getDims() )
+  {
+    const Type in_base_type = in_base->getType();
+    if( in_base_type.isArray() )
+    {
+      ArrayArrayElements *e = 0;
+      if( in_base->getAs( e ) && !e->empty() )
+      {
+        in_base = e->elements()->get();
+      }
+      else
+      {
+        break;
+      }
+    }
+    else if( in_base_type.isOutput() )
+    {
+      OutputArrayElements *e = 0;
+      if( in_base->getAs( e ) && !e->empty() )
+      {
+        in_base = e->elements()->get()->getData();
+        break;
+      }
+      else
+      {
+        break;
+      }
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  return in_base;
+}
+
 Node::NotConnected::NotConnected( const Input *_input )
 : input( _input )
 {
   (*this)
     << "Input '" << input->getIdentifier() << "' is not connected."
+    ;
+}
+
+Node::NotReady::NotReady( const Input *_input )
+: input( _input )
+{
+  (*this)
+    << "Input '" << input->getIdentifier() << "' is not ready."
     ;
 }
 

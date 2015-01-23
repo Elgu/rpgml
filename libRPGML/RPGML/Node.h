@@ -54,6 +54,11 @@
   setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index, true ) ); \
   push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
+#define GET_INPUT_DATA( INPUT_ENUM, var_identifier ) \
+  if( !getInput( INPUT_ENUM )->isConnected() ) throw NotConnected( getInput( INPUT_ENUM ) ); \
+  const ArrayBase *const var_identifier = getInput( INPUT_ENUM )->getData(); \
+  if( !var_identifier ) throw NotReady( getInput( INPUT_ENUM ) ); \
+
 #define GET_INPUT_MANDATORY( INPUT_ENUM, var_identifier, type, dims ) \
   const Array< type, dims > *var_identifier = 0; \
   if( !getInput( INPUT_ENUM )->isConnected() ) \
@@ -118,7 +123,7 @@
   { \
     throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
   } \
-  if( size ) var_identifier->resize( dims, size );\
+  if( size ) var_identifier->resize_v( dims, size );\
 
 #define GET_OUTPUT_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type, dims ) \
   Array< type, dims > *var_identifier = 0; \
@@ -239,6 +244,8 @@ public:
     as = 0; return 0;
   }
 
+  void resolve( void );
+
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
@@ -312,22 +319,32 @@ public:
   EXCEPTION_DERIVED( ParamNotFound , NotFound  );
 
   class NotConnected;
+  class NotReady;
   class IncompatibleOutput;
   class GetAsFailed;
 
   class NotConnected : public Exception
   {
-  public:
     typedef Exception Base;
+  public:
     explicit NotConnected( const Input *_input );
     EXCEPTION_BODY( NotConnected )
     CountPtr< const Input > input;
   };
 
+  class NotReady : public Exception
+  {
+    typedef Exception Base;
+  public:
+    explicit NotReady( const Input *_input );
+    EXCEPTION_BODY( NotReady)
+    CountPtr< const Input > input;
+  };
+
   class IncompatibleOutput : public Exception
   {
-  public:
     typedef Exception Base;
+  public:
     explicit IncompatibleOutput( const Input *_input );
     EXCEPTION_BODY( IncompatibleOutput )
     CountPtr< const Input > input;
@@ -335,9 +352,8 @@ public:
 
   class GetAsFailed : public Exception
   {
-  public:
     typedef Exception Base;
-
+  public:
     template< class T, int DIMS >
     explicit GetAsFailed( const Port *_port, const Array< T, DIMS > * )
     : port( _port )
@@ -410,6 +426,10 @@ public:
   bool hasAnyInputChanged( void ) const;
   void setAllOutputChanged( bool changed = true );
 
+  static CountPtr< const ArrayBase > resolve( const CountPtr< const ArrayBase > &in_base );
+  static CountPtr< const ArrayBase > resolve( const ArrayBase *in_base );
+  static CountPtr< ArrayBase > resolve( const CountPtr< ArrayBase > &in_base );
+  static CountPtr< ArrayBase > resolve( ArrayBase *in_base );
 protected:
   template< class ParentNode >
   class NodeParam : public Param
