@@ -19,6 +19,8 @@
 #define RPGML_String_h
 
 #include "Refcounted.h"
+#include "Exception.h"
+
 #include <string>
 #include <cstring>
 #include <ostream>
@@ -91,6 +93,8 @@ private:
 class String
 {
 public:
+  EXCEPTION_BASE( Exception );
+
   static const size_t npos;
 
   String( void );
@@ -192,6 +196,19 @@ public:
   String &operator+=( const String &other );
   String &operator+=( const std::string &other );
   String &operator+=( const char *other );
+
+  void parse( bool     &x ) const;
+  void parse( uint8_t  &x, int base=10 ) const;
+  void parse( int8_t   &x, int base=10 ) const;
+  void parse( uint16_t &x, int base=10 ) const;
+  void parse( int16_t  &x, int base=10 ) const;
+  void parse( uint32_t &x, int base=10 ) const;
+  void parse( int32_t  &x, int base=10 ) const;
+  void parse( uint64_t &x, int base=10 ) const;
+  void parse( int64_t  &x, int base=10 ) const;
+  void parse( float    &x ) const;
+  void parse( double   &x ) const;
+  void parse( String   &x ) const;
 
 private:
   CountPtr< const StringData > m_str;

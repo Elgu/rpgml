@@ -18,6 +18,7 @@
 #include "String.h"
 
 #include <cstring>
+#include <cstdlib>
 
 namespace RPGML {
 
@@ -342,6 +343,67 @@ namespace RPGML {
     this->swap( tmp );
     return (*this);
   }
+
+  void String::parse( bool     & ) const
+  {
+    throw Exception() << "Cannot parse bool directly from string, use something defined like != ''";
+  }
+
+  void String::parse( uint8_t  &x, int base ) const
+  {
+    x = uint8_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( int8_t   &x, int base ) const
+  {
+    x = int8_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( uint16_t &x, int base ) const
+  {
+    x = uint16_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( int16_t  &x, int base ) const
+  {
+    x = int16_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( uint32_t &x, int base ) const
+  {
+    x = uint32_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( int32_t  &x, int base ) const
+  {
+    x = int32_t( strtol( c_str(), 0, base ) );
+  }
+
+  void String::parse( uint64_t &x, int base ) const
+  {
+    x = uint64_t( strtoull( c_str(), 0, base ) );
+  }
+
+  void String::parse( int64_t  &x, int base ) const
+  {
+    x = int64_t( strtoll( c_str(), 0, base ) );
+  }
+
+  void String::parse( float    &x ) const
+  {
+    x = strtof( c_str(), 0 );
+  }
+
+  void String::parse( double   &x ) const
+  {
+    x = strtod( c_str(), 0 );
+  }
+
+  void String::parse( String   &x ) const
+  {
+    x = (*this);
+  }
+
 
 } // namespace RPGML
 
