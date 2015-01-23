@@ -53,6 +53,6 @@
   print( c );
 }
 
-Exit e();
+.core.Exit e();
 needing( e );
 

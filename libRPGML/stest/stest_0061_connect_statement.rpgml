@@ -1,7 +1,7 @@
 
 Function _exit_if( condition=nil )
 {
-  Exit e();
+  .core.Exit e();
   condition -> e.condition;
   needing( e );
   return condition;
