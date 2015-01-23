@@ -22,6 +22,8 @@
 
 #include <ostream>
 
+#define LOCATION new Location( __FILE__, __LINE__ )
+
 namespace RPGML {
 
 class Location : public Refcounted
@@ -58,6 +60,11 @@ public:
   Location( const Location *copy_location, const Location *_parent );
 
   virtual ~Location( void );
+
+  const Location *getParent( void ) const
+  {
+    return parent;
+  }
 
   std::ostream &print( std::ostream &o, bool with_filename=true, bool is_parent=false ) const;
 

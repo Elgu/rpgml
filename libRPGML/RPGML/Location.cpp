@@ -49,7 +49,7 @@ std::ostream &Location::print( std::ostream &o, bool with_filename, bool is_pare
     o << std::endl;
   }
 
-  if( is_parent ) o << "at ";
+  if( is_parent ) o << "from ";
 
   if( !filename.empty() )
   {
@@ -83,6 +83,8 @@ std::ostream &Location::print( std::ostream &o, bool with_filename, bool is_pare
       }
     }
   }
+
+  if( is_parent ) o << ":";
   return o;
 }
 
