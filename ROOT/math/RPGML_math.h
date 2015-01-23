@@ -1,10 +1,24 @@
+/* This file is part of RPGML.
+ *
+ * Copyright (c) 2015, Gunnar Payer, All rights reserved.
+ *
+ * RPGML is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 #ifndef RPGML_math_h
 #define RPGML_math_h
 
-#include <RPGML/Value.h>
-#include <RPGML/Array.h>
-#include <RPGML/Type.h>
-#include <RPGML/Exception.h>
+#include "RPGML_MapOp.h"
 
 #include <cmath>
 
@@ -124,6 +138,12 @@ template< class _T, MOP1 op > struct MathOp1_op { typedef _T T, Ret; };
 template< class _T >
 struct MathOp1_op< _T, MOP1_MINUS >
 {
+  static const MOP1 op = MOP1_MINUS;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
   typedef _T T;
   typedef typename MakeSigned< _T >::T Ret;
   Ret operator()( const T &x ) const { return Ret( -Ret( x ) ); }
@@ -132,6 +152,12 @@ struct MathOp1_op< _T, MOP1_MINUS >
 template< class _T >
 struct  MathOp1_op< _T, MOP1_PLUS >
 {
+  static const MOP1 op = MOP1_PLUS;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
   typedef _T T, Ret;
   Ret operator()( const T &x ) const { return x; }
 };
@@ -139,6 +165,12 @@ struct  MathOp1_op< _T, MOP1_PLUS >
 template< class _T >
 struct MathOp1_op< _T, MOP1_LOG_NOT >
 {
+  static const MOP1 op = MOP1_LOG_NOT;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
   typedef _T T;
   typedef bool Ret;
   Ret operator()( const T &x ) const { return bool( x ); }
@@ -147,6 +179,12 @@ struct MathOp1_op< _T, MOP1_LOG_NOT >
 template< class _T >
 struct MathOp1_op< _T, MOP1_BIT_NOT >
 {
+  static const MOP1 op = MOP1_BIT_NOT;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
   typedef _T T;
   typedef typename SelectType< int( IsInteger< T >::B ), uint8_t, T >::T Ret;
   Ret operator()( const T &x ) const
@@ -165,6 +203,12 @@ struct MathOp1_op< _T, MOP1_BIT_NOT >
   template< class _T > \
   struct MathOp1_op< _T, mop1 > \
   { \
+    static const MOP1 op = mop1; \
+    template< class OtherT > \
+    struct Other \
+    { \
+      typedef MathOp1_op< OtherT, op > Op; \
+    }; \
     typedef _T T; \
     typedef typename AppropFloat< T >::T Ret; \
     Ret f( float x ) const { return func ## f( x ); } \
@@ -188,268 +232,31 @@ DEFINE_FLOAT_MATHOP1( MOP1_LOG10, log10 );
 DEFINE_FLOAT_MATHOP1( MOP1_LOG2 , log2  );
 DEFINE_FLOAT_MATHOP1( MOP1_LOG1P, log1p );
 
-template< class _T, MOP1 _op >
-struct mathOp1_t
-{
-  typedef _T T;
-  static const MOP1 op = _op;
-  typedef MathOp1_op< T, op > Op;
-  typedef typename Op::Ret Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return Op()( x );
-  }
-};
-
-template< MOP1 _op > struct mathOp1_t< Value, _op >;
-template< MOP1 _op > struct mathOp1_t< const ArrayBase*, _op >;
-template< MOP1 _op > struct mathOp1_t< CountPtr< ArrayBase >, _op >;
-template< MOP1 _op > struct mathOp1_t< CountPtr< const ArrayBase >, _op >;
-template< MOP1 _op > struct mathOp1_t< const ArrayElements< Value >*, _op >;
-template< MOP1 _op > struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >;
-template< MOP1 _op > struct mathOp1_t< CountPtr< const ArrayElements< Value > >, _op >;
-template< MOP1 _op, class Element > struct mathOp1_t< const ArrayElements< Element >*, _op >;
-template< MOP1 _op, class Element > struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >;
-template< MOP1 _op, class Element > struct mathOp1_t< CountPtr< const ArrayElements< Element > >, _op >;
-
-template< MOP1 _op >
-struct mathOp1_t< Value, _op >
-{
-  typedef Value T;
-  static const MOP1 op = _op;
-  typedef Value Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    switch( x.getType().getEnum() )
-    {
-      case Type::BOOL  : return Value( mathOp1_t< bool    , op >()( x.getBool  () ) );
-      case Type::UINT8 : return Value( mathOp1_t< uint8_t , op >()( x.getUInt8 () ) );
-      case Type::INT8  : return Value( mathOp1_t< int8_t  , op >()( x.getInt8  () ) );
-      case Type::UINT16: return Value( mathOp1_t< uint16_t, op >()( x.getUInt16() ) );
-      case Type::INT16 : return Value( mathOp1_t< int16_t , op >()( x.getInt16 () ) );
-      case Type::UINT32: return Value( mathOp1_t< uint32_t, op >()( x.getUInt32() ) );
-      case Type::INT32 : return Value( mathOp1_t< int32_t , op >()( x.getInt32 () ) );
-      case Type::UINT64: return Value( mathOp1_t< uint64_t, op >()( x.getUInt64() ) );
-      case Type::INT64 : return Value( mathOp1_t< int64_t , op >()( x.getInt64 () ) );
-      case Type::FLOAT : return Value( mathOp1_t< float   , op >()( x.getFloat () ) );
-      case Type::DOUBLE: return Value( mathOp1_t< double  , op >()( x.getDouble() ) );
-      case Type::ARRAY : return Value( mathOp1_t< const ArrayBase*, op >()( x.getArray() ) );
-      default:
-        throw Exception() << "Unsupported Type";
-    }
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< const ArrayBase*, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayBase > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    if( x->isValue() )
-    {
-      return mathOp1_t< CountPtr< ArrayElements< Value > >, op >()( x );
-    }
-    switch( x->getType().getEnum() )
-    {
-      case Type::BOOL  : return Value( mathOp1_t< CountPtr< ArrayElements< bool     > >, op >()( x ) );
-      case Type::UINT8 : return Value( mathOp1_t< CountPtr< ArrayElements< uint8_t  > >, op >()( x ) );
-      case Type::INT8  : return Value( mathOp1_t< CountPtr< ArrayElements< int8_t   > >, op >()( x ) );
-      case Type::UINT16: return Value( mathOp1_t< CountPtr< ArrayElements< uint16_t > >, op >()( x ) );
-      case Type::INT16 : return Value( mathOp1_t< CountPtr< ArrayElements< int16_t  > >, op >()( x ) );
-      case Type::UINT32: return Value( mathOp1_t< CountPtr< ArrayElements< uint32_t > >, op >()( x ) );
-      case Type::INT32 : return Value( mathOp1_t< CountPtr< ArrayElements< int32_t  > >, op >()( x ) );
-      case Type::UINT64: return Value( mathOp1_t< CountPtr< ArrayElements< uint64_t > >, op >()( x ) );
-      case Type::INT64 : return Value( mathOp1_t< CountPtr< ArrayElements< int64_t  > >, op >()( x ) );
-      case Type::FLOAT : return Value( mathOp1_t< CountPtr< ArrayElements< float    > >, op >()( x ) );
-      case Type::DOUBLE: return Value( mathOp1_t< CountPtr< ArrayElements< double   > >, op >()( x ) );
-      case Type::ARRAY : return Value( mathOp1_t< CountPtr< ArrayElements< CountPtr< ArrayBase > > >, op >()( x ) );
-      default:
-        throw Exception() << "Unsupported Array Type";
-    }
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< CountPtr< ArrayBase >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayBase > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayBase*, _op >()( x );
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< CountPtr< const ArrayBase >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayBase > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayBase*, _op >()( x );
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< const ArrayElements< Value >*, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayElements< Value > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    typedef ArrayElements< Value > ValueArrayElements;
-    const ValueArrayElements *e = 0;
-    if( !x->getAs( e ) ) throw Exception() << "x is not a Value Array";
-
-    const ArrayBase::Size size = x->getSize();
-    CountPtr< ValueArrayElements > ret( new_Array< Value >( x->getGC(), size.getDims() ) );
-    ret->resize( size );
-
-    ValueArrayElements::const_iterator e_iter = e->begin();
-    ValueArrayElements::const_iterator e_end  = e->end();
-    ValueArrayElements::iterator ret_iter = ret->begin();
-    for( ; e_iter != e_end; ++e_iter, ++ret_iter )
-    {
-      (*ret_iter ) = mathOp1_t< Value, op >()( (*e_iter) );
-    }
-
-    return ret;
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< CountPtr< ArrayElements< Value > >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayElements< Value > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayElements< Value >*, _op >()( x );
-  }
-};
-
-template< MOP1 _op >
-struct mathOp1_t< CountPtr< const ArrayElements< Value > >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef CountPtr< ArrayElements< Value > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayElements< Value >*, _op >()( x );
-  }
-};
-
-template< MOP1 _op, class Element >
-struct mathOp1_t< const ArrayElements< Element >*, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef mathOp1_t< Element, op > ElementOp;
-  typedef typename ElementOp::Ret RetElement;
-  typedef CountPtr< ArrayElements< RetElement > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    typedef ArrayElements< Element > InElements;
-    typedef ArrayElements< RetElement > RetElements;
-
-    const InElements *e = 0;
-    if( !x->getAs( e ) )
-    {
-      throw Exception()
-        << "x is not of specified element type " << getTypeName< T >()
-        << ", is " << x->getTypeName()
-        ;
-    }
-
-    const ArrayBase::Size size = x->getSize();
-    CountPtr< RetElements > ret( new_Array< RetElement >( x->getGC(), size.getDims() ) );
-    ret->resize( size );
-
-    typename InElements::const_iterator e_iter = e->begin();
-    typename InElements::const_iterator e_end  = e->end();
-    typename RetElements::iterator ret_iter = ret->begin();
-    for( ; e_iter != e_end; ++e_iter, ++ret_iter )
-    {
-      (*ret_iter ) = ElementOp()( Element(*e_iter) );
-    }
-
-    return ret;
-  }
-};
-
-template< MOP1 _op, class Element >
-struct mathOp1_t< CountPtr< ArrayElements< Element > >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef mathOp1_t< Element, op > ElementOp;
-  typedef typename ElementOp::Ret RetElement;
-  typedef CountPtr< ArrayElements< RetElement > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayElements< Element >*, _op >()( x );
-  }
-};
-
-template< MOP1 _op, class Element >
-struct mathOp1_t< CountPtr< const ArrayElements< Element > >, _op >
-{
-  typedef const ArrayBase *T;
-  static const MOP1 op = _op;
-  typedef mathOp1_t< Element, op > ElementOp;
-  typedef typename ElementOp::Ret RetElement;
-  typedef CountPtr< ArrayElements< RetElement > > Ret;
-
-  Ret operator()( const T &x ) const
-  {
-    return mathOp1_t< const ArrayElements< Element >*, _op >()( x );
-  }
-};
-
 template< class T, class Ret=T >
 static
 Ret mathOp1( MOP1 op, const T &x )
 {
   switch( op )
   {
-    case MOP1_MINUS  : return mathOp1_t< T, MOP1_MINUS   >()( x );
-    case MOP1_PLUS   : return mathOp1_t< T, MOP1_PLUS    >()( x );
-    case MOP1_LOG_NOT: return mathOp1_t< T, MOP1_LOG_NOT >()( x );
-    case MOP1_BIT_NOT: return mathOp1_t< T, MOP1_BIT_NOT >()( x );
-    case MOP1_SIN    : return mathOp1_t< T, MOP1_SIN     >()( x );
-    case MOP1_COS    : return mathOp1_t< T, MOP1_COS     >()( x );
-    case MOP1_TAN    : return mathOp1_t< T, MOP1_TAN     >()( x );
-    case MOP1_ASIN   : return mathOp1_t< T, MOP1_ASIN    >()( x );
-    case MOP1_ACOS   : return mathOp1_t< T, MOP1_ACOS    >()( x );
-    case MOP1_ATAN   : return mathOp1_t< T, MOP1_ATAN    >()( x );
-    case MOP1_EXP    : return mathOp1_t< T, MOP1_EXP     >()( x );
-    case MOP1_EXP10  : return mathOp1_t< T, MOP1_EXP10   >()( x );
-    case MOP1_EXP2   : return mathOp1_t< T, MOP1_EXP2    >()( x );
-    case MOP1_EXPM1  : return mathOp1_t< T, MOP1_EXPM1   >()( x );
-    case MOP1_SQRT   : return mathOp1_t< T, MOP1_SQRT    >()( x );
-    case MOP1_LOG    : return mathOp1_t< T, MOP1_LOG     >()( x );
-    case MOP1_LOG10  : return mathOp1_t< T, MOP1_LOG10   >()( x );
-    case MOP1_LOG2   : return mathOp1_t< T, MOP1_LOG2    >()( x );
-    case MOP1_LOG1P  : return mathOp1_t< T, MOP1_LOG1P   >()( x );
+    case MOP1_MINUS  : return MapOp< T, MathOp1_op< T, MOP1_MINUS   > >()( x );
+    case MOP1_PLUS   : return MapOp< T, MathOp1_op< T, MOP1_PLUS    > >()( x );
+    case MOP1_LOG_NOT: return MapOp< T, MathOp1_op< T, MOP1_LOG_NOT > >()( x );
+    case MOP1_BIT_NOT: return MapOp< T, MathOp1_op< T, MOP1_BIT_NOT > >()( x );
+    case MOP1_SIN    : return MapOp< T, MathOp1_op< T, MOP1_SIN     > >()( x );
+    case MOP1_COS    : return MapOp< T, MathOp1_op< T, MOP1_COS     > >()( x );
+    case MOP1_TAN    : return MapOp< T, MathOp1_op< T, MOP1_TAN     > >()( x );
+    case MOP1_ASIN   : return MapOp< T, MathOp1_op< T, MOP1_ASIN    > >()( x );
+    case MOP1_ACOS   : return MapOp< T, MathOp1_op< T, MOP1_ACOS    > >()( x );
+    case MOP1_ATAN   : return MapOp< T, MathOp1_op< T, MOP1_ATAN    > >()( x );
+    case MOP1_EXP    : return MapOp< T, MathOp1_op< T, MOP1_EXP     > >()( x );
+    case MOP1_EXP10  : return MapOp< T, MathOp1_op< T, MOP1_EXP10   > >()( x );
+    case MOP1_EXP2   : return MapOp< T, MathOp1_op< T, MOP1_EXP2    > >()( x );
+    case MOP1_EXPM1  : return MapOp< T, MathOp1_op< T, MOP1_EXPM1   > >()( x );
+    case MOP1_SQRT   : return MapOp< T, MathOp1_op< T, MOP1_SQRT    > >()( x );
+    case MOP1_LOG    : return MapOp< T, MathOp1_op< T, MOP1_LOG     > >()( x );
+    case MOP1_LOG10  : return MapOp< T, MathOp1_op< T, MOP1_LOG10   > >()( x );
+    case MOP1_LOG2   : return MapOp< T, MathOp1_op< T, MOP1_LOG2    > >()( x );
+    case MOP1_LOG1P  : return MapOp< T, MathOp1_op< T, MOP1_LOG1P   > >()( x );
     default:
       throw Exception() << "Undefined op";
   }
