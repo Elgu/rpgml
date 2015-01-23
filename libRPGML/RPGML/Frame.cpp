@@ -41,7 +41,7 @@ public:
   typedef Function Base;
   EXCEPTION_BASE( Exception );
 
-  NodeCreator( GarbageCollector *gc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so=0 );
+  NodeCreator( GarbageCollector *gc, const Location *loc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so=0 );
   virtual ~NodeCreator( void );
 
   virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
@@ -57,8 +57,8 @@ private:
   create_Node_t m_create_Node;
 };
 
-NodeCreator::NodeCreator( GarbageCollector *_gc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so )
-: Function( _gc, parent, 0, so )
+NodeCreator::NodeCreator( GarbageCollector *_gc, const Location *loc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so )
+: Function( _gc, loc, parent, 0, so )
 , m_name( name )
 , m_create_Node( create_Node )
 {}
@@ -140,10 +140,15 @@ Frame::Frame( GarbageCollector *_gc, Frame *parent, const String &path )
 , m_path( path )
 , m_depth( parent ? parent->getDepth()+1 : 0 )
 , m_is_this( false )
-{}
+{
+//  cerr << "Frame " << (void*)this << " create: gc = " << (void*)getGC() << endl;
+}
 
 Frame::~Frame( void )
-{}
+{
+//  cerr << "Frame " << (void*)this << " destroy: gc = " << (void*)getGC() << endl;
+  gc_clear();
+}
 
 Frame *Frame::getParent( void ) const
 {
@@ -461,6 +466,8 @@ Frame::Ref Frame::load( const String &identifier, const Scope *scope )
     throw Exception() << "Frame member identifiers cannot start with a '.'";
   }
 
+//  cerr << "Frame::load( '" << identifier << "', scope ); Frame = '" << getIdentifier() << "'" << endl;
+
   Frame *curr_frame = this;
   size_t dot_pos = 0;
   size_t identifier_begin = 0;
@@ -569,7 +576,10 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
   {
     closedir( dir_p );
 //    std::cerr << "Found directory '" << dir << "'" << std::endl;
-    return getStack( set( identifier, Value( new Frame( getGC(), this, dir ) ) ) );
+    CountPtr< Frame > ret = new Frame( getGC(), this, dir );
+    const String unified = scope->unify( identifier );
+    ret->setIdentifier( unified );
+    return getStack( set( unified, Value( ret ) ) );
   }
 
 	// Check whether identifier refers to a Function-plugin
@@ -593,7 +603,8 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
         {
   //        std::cerr << "Got symbol '" << symbol << " from shared object '" << so << "'" << std::endl;
           CountPtr< Function > function = create_function( getGC(), this, so_p.get() );
-          return getStack( set( identifier, Value( function.get() ) ) );
+          const String unified = scope->unify( identifier );
+          return getStack( set( unified, Value( function.get() ) ) );
         }
       }
       else
@@ -626,10 +637,11 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
           const String name = genGlobalName( identifier );
           CountPtr< Function > node_creator(
             new Frame_impl::NodeCreator(
-              getGC(), this, name, create_Node, so_p.get()
+              getGC(), new Location( so ), this, name, create_Node, so_p.get()
               )
             );
-          return getStack( set( identifier, Value( node_creator.get() ) ) );
+          const String unified = scope->unify( identifier );
+          return getStack( set( unified, Value( node_creator.get() ) ) );
         }
       }
       else
@@ -680,15 +692,12 @@ void Frame::gc_clear( void )
 
 void Frame::gc_getChildren( Children &children ) const
 {
-  children.add( m_parent.get() );
+  children.add( m_parent );
 
   for( size_t i( 0 ), end( m_values.size() ); i<end; ++i )
   {
     const Value &value = m_values[ i ];
-    if( value.isCollectable() )
-    {
-      children.add( value.getCollectable() );
-    }
+    children.add( value.getCollectable() );
   }
 }
 
