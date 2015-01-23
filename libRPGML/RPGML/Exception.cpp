@@ -22,43 +22,40 @@
  */
 #include "Exception.h"
 
-#include <execinfo.h>
-#include <unistd.h>
-
 namespace RPGML {
 
 Exception::Exception( void ) throw()
-: m_backtrace_n( 0 )
 {
   breakpoint();
 }
 
 Exception::Exception( const std::string &text ) throw()
 : m_text( text )
-, m_backtrace_n( 0 )
 {
   breakpoint();
 }
 
-void Exception::breakpoint( void )
+void NOINLINE Exception::breakpoint( void )
 {
-  m_backtrace_n = ::backtrace( m_backtrace_buffer, BACKTRACE_BUFFER_SIZE );
   return;
 }
 
 void Exception::print_backtrace( void ) const
 {
-  ::backtrace_symbols_fd( m_backtrace_buffer, m_backtrace_n, STDERR_FILENO );
-  // cxxabi.h
-  // char *__cxxabiv1::__cxa_demangle (const char *__mangled_name, char *__output_buffer, size_t *__length, int *__status)
+  m_backtrace.print();
 }
 
 Exception::~Exception( void ) throw()
 {}
 
+const std::string &Exception::getText( void ) const
+{
+  return m_text;
+}
+
 const char *Exception::what() const throw()
 {
-  return m_text.c_str();
+  return getText().c_str();
 }
 
 Exception &Exception::append( const std::string &text )
@@ -67,13 +64,14 @@ Exception &Exception::append( const std::string &text )
   return (*this);
 }
 
-void Exception::copyBackTraceBuffer( Exception &dest ) const
+const Backtrace &Exception::getBacktrace( void ) const
 {
-  std::copy(
-      m_backtrace_buffer
-    , m_backtrace_buffer + BACKTRACE_BUFFER_SIZE
-    , dest.m_backtrace_buffer
-    );
+  return m_backtrace;
+}
+
+void Exception::copyBacktrace( Exception &dest ) const
+{
+  m_backtrace.copy( dest.m_backtrace );
 }
 
 } // namespace RPGML

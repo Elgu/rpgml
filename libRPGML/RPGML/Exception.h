@@ -23,9 +23,13 @@
 #ifndef RPGML_Exception_h
 #define RPGML_Exception_h
 
+#include "Backtrace.h"
+
 #include <exception>
 #include <string>
 #include <sstream>
+
+#define NOINLINE __attribute__ ((noinline))
 
 namespace RPGML {
 
@@ -41,10 +45,13 @@ public:
   explicit Exception( const std::string &text ) throw();
   //! @brief destructor
   virtual ~Exception( void ) throw();
-  //! @brief Returns the exception text specified at creation
+  //! @brief Returns the exception text, might be overloaded by derived Exceptions
   virtual const char *what() const throw();
   //! @brief appends text to exception text
   Exception &append( const std::string &text );
+
+  //! @brief Returns current exception text as specified at construction and "<<"
+  const std::string &getText( void ) const;
 
   template< class T >
   Exception &operator<<( const T &x )
@@ -54,17 +61,17 @@ public:
     return append( s.str() );
   }
 
-  void breakpoint( void );
+  const Backtrace &getBacktrace( void ) const;
+
+  void NOINLINE breakpoint( void );
   void print_backtrace( void ) const;
 
 //protected: I cannot call this from ParseException for some reason
-  void copyBackTraceBuffer( Exception &dest ) const;
+  void copyBacktrace( Exception &dest ) const;
 
 private:
-  static const int BACKTRACE_BUFFER_SIZE = 64;
-  void *m_backtrace_buffer[ BACKTRACE_BUFFER_SIZE ];
+  Backtrace m_backtrace;
   std::string m_text; //!< The exception text
-  int m_backtrace_n;
 };
 
 #define EXCEPTION_BODY( NAME ) \
