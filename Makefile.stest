@@ -1,5 +1,27 @@
 
-stest:
+STEST_SCRIPTS=$(shell find . -name "stest_*.rpgml" -type f )
+
+STEST_RESULTS=\
+	$(STEST_SCRIPTS:.rpgml=.output)\
+# 	$(STEST_SCRIPTS:.rpgml=.pretty)\
+
+TIMEOUT_SECONDS=1
+
+RPGML=$(RPGML_SRC_ROOT)/rpgml/rpgml
+PRETTYPRINTER=$(RPGML_SRC_ROOT)/rpgml/prettyprinter
+
+.rerun_stest:
+	@touch $@
+
+%.pretty: %.rpgml .rerun_stest $(PRETTYPRINTER) Makefile
+	@echo "Prettyprinting $<"
+	@cd ./$(dir $<) && RPGML_PATH="$(RPGML_SRC_ROOT)/ROOT:." $(PRETTYPRINTER) $(notdir $<) > $(notdir $@)
+
+%.output: %.pretty %.expected .rerun_stest $(RPGML) Makefile
+	@echo "Running $<"
+	@cd ./$(dir $<) && RPGML_PATH="$(RPGML_SRC_ROOT)/ROOT:." $(RPGML) $(notdir $<) > $(notdir $@)
+	@diff -udab $@ $(<:.pretty=.expected)
+
+stest: $(STEST_RESULTS)
 	@touch .rerun_stest
-	$(MAKE) $(STEST_RESULTS)
 
