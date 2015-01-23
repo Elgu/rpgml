@@ -41,9 +41,10 @@ public:
   class Arg;
   class Args;
 
-  Function( GarbageCollector *gc, Frame *parent, const Args *decl_args, bool is_method=false, const SharedObject *so=0 );
+  Function( GarbageCollector *gc, const Location *loc, Frame *parent, const Args *decl_args, bool is_method=false, const SharedObject *so=0 );
   virtual ~Function( void );
 
+  const Location *getLocation( void ) const;
   Frame *getParent( void ) const;
   const Args *getDecl( void ) const;
   const SharedObject *getSO( void ) const;
@@ -103,6 +104,7 @@ private:
   void setupFunctionFrame( Frame &args, const Args &call_args );
   void setupFunctionFrame( Frame &frame, index_t n_args, const Value *args );
 
+  CountPtr< const Location > m_loc;
   CountPtr< Frame > m_parent;
   CountPtr< const Args > m_decl;
   CountPtr< const SharedObject > m_so;

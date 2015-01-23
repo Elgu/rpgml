@@ -27,8 +27,9 @@ using namespace std;
 
 namespace RPGML {
 
-Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, bool is_method, const SharedObject *so )
+Function::Function( GarbageCollector *_gc, const Location *loc, Frame *parent, const Args *decl, bool is_method, const SharedObject *so )
 : Collectable( _gc )
+, m_loc( loc )
 , m_parent( parent )
 , m_decl( decl )
 , m_so( so )
@@ -47,6 +48,11 @@ Function::Function( GarbageCollector *_gc, Frame *parent, const Args *decl, bool
 
 Function::~Function( void )
 {}
+
+const Location *Function::getLocation( void ) const
+{
+  return m_loc;
+}
 
 Frame *Function::getParent( void ) const
 {
