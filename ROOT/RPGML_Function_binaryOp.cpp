@@ -27,7 +27,7 @@
 namespace RPGML {
 
 Function_binaryOp::Function_binaryOp( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
-: Function( _gc, parent, genDeclArgs(), so )
+: Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
 Function_binaryOp::~Function_binaryOp( void )

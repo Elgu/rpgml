@@ -27,7 +27,7 @@
 namespace RPGML {
 
 Function_print::Function_print( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
-: Function( _gc, parent, genDeclArgs(), so )
+: Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
 Function_print::~Function_print( void )
@@ -42,7 +42,7 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
   {
     case Type::OUTPUT:
       {
-        CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".Print" ) ) );
+        CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".core.Print" ) ) );
 
         in.getOutput()->connect( node->getInput( "in" ) );
         scope->call( loc, recursion_depth+1, String::Static( ".needing" ), ret, Value( node.get() ) );

@@ -31,7 +31,7 @@ namespace RPGML {
 
 
 Function_needing::Function_needing( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
-: Function( _gc, parent, genDeclArgs(), so )
+: Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
 Function_needing::~Function_needing( void )
