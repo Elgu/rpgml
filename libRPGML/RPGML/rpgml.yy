@@ -72,19 +72,19 @@ namespace RPGML
 %destructor {} <uop>
 %destructor {} <assign>
 %destructor { /* is unified */ } <str>
-%destructor { if( !($$)->unref() ) delete ($$); } <stmt>
-%destructor { if( !($$)->unref() ) delete ($$); } <comp>
-%destructor { if( !($$)->unref() ) delete ($$); } <expr>
-%destructor { if( !($$)->unref() ) delete ($$); } <seq>
-%destructor { if( !($$)->unref() ) delete ($$); } <expr_seq>
-%destructor { if( !($$)->unref() ) delete ($$); } <fad>
-%destructor { if( !($$)->unref() ) delete ($$); } <fadl>
-%destructor { if( !($$)->unref() ) delete ($$); } <arg>
-%destructor { if( !($$)->unref() ) delete ($$); } <args>
-%destructor { if( !($$)->unref() ) delete ($$); } <type>
-%destructor { if( !($$)->unref() ) delete ($$); } <dims>
-%destructor { if( !($$)->unref() ) delete ($$); } <seq_array>
-%destructor { if( !($$)->unref() ) delete ($$); } <array_array>
+%destructor {} <stmt>
+%destructor {} <comp>
+%destructor {} <expr>
+%destructor {} <seq>
+%destructor {} <expr_seq>
+%destructor {} <fad>
+%destructor {} <fadl>
+%destructor {} <arg>
+%destructor {} <args>
+%destructor {} <type>
+%destructor {} <dims>
+%destructor {} <seq_array>
+%destructor {} <array_array>
 
 
 %token            END          0 "end of file";
@@ -138,6 +138,7 @@ namespace RPGML
 %token  <type_enum>    INPUT        "Input";
 %token  <type_enum>    NODE         "Node";
 %token  <type_enum>    PARAM        "Param";
+%token  <type_enum>    SEQUENCE     "Sequence";
 %token            IF           "if";
 %token            ELSE         "else";
 %token            FOR          "for";
@@ -289,6 +290,7 @@ frame_constant
 primary_expression
   : constant           { ($$) = ($1); }
   | sequence_expression { ($$) = ($1); }
+  | '(' expression ')' { ($$) = ($2); }
   ;
 
 constant
@@ -563,6 +565,7 @@ basic_type_expression
   | OUTPUT
   | INPUT
   | PARAM
+  | SEQUENCE
 //  | ARRAY
   ;
 
@@ -703,16 +706,15 @@ sequence
   ;
 
 sequence_expression
-  : '(' sequence ')'
+  : SEQUENCE '(' sequence ')'
     {
-      if( 1 == ($2)->length() )
-      {
-        ($$) = ($2)->first();
-      }
-      else
-      {
-        ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($2) );
-      }
+      (void)($1);
+      ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($3) );
+    }
+  | SEQUENCE '(' ')'
+    {
+      (void)($1);
+      ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$) );
     }
   ;
 
