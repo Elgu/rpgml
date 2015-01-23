@@ -96,10 +96,8 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
 
     if( obj->gc_generation > up_to_generation )
     {
-      // Just keep "older" objects, they will not play any role in the
-      // rest of the garbage collecting process.
+      // Ignore "older" objects at this point
       // They will just implicitly contribute to the "foreign" references.
-      removeFromOldAddToNew( obj, cs_new );
       continue;
     }
 
@@ -130,6 +128,14 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
   {
     const Collectable *const obj = m_cs[ i ];
     if( !obj ) continue;
+
+    if( obj->gc_generation > up_to_generation )
+    {
+      // Just keep "older" objects, they will not play any role in the
+      // rest of the garbage collecting process.
+      removeFromOldAddToNew( obj, cs_new );
+      continue;
+    }
 
     // Only root objects are referenced from outside
     if( refcount[ obj->gc_index ] == obj->count() ) continue;
