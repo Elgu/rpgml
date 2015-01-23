@@ -203,9 +203,20 @@ bool Scope::call(
   if( !func ) throw ParseException( loc ) << "Function '" << function_identifier << "' not found";
   if( !func->isFunction() ) throw ParseException( loc ) << "Variable '" << function_identifier << "' is not a Function";
 
-  if( !func->getFunction()->call( loc, recursion_depth, this, ret, call_args ) )
+  try
   {
-    throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
+    if( !func->getFunction()->call( loc, recursion_depth, this, ret, call_args ) )
+    {
+      throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
+    }
+  }
+  catch( const ParseException & )
+  {
+    throw;
+  }
+  catch( const RPGML::Exception &e )
+  {
+    throw ParseException( loc, e );
   }
 
   return true;
@@ -252,9 +263,20 @@ bool Scope::call(
   if( !func ) throw ParseException( loc ) << "Function '" << function_identifier << "' not found";
   if( !func->isFunction() ) throw ParseException( loc ) << "Variable '" << function_identifier << "' is not a Function";
 
-  if( !func->getFunction()->call( loc, recursion_depth, this, ret, n_args, args ) )
+  try
   {
-    throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
+    if( !func->getFunction()->call( loc, recursion_depth, this, ret, n_args, args ) )
+    {
+      throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
+    }
+  }
+  catch( const ParseException & )
+  {
+    throw;
+  }
+  catch( const RPGML::Exception &e )
+  {
+    throw ParseException( loc, e );
   }
 
   return true;
@@ -267,11 +289,22 @@ CountPtr< Node > Scope::createNode(
   )
 {
   Value ret;
-  if( !call( loc, recursion_depth+1, name, ret, 0, (const Value*)0 ) )
+  try
   {
-    throw ParseException()
-      << "Could not find/instantiate Node '" << name << "'"
-      ;
+    if( !call( loc, recursion_depth+1, name, ret, 0, (const Value*)0 ) )
+    {
+      throw ParseException( loc )
+        << "Could not find/instantiate Node '" << name << "'"
+        ;
+    }
+  }
+  catch( const ParseException & )
+  {
+    throw;
+  }
+  catch( const RPGML::Exception &e )
+  {
+    throw ParseException( loc, e );
   }
 
   if( !ret.isNode() )
@@ -301,7 +334,7 @@ CountPtr< Output > Scope::toOutput(
   }
   else if( x.isPrimitive() )
   {
-    CountPtr< Node > ret = createNode( loc, recursion_depth, String::Static( ".Constant" ) );
+    CountPtr< Node > ret = createNode( loc, recursion_depth+1, String::Static( ".core.Constant" ) );
 
     ret->getParam( "value" )->set( x );
 
@@ -317,16 +350,18 @@ CountPtr< Output > Scope::toOutput(
     const Type             array_type = array_base->getType();
     const int              dims       = array_size.getDims();
 
-    CountPtr< Node > array_node = createNode( loc, recursion_depth, String::Static( ".ConstantArray" ) );
+    static const char *const size_names[] = { "sizeX", "sizeY", "sizeZ", "sizeT" };
 
     if( array_type.isPrimitive() )
     {
+      CountPtr< Node > array_node = createNode( loc, recursion_depth+1, String::Static( ".core.ConstantArray" ) );
       const Type constant_array_type = array_type;
 
+      // Set type and dims
       array_node->getParam( "type" )->set( Value( String::Static( constant_array_type.getTypeName() ) ) );
       array_node->getParam( "dims" )->set( Value( dims ) );
 
-      static const char *const size_names[] = { "sizeX", "sizeY", "sizeZ", "sizeT" };
+      // Set size
       for( int d=0; d<dims; ++d )
       {
         array_node->getParam( size_names[ d ] )->set( Value( array_size[ d ] ) );
@@ -336,7 +371,8 @@ CountPtr< Output > Scope::toOutput(
       if( constant_array_v.isNull() )
       {
         throw ParseException( new Location( __FILE__, __LINE__ ) )
-          << "Could not get 'in' from ConstantArray";
+          << "Could not get 'in' from ConstantArray"
+          ;
       }
       if( !constant_array_v->isParam() )
       {
@@ -351,15 +387,63 @@ CountPtr< Output > Scope::toOutput(
         const ArrayBase::Coordinates C = c->get();
         constant_array->set( array_base->getValue( C ), C.getDims(), C.getCoords() );
       }
+
+      return array_node->getOutput( "out" );
+    }
+    else if( array_type.isOutput() || array_base->isValue() )
+    {
+      CountPtr< Node > array_node = createNode( loc, recursion_depth+1, String::Static( ".core.OutputArray" ) );
+
+      // Set dims
+      array_node->getParam( "dims" )->set( Value( dims ) );
+
+      // Set size
+      for( int d=0; d<dims; ++d )
+      {
+        array_node->getParam( size_names[ d ] )->set( Value( array_size[ d ] ) );
+      }
+
+      const Frame::Ref in_v = array_node->getVariable( "in" );
+      if( in_v.isNull() )
+      {
+        throw ParseException( new Location( __FILE__, __LINE__ ) )
+          << "Could not get 'in' from OutputArray";
+      }
+      if( !in_v->isArray() )
+      {
+        throw ParseException( new Location( __FILE__, __LINE__ ) )
+          << "Expected 'in' of OutputArray to be a Array, is " << in_v->getTypeName()
+          ;
+      }
+      ArrayBase *const in_base = in_v->getArray();
+      InputArrayElements *in = 0;
+      if( !in_base->getAs( in ) )
+      {
+        throw ParseException( new Location( __FILE__, __LINE__ ) )
+          << "Expected 'in' of OutputArray to be a InputArray, Elements are " << in_base->getTypeName()
+          ;
+      }
+
+      InputArrayElements::iterator in_iter = in->begin();
+      for(
+          CountPtr< ArrayBase::ValueIterator >
+          array_iter = array_base->getValueIterator()
+        ; !array_iter->done()
+        ; array_iter->next(), ++in_iter
+        )
+      {
+        CountPtr< Output > output = toOutput( loc, recursion_depth+1, array_iter->get() );
+        (*in_iter)->connect( output );
+      }
+
+      return array_node->getOutput( "out" );
     }
     else
     {
       throw ParseException( loc )
-        << "Unsupported Array type of " << array_base->getType()
+        << "Cannot convert to Output: Unsupported Array Element type of " << array_base->getType()
         ;
     }
-
-    return array_node->getOutput( "out" );
   }
   else
   {
