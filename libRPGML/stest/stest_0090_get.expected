@@ -1,0 +1,45 @@
+bool
+uint8
+int8
+uint16
+int16
+uint32
+int32
+uint64
+int64
+float
+double
+string
+Frame
+Function
+Node
+Input
+Param
+Sequence
+Sequence()
+Sequence( 1, 2 )
+Sequence( 1 to 2 )
+[] type
+[] array_type
+[] dims
+[] size 0
+int[] type
+int[] array_type
+int[] dims
+int[] size 0
+float[,] type
+float[,] array_type
+float[,] dims
+float[,] size 0
+float[,] size 1
+float[][] type
+float[][] array_type
+float[][] dims
+float[][] size 0
+Output[][] type
+Output[][] a array_type
+Output[][] a[ 0 ] type
+Output[][] a[ 0 ] array_type
+Output[][] a[ 0 ][ 0 ] type
+Output[][] dims
+Output[][] size 0

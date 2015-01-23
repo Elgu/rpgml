@@ -1,0 +1,9 @@
+
+Output i = counter();
+
+Output[] a = [ 1, 2, 3 ];
+print( a[ i ] + "\n" );
+
+.core.Exit e();
+( i == 2 ) -> e.condition;
+needing( e );

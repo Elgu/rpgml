@@ -1,0 +1,13 @@
+#rpgml
+Output c0 = counter(  0, 1 );
+Output c1 = counter( 10, 2 );
+Output c2 = counter( 20, 3 );
+
+Output o = [ c0, c1, c2 ];
+
+Output i = counter();
+print( o[ i ] + "\n" );
+
+.core.Exit e();
+( i == 2 ) -> e.condition;
+needing( e );
