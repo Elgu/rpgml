@@ -33,195 +33,9 @@ using namespace std;
 
 namespace RPGML {
 
-namespace InterpretingASTVisitor_impl {
-
-  Value save_cast( const Value &x, Type type )
-  {
-    return x.save_cast( type );
-  }
-
-  Value save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to, GarbageCollector *gc )
-  {
-    if( !to ) return x;
-    if( !to->type.isArray() ) return save_cast( x, to->type );
-
-    // to Array
-
-    if( !to->dims ) throw Exception() << "Internal: No array dimensions specified in TypeDescr";
-    if( !to->of ) throw Exception() << "Internal: No array 'of'-type specified in TypeDescr";
-
-    // Get Array dimensions and size
-
-    const index_t to_dims = to->dims->size();
-    const Type to_type_of = to->of->type;
-
-    vector< index_t > to_size( to_dims );
-    vector< bool > to_size_known( to_dims, false );
-
-    for( index_t d=0; d<to_dims; ++d )
-    {
-      const Value &dims_d = to->dims->at( d );
-      if( dims_d.isNil() )
-      {
-        to_size[ d ] = 1; //( value.isArray() ? unknown : 0 );
-      }
-      else if( dims_d.isInteger() )
-      {
-        const int64_t dims_d_i = save_cast( dims_d, Type::Int64() ).getInt64();
-        if( dims_d_i < 0 )
-        {
-          throw Exception()
-            << "Array size must not be negative"
-            << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d_i
-            ;
-        }
-        to_size[ d ] = index_t( dims_d_i );
-        to_size_known[ d ] = true;
-      }
-      else
-      {
-        throw Exception()
-          << "Array dimension must be of an integer type"
-          << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d.getType()
-          ;
-      }
-    }
-
-    // Assign x to 'to'
-
-    // Create array of specified type
-    CountPtr< ArrayBase > ret( new_Array( gc, to_type_of, to_dims ) );
-
-    if( x.isArray() )
-    {
-      // Array <- Array
-
-      const ArrayBase *const x_base = x.getArray();
-
-      if( x_base->getDims() != to_dims )
-      {
-        throw Exception()
-          << "Number of Array dimensions do not match"
-          << ": Expected " << to_dims
-          << ", got " << x_base->getDims()
-          ;
-      }
-
-      const ArrayBase::Size x_size = x_base->getSize();
-
-      // Check size of x
-      for( index_t d=0; d<to_dims; ++d )
-      {
-        if( !to_size_known[ d ] ) continue;
-
-        if( x_size[ d ] != to_size[ d ] )
-        {
-          throw Exception()
-            << "Dimension " << ("xyzt"[ d ]) << "-size does not match the specified size"
-            << ": Expected " << to_size[ d ]
-            << ", is " << x_size[ d ]
-            ;
-        }
-      }
-
-      // Resize array to size of x
-      ret->resize( x_size );
-
-      // Try to assign the values in x to the values in the new array
-      for( CountPtr< ArrayBase::CoordinatesIterator > c( ret->getCoordinatesIterator() ); !c->done(); c->next() )
-      {
-        const ArrayBase::Coordinates C = c->get();
-        if( to_type_of.isArray() )
-        {
-          ret->setValue( save_cast( x_base->getValue( C ), to->of, gc ), C );
-        }
-        else
-        {
-          ret->setValue( save_cast( x_base->getValue( C ), to_type_of ), C );
-        }
-      }
-
-      return Value( ret );
-    }
-    else
-    {
-      // Array <- Scalar
-
-      // Resize array to specified size
-      ret->resize_v( to_dims, &to_size[ 0 ] );
-
-      // Fill with x cast to the correct type
-      ret->fillValue( save_cast( x, to_type_of ) );
-
-      return Value( ret );
-    }
-  }
-
-  void save_assign( Value &lvalue, const Value &x )
-  {
-    const Type lvalue_type = lvalue.getType();
-    if( lvalue_type.isNil() )
-    {
-      lvalue = x;
-      return;
-    }
-
-    if( lvalue.isArray() )
-    {
-      ArrayBase *const      lvalue_base    = lvalue.getArray();
-      const ArrayBase::Size lvalue_size    = lvalue_base->getSize();
-      const Type            lvalue_type_of = lvalue_base->getType();
-
-      if( x.isArray() )
-      {
-        const ArrayBase *const x_base = x.getArray();
-        const ArrayBase::Size  x_size = x_base->getSize();
-
-        if( lvalue_size.getDims() == lvalue_size.getDims() )
-        {
-          lvalue_base->resize( x_size );
-
-          for( CountPtr< ArrayBase::CoordinatesIterator > c( x_base->getCoordinatesIterator() ); !c->done(); c->next() )
-          {
-            const ArrayBase::Coordinates C = c->get();
-            const Value v = save_cast( x_base->getValue( C ), lvalue_type_of );
-            lvalue_base->setValue( v, C );
-          }
-        }
-        else
-        {
-          throw Exception() << "Assigning Array with different dimension not supported (yet?)";
-        }
-      }
-      else
-      {
-        try
-        {
-          const Value fill_value = save_cast( x, lvalue_base->getType() );
-          lvalue_base->fillValue( fill_value );
-        }
-        catch( const Value::GetFailed &e )
-        {
-          throw;
-        }
-      }
-    }
-    else
-    {
-      lvalue = save_cast( x, lvalue_type );
-      return;
-    }
-  }
-
-
-
-} // namespace InterpretingASTVisitor_impl
-
-using namespace InterpretingASTVisitor_impl;
-
-InterpretingASTVisitor::InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, index_t _recursion_depth )
+InterpretingASTVisitor::InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, const Location *_call_loc, index_t _recursion_depth )
 : Collectable( _gc )
-, AST::Visitor( _recursion_depth )
+, AST::Visitor( _call_loc, _recursion_depth )
 , scope( _scope )
 , return_encountered( false )
 {}
@@ -386,7 +200,7 @@ void InterpretingASTVisitor::fill_array( const ArrayBase *array, const ArrayBase
     index_t y = 0;
     for( CountPtr< E > e( seq_array->getElements() ); !e->done(); e->next(), ++y )
     {
-      if( y >= size[ 1 ] ) goto not_equal_sides;
+      if( dims > 1 && y >= size[ 1 ] ) goto not_equal_sides;
 
       const AST::SequenceExpression *const seq = e->get();
 
@@ -499,8 +313,15 @@ bool InterpretingASTVisitor::visit( const AST::FrameConstantExpression *node )
 
 bool InterpretingASTVisitor::visit( const AST::ParenthisSequenceExpression  *node )
 {
-  if( !node->sequence->invite( this ) ) return false;
-  return true;
+  if( node->sequence )
+  {
+    return node->sequence->invite( this );
+  }
+  else
+  {
+    return_value = Value( genSequenceFromToStep( getGC(), Value( 1 ), Value( -1 ), Value( 1 ) ) );
+    return true;
+  }
 }
 
 bool InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *node )
@@ -613,7 +434,8 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
     args.push_back( Function::Arg( node->args->at( i )->identifier, value ) );
   }
 
-  return function.getFunction()->call( node->loc, getRD()+1, scope, return_value, &args );
+  CallLoc guard( this, node->loc );
+  return function.getFunction()->call( getCallLoc(), getRD()+1, scope, return_value, &args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::DotExpression                *node )
@@ -647,7 +469,8 @@ bool InterpretingASTVisitor::visit( const AST::FrameAccessExpression            
 
   Value *value = 0;
 
-  if( dot_access_impl( node->loc, left, node->identifier, value ) )
+  CallLoc guard( this, node->loc );
+  if( dot_access_impl( left, node->identifier, value ) )
   {
     return_value = (*value);
     return true;
@@ -691,7 +514,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
       }
       else if( c.isInteger() )
       {
-        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
+        coords_int[ i ] = c.save_cast( typeOf( index_t() ) ).get< index_t >();
       }
       else if( c.isOutput() )
       {
@@ -702,7 +525,8 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
           at_args[ 1+j ] = coord->at( j );
         }
 
-        scope->call( node->coord->loc, getRD()+1, String::Static( ".at" ), return_value, 1+Dims, at_args );
+        CallLoc guard( this, node->loc );
+        scope->call( getCallLoc(), getRD()+1, String::Static( ".core.at" ), return_value, 1+Dims, at_args );
         if( !return_value.isOutput() )
         {
           throw ParseException( node->loc )
@@ -756,10 +580,12 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
   {
     Output *const output = left.getOutput();
 
-    CountPtr< Node > at = scope->createNode( node->loc, getRD()+1, ".At" );
-    if( at.isNull() ) throw Exception() << "Could not create Node 'At'";
-
-    output->connect( at->getInput( String::Static( "in" ) ) );
+    CountPtr< Node > at;
+    {
+      CallLoc guard( this, node->loc );
+      at = scope->createNode( getCallLoc(), getRD()+1, ".core.At" );
+      output->connect( at->getInput( String::Static( "in" ) ) );
+    }
 
     const index_t Dims = coord->size();
     if( Dims > 4 )
@@ -771,17 +597,17 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
 
     for( index_t i=0; i<Dims; ++i )
     {
-      const Location *const loc = node->coord->dims[ i ]->loc;
+      CallLoc guard( this, node->coord->dims[ i ]->loc );
       const Value &c = coord->at( i );
       if( c.isNil() )
       {
-        throw ParseException( loc )
+        throw CallLocException( getCallLoc() )
           << "All coordinates must be specified for access, coordinate " << i << " isn't"
           ;
       }
       else
       {
-        CountPtr< Output > oc = scope->toOutput( loc, getRD()+1, c );
+        CountPtr< Output > oc = toOutput( c );
         static const char *const xyzt[] = { "x", "y", "z", "t" };
         oc->connect( at->getInput( String::Static( xyzt[ i ] ) ) );
       }
@@ -807,7 +633,8 @@ bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *nod
   if( !node->arg->invite( this ) ) return false;
   args[ 1 ].swap( return_value );
 
-  return scope->call( node->loc, getRD()+1, String::Static( ".math.mathOp1" ), return_value, 2, args );
+  CallLoc guard( this, node->loc );
+  return scope->call( getCallLoc(), getRD()+1, String::Static( ".math.mathOp1" ), return_value, 2, args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
@@ -822,7 +649,8 @@ bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *nod
   if( !node->right->invite( this ) ) return false;
   args[ 2 ].swap( return_value );
 
-  return scope->call( node->loc, getRD()+1, String::Static( ".binaryOp" ), return_value, 3, args );
+  CallLoc guard( this, node->loc );
+  return scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), return_value, 3, args );
 }
 
 bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *node )
@@ -947,7 +775,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     }
   }
 
-  Value function( new InterpretingFunction( scope->getGC(), scope->getCurr(), node->identifier, decl_args, node->body, node->is_method ) );
+  Value function( new InterpretingFunction( scope->getGC(), node->loc, scope->getCurr(), node->identifier, decl_args, node->body, node->is_method ) );
 
   if( !scope->create_unified( node->identifier, function ) ) return false;
 
@@ -955,7 +783,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
   return true;
 }
 
-bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value )
+bool InterpretingASTVisitor::dot_access_impl( Value &left, const String &identifier, Value *&value )
 {
   value = 0;
 
@@ -969,14 +797,14 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
   }
   else
   {
-    throw ParseException( loc )
+    throw CallLocException( getCallLoc() )
       << "Left of '.' is not accessible via '.', is " << left.getTypeName()
       ;
   }
 
   if( !value )
   {
-    throw ParseException( loc )
+    throw CallLocException( getCallLoc() )
       << "Identifier '" << identifier << "' not found right of '.'"
       ;
   }
@@ -986,8 +814,6 @@ bool InterpretingASTVisitor::dot_access_impl( const Location *loc, Value &left, 
 
 bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue )
 {
-  using namespace InterpretingASTVisitor_impl;
-
   if( !node->value->invite( this ) ) return false;
   Value value; value.swap( return_value );
 
@@ -1003,25 +829,36 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *no
       {
         param->set( value );
       }
-      catch( ... )
+      catch( const RPGML::Exception &e )
       {
-        throw;
+        throw CallLocException( getCallLoc(), e );
+      }
+      catch( const std::exception &e )
+      {
+        throw CallLocException( getCallLoc() ) << e.what();
+      }
+      catch( const char *e )
+      {
+        throw CallLocException( getCallLoc() ) << e;
       }
     }
     else
     {
       if( lvalue_type.isOutput() )
       {
-        lvalue->set( scope->toOutput( node->loc, getRD()+1, value ) );
+        CallLoc guard( this, node->value->loc );
+        lvalue->set( toOutput( value ) );
       }
       else
       {
+        CallLoc guard( this, node->loc );
         save_assign( (*lvalue), value );
       }
     }
   }
   else
   {
+    CallLoc guard( this, node->loc );
     const BOP bop = getAssignBOP( node->op );
 
     Value args[ 3 ];
@@ -1030,7 +867,7 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *no
     args[ 2 ] = value;
 
     Value new_value;
-    return scope->call( node->loc, getRD()+1, String::Static( ".binaryOp" ), new_value, 3, args );
+    scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), new_value, 3, args );
 
     save_assign( (*lvalue), new_value );
   }
@@ -1040,23 +877,32 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *no
 
 bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
 {
-  if( !node->output->invite( this ) ) return false;
-  Value output_v; output_v.swap( return_value );
+  CountPtr< Output > output;
+  CountPtr< Input > input;
 
-  CountPtr< Output > output( scope->toOutput( node->loc, getRD()+1, output_v ) );
-
-  if( !node->input->invite( this ) ) return false;
-  Value input; input.swap( return_value );
-
-  if( !input.isInput() )
   {
-    throw ParseException( node->input->loc )
-      << "Right of '->' is not an Input, is " << input.getTypeName()
-      ;
+    CallLoc guard( this, node->output->loc );
+    if( !node->output->invite( this ) ) return false;
+    Value output_v; output_v.swap( return_value );
+    output = toOutput( output_v );
+  }
+
+  {
+    CallLoc guard( this, node->input->loc );
+    if( !node->input->invite( this ) ) return false;
+    Value input_v; input_v.swap( return_value );
+    if( !input_v.isInput() )
+    {
+      throw CallLocException( getCallLoc() )
+        << "Right of '->' is not an Input, is " << input_v.getTypeName()
+        ;
+    }
+    input = input_v.getInput();
   }
 
   // output might be null, but that is ok
-  input.getInput()->connect( output );
+  CallLoc guard( this, node->loc );
+  input->connect( output );
   return true;
 }
 
@@ -1080,7 +926,8 @@ bool InterpretingASTVisitor::visit( const AST::AssignDotStatement           *nod
 
   Value *lvalue = 0;
 
-  if( !dot_access_impl( node->loc, left, node->identifier, lvalue ) )
+  CallLoc guard( this, node->loc );
+  if( !dot_access_impl( left, node->identifier, lvalue ) )
   {
     return false;
   }
@@ -1115,7 +962,7 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
       const Value &c = coords->at( i );
       if( c.isInteger() )
       {
-        coords_int[ i ] = save_cast( c, typeOf( index_t() ) ).get< index_t >();
+        coords_int[ i ] = c.save_cast( typeOf( index_t() ) ).get< index_t >();
       }
       else if( c.isNil() )
       {
@@ -1306,8 +1153,6 @@ bool InterpretingASTVisitor::visit( const AST::ExpressionStatement        *node 
 
 bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
 {
-  using namespace InterpretingASTVisitor_impl;
-
   const String &identifier = node->identifier;
 
   // Evaluate type expression
@@ -1319,24 +1164,19 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   if( !node->value->invite( this ) ) return false;
   Value value; value.swap( return_value );
 
-  if( expected_type->type.isOutput() )
-  {
-    value.set( scope->toOutput( node->value->loc, getRD()+1, value ) );
-  }
-  else
-  {
-    value = save_cast( value, expected_type, scope->getGC() );
-  }
+  CallLoc guard( this, node->loc );
+  value = save_cast( value, expected_type );
 
   if( !scope->create_unified( identifier, value ) )
   {
-    throw Exception() << "Could not create variable '" << identifier << "'";
+    throw CallLocException( getCallLoc() ) << "Could not create variable '" << identifier << "'";
   }
   return true;
 }
 
 bool InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *node )
 {
+  CallLoc guard( this, node->loc );
   if( !node->value->invite( this ) ) return false;
   Value value; value.swap( return_value );
 
@@ -1344,7 +1184,7 @@ bool InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *no
 
   if( !scope->create_unified( identifier, value ) )
   {
-    throw Exception() << "Could not create variable '" << identifier << "'";
+    throw CallLocException( getCallLoc() ) << "Could not create variable '" << identifier << "'";
   }
   return true;
 }
@@ -1354,6 +1194,196 @@ bool InterpretingASTVisitor::visit( const AST::ReturnStatement              *nod
   node->value->invite( this );
   return_encountered = true;
   return true;
+}
+
+Value InterpretingASTVisitor::save_cast( const Value &x, Type type )
+{
+  if( type.isOutput() )
+  {
+    return Value( toOutput( x ) );
+  }
+  else
+  {
+    return x.save_cast( type );
+  }
+}
+
+Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to )
+{
+  if( !to ) return x;
+  if( !to->type.isArray() ) return save_cast( x, to->type );
+
+  // to Array
+
+  if( !to->dims ) throw Exception() << "Internal: No array dimensions specified in TypeDescr";
+  if( !to->of ) throw Exception() << "Internal: No array 'of'-type specified in TypeDescr";
+
+  // Get Array dimensions and size
+
+  const index_t to_dims = to->dims->size();
+  const Type to_type_of = to->of->type;
+
+  vector< index_t > to_size( to_dims );
+  vector< bool > to_size_known( to_dims, false );
+
+  for( index_t d=0; d<to_dims; ++d )
+  {
+    const Value &dims_d = to->dims->at( d );
+    if( dims_d.isNil() )
+    {
+      to_size[ d ] = 1; //( value.isArray() ? unknown : 0 );
+    }
+    else if( dims_d.isInteger() )
+    {
+      const int64_t dims_d_i = dims_d.save_cast( Type::Int64() ).getInt64();
+      if( dims_d_i < 0 )
+      {
+        throw Exception()
+          << "Array size must not be negative"
+          << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d_i
+          ;
+      }
+      to_size[ d ] = index_t( dims_d_i );
+      to_size_known[ d ] = true;
+    }
+    else
+    {
+      throw Exception()
+        << "Array dimension must be of an integer type"
+        << ", " << ("xyzt"[ d ]) << "-dim is " << dims_d.getType()
+        ;
+    }
+  }
+
+  // Assign x to 'to'
+
+  // Create array of specified type
+  CountPtr< ArrayBase > ret( new_Array( getGC(), to_type_of, to_dims ) );
+
+  if( x.isArray() )
+  {
+    // Array <- Array
+
+    const ArrayBase *const x_base = x.getArray();
+
+    if( x_base->getDims() != to_dims )
+    {
+      throw Exception()
+        << "Number of Array dimensions do not match"
+        << ": Expected " << to_dims
+        << ", got " << x_base->getDims()
+        ;
+    }
+
+    const ArrayBase::Size x_size = x_base->getSize();
+
+    // Check size of x
+    for( index_t d=0; d<to_dims; ++d )
+    {
+      if( !to_size_known[ d ] ) continue;
+
+      if( x_size[ d ] != to_size[ d ] )
+      {
+        throw Exception()
+          << "Dimension " << ("xyzt"[ d ]) << "-size does not match the specified size"
+          << ": Expected " << to_size[ d ]
+          << ", is " << x_size[ d ]
+          ;
+      }
+    }
+
+    // Resize array to size of x
+    ret->resize( x_size );
+
+    // Try to assign the values in x to the values in the new array
+    for( CountPtr< ArrayBase::CoordinatesIterator > c( ret->getCoordinatesIterator() ); !c->done(); c->next() )
+    {
+      const ArrayBase::Coordinates C = c->get();
+      if( to_type_of.isArray() )
+      {
+        ret->setValue( save_cast( x_base->getValue( C ), to->of ), C );
+      }
+      else
+      {
+        ret->setValue( save_cast( x_base->getValue( C ), to_type_of ), C );
+      }
+    }
+
+    return Value( ret );
+  }
+  else
+  {
+    // Array <- Scalar
+
+    // Resize array to specified size
+    ret->resize_v( to_dims, &to_size[ 0 ] );
+
+    // Fill with x cast to the correct type
+    ret->fillValue( save_cast( x, to_type_of ) );
+
+    return Value( ret );
+  }
+}
+
+void InterpretingASTVisitor::save_assign( Value &lvalue, const Value &x )
+{
+  const Type lvalue_type = lvalue.getType();
+  if( lvalue_type.isNil() )
+  {
+    lvalue = x;
+    return;
+  }
+
+  if( lvalue.isArray() )
+  {
+    ArrayBase *const      lvalue_base    = lvalue.getArray();
+    const ArrayBase::Size lvalue_size    = lvalue_base->getSize();
+    const Type            lvalue_type_of = lvalue_base->getType();
+
+    if( x.isArray() )
+    {
+      const ArrayBase *const x_base = x.getArray();
+      const ArrayBase::Size  x_size = x_base->getSize();
+
+      if( lvalue_size.getDims() == lvalue_size.getDims() )
+      {
+        lvalue_base->resize( x_size );
+
+        for( CountPtr< ArrayBase::CoordinatesIterator > c( x_base->getCoordinatesIterator() ); !c->done(); c->next() )
+        {
+          const ArrayBase::Coordinates C = c->get();
+          const Value v = save_cast( x_base->getValue( C ), lvalue_type_of );
+          lvalue_base->setValue( v, C );
+        }
+      }
+      else
+      {
+        throw Exception() << "Assigning Array with different dimension not supported (yet?)";
+      }
+    }
+    else
+    {
+      try
+      {
+        const Value fill_value = save_cast( x, lvalue_base->getType() );
+        lvalue_base->fillValue( fill_value );
+      }
+      catch( const Value::GetFailed &e )
+      {
+        throw;
+      }
+    }
+  }
+  else
+  {
+    lvalue = save_cast( x, lvalue_type );
+    return;
+  }
+}
+
+CountPtr< Output > InterpretingASTVisitor::toOutput( const Value &x )
+{
+  return scope->toOutput( getCallLoc(), getRD()+1, x );
 }
 
 } // namespace RPGML

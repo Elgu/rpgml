@@ -30,7 +30,7 @@ class InterpretingASTVisitor : public Collectable, public AST::Visitor
 {
 public:
   explicit
-  InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, index_t recursion_depth=0 );
+  InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, const Location *call_loc=0, index_t recursion_depth=0 );
 
   virtual ~InterpretingASTVisitor( void );
 
@@ -92,11 +92,15 @@ public:
   };
 
 private:
-  bool dot_access_impl( const Location *loc, Value &left, const String &identifier, Value *&value );
+  bool dot_access_impl( Value &left, const String &identifier, Value *&value );
   bool assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue );
 
   void determine_size( const ArrayBase *array, int dims, index_t *size, int dim );
   void fill_array( const ArrayBase *array, const ArrayBase::Size &size, Value *dest, int dim );
+  Value save_cast( const Value &x, Type type );
+  Value save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to );
+  void save_assign( Value &lvalue, const Value &x );
+  CountPtr< Output > toOutput( const Value &x );
 
   CountPtr< Scope > scope;
   CountPtr< TypeDescr > return_value_type_descr;
