@@ -188,6 +188,7 @@ const Keyword keywords[] =
   { "Input"   , _Parser::token::INPUT   , Type::INPUT    },
   { "Node"    , _Parser::token::NODE    , Type::NODE     },
   { "Param"   , _Parser::token::PARAM   , Type::PARAM    },
+  { "Sequence", _Parser::token::SEQUENCE, Type::SEQUENCE },
   { "if"      , _Parser::token::IF      , Type::NIL  },
   { "else"    , _Parser::token::ELSE    , Type::NIL  },
   { "for"     , _Parser::token::FOR     , Type::NIL  },
