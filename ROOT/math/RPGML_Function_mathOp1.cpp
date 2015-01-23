@@ -32,12 +32,8 @@ using namespace std;
 namespace RPGML {
 namespace math {
 
-namespace Function_mathOp1_impl {
-} // namespace Function_mathOp1_impl
-using namespace Function_mathOp1_impl;
-
 Function_mathOp1::Function_mathOp1( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
-: Function( _gc, parent, genDeclArgs(), so )
+: Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
 Function_mathOp1::~Function_mathOp1( void )
