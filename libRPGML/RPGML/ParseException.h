@@ -31,12 +31,18 @@ public:
   explicit
   ParseException( const Location *_loc );
 
+  //! @brief Takes Location of e and makes _loc parent
+  ParseException( const Location *_loc, const ParseException &e );
   ParseException( const Location *_loc, const RPGML::Exception &e );
   ParseException( const Location *_loc, const char *e );
+
+  virtual const char *what() const throw();
 
   EXCEPTION_BODY( ParseException );
 
   CountPtr< const Location > loc;
+private:
+  mutable std::string m_what;
 };
 
 } // namespace RPGML

@@ -21,21 +21,33 @@ namespace RPGML {
 
 ParseException::ParseException( const Location *_loc )
 : loc( _loc )
+{}
+
+ParseException::ParseException( const Location *_loc, const ParseException &e )
+: Base( e.getText() )
+, loc( new Location( e.loc, _loc ) )
 {
-  (*this) << (*loc) << ": ";
+  e.copyBacktrace( *this );
 }
 
 ParseException::ParseException( const Location *_loc, const RPGML::Exception &e )
-: loc( _loc )
+: Base( e.getText() )
+, loc( _loc )
 {
-  e.copyBackTraceBuffer( *this );
-  (*this) << (*loc) << ": " << e.what();
+  e.copyBacktrace( *this );
 }
 
 ParseException::ParseException( const Location *_loc, const char *e )
-: loc( _loc )
+: Base( e )
+, loc( _loc )
+{}
+
+const char *ParseException::what() const throw()
 {
-  (*this) << (*loc) << ": " << e;
+  std::ostringstream o;
+  o << (*loc) << ": " << Base::what();
+  m_what = o.str();
+  return m_what.c_str();
 }
 
 } // namespace RPGML
