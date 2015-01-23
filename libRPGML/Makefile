@@ -9,6 +9,8 @@ all: libRPGML.so
 
 libRPGML_SOURCE=\
 	rpgml.tab.cc\
+	Backtrace.cpp\
+	StringUnifier.cpp\
 	Location.cpp\
 	Scanner.cpp\
 	GarbageCollector.cpp\
@@ -51,12 +53,11 @@ PARSER_FILES=\
  	RPGML/rpgml.tab.hh\
  	RPGML/stack.hh\
 
-.parser_files: RPGML/rpgml.yy
+$(firstword $(PARSER_FILES)): RPGML/rpgml.yy
 	cd RPGML && bison -v rpgml.yy
-	touch $@
 
-$(PARSER_FILES): .parser_files
-	@echo Parser Files generated
+$(wordlist 2, $(words $(PARSER_FILES)), $(PARSER_FILES)): $(firstword $(PARSER_FILES))
+	@true # do nothing
 
 DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 
@@ -73,7 +74,6 @@ clean:
 	$(MAKE) -C utest clean
 	rm -f $(DEP_FILES)
 	rm -f $(PARSER_FILES)
-	rm -f .parser_files
 	rm -f .depend
 	rm -f *.o
 	rm -f *.o.CXXFLAGS
