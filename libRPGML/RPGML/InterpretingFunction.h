@@ -30,6 +30,7 @@ class InterpretingFunction : public Function
 public:
   InterpretingFunction(
       GarbageCollector *gc
+    , const Location *loc
     , Frame *parent
     , const String &name
     , const Args *decl_args

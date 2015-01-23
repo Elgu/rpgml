@@ -23,8 +23,16 @@
 
 namespace RPGML {
 
-InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent, const String &name, const Args *decl_args, const AST::CompoundStatement *body, bool is_method )
-: Function( _gc, parent, decl_args, is_method )
+InterpretingFunction::InterpretingFunction(
+    GarbageCollector *_gc
+  , const Location *loc
+  , Frame *parent
+  , const String &name
+  , const Args *decl_args
+  , const AST::CompoundStatement *body
+  , bool is_method
+  )
+: Function( _gc, loc, parent, decl_args, is_method )
 , m_body( body )
 , m_name( name )
 {}
@@ -32,14 +40,14 @@ InterpretingFunction::InterpretingFunction( GarbageCollector *_gc, Frame *parent
 InterpretingFunction::~InterpretingFunction( void )
 {}
 
-bool InterpretingFunction::call_impl( const Location *, index_t recursion_depth, Scope *scope, Value &ret, index_t, const Value * )
+bool InterpretingFunction::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t, const Value * )
 {
   CountPtr< Frame > frame = new Frame( scope->getGC(), scope->getCurr() );
   frame->setThis( !isMethod() );
 
   Scope::EnterLeaveGuard guard( scope, frame );
 
-  CountPtr< InterpretingASTVisitor > interpreter = new InterpretingASTVisitor( getGC(), scope, recursion_depth+1 );
+  CountPtr< InterpretingASTVisitor > interpreter = new InterpretingASTVisitor( getGC(), scope, loc, recursion_depth+1 );
   if( !m_body->invite( interpreter.get() ) ) return false;
 
   if( !interpreter->get_return_encountered() )
