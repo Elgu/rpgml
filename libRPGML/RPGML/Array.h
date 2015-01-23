@@ -35,6 +35,18 @@ class Value;
 template< class _Element, int _Dims >
 class Array;
 
+template< class _Element >
+class ArrayElements;
+
+template< class Element, int Dims >
+CountPtr< Array< Element, Dims > > new_Array( GarbageCollector *gc, const Element *fill_value=0 );
+
+template< class Element >
+CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 );
+
+template< class Element >
+CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value );
+
 class ArrayBase : public Collectable
 {
   typedef Collectable Base;
