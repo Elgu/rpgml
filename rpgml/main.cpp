@@ -27,20 +27,85 @@
 #include <RPGML/FileSource.h>
 #include <RPGML/InterpretingParser.h>
 #include <RPGML/ThreadPool.h>
+#include <RPGML/Guard.h>
 
 #include <cerrno>
 #include <cstring>
 
+#include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
 // RPGML_CXXFLAGS=
-// RPGML_LDFLAGS=
+// RPGML_LDFLAGS=-lreadline
 
 using namespace RPGML;
+
+class ReadlineSource : public Source
+{
+public:
+  ReadlineSource( void )
+  : m_pos( 0 )
+  {}
+  virtual ~ReadlineSource( void ) {}
+
+protected:
+  virtual char nextChar( void )
+  {
+    if( m_line.isNull() )
+    {
+      m_line.set( ::readline( "" ) );
+      m_pos = 0;
+    }
+
+    if( m_line.isNull() )
+    {
+      // still 0
+      return '\0';
+    }
+    else if( '\0' == m_line[ m_pos ] )
+    {
+      // insert newline at end of line
+      m_line.clear();
+      return '\n';
+    }
+
+    return m_line[ m_pos++ ];
+  }
+
+  class CharPtrGuard : public Guard< const char >
+  {
+    typedef Guard< const char > Base;
+  public:
+    CharPtrGuard( void )
+    : Base( (const char*)0, free_c_str )
+    {}
+
+    explicit
+    CharPtrGuard( const char *c )
+    : Base( c, free_c_str )
+    {}
+
+    char operator[]( size_t pos ) const
+    {
+      return get()[ pos ];
+    }
+  private:
+    static void free_c_str( const char *c )
+    {
+      ::free( (void*)c );
+    }
+  };
+
+  CharPtrGuard m_line;
+  size_t m_pos;
+};
 
 static GarbageCollector gc( 5 );
 
 int main( int argc, char **argv )
 {
-  const int num_threads = 2;
+  const int num_threads = 1;
 
   const char *searchPath = getenv( "RPGML_PATH" );
   if( !searchPath ) searchPath = ".";
@@ -64,7 +129,8 @@ int main( int argc, char **argv )
     else
     {
       filename = "stdin";
-      source = new FileSource( stdin );
+//      source = new FileSource( stdin );
+      source = new ReadlineSource;
     }
 
     CountPtr< StringUnifier > unifier = new StringUnifier();
