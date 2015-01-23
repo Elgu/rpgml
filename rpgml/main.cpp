@@ -29,12 +29,15 @@
 #include <RPGML/ThreadPool.h>
 #include <RPGML/Guard.h>
 
-#include <cerrno>
-#include <cstring>
-
-#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <getopt.h>
+
+#include <cerrno>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
 
 // RPGML_CXXFLAGS=
 // RPGML_LDFLAGS=-lreadline
@@ -103,26 +106,99 @@ protected:
 
 static GarbageCollector gc( 5 );
 
+static const char *rpgml_file = 0;
+static int         num_threads = -1;
+static std::string searchPath;
+static CountPtr< StringArray1D > rpgml_argv;
+
+static
+void parse_argv( int argc, char **argv )
+{
+  static struct option long_options[] =
+  {
+    { "num_threads", 1, 0, 'j' },
+    { "path"       , 1, 0, 'p' },
+    { 0            , 0, 0, 0   }
+  };
+  static const char *options = "j:p:";
+
+  int c = 0;
+  int option_index = 0;
+
+  while( -1 != ( c = getopt_long( argc, argv, options, long_options, &option_index ) ) )
+  {
+    switch( c )
+    {
+      case 'j':
+        num_threads = atoi( optarg );
+        if( num_threads < 1 )
+        {
+          throw Exception()
+            << "Option --num_threads must be greater than 0, is " << num_threads
+            ;
+        }
+        break;
+
+      case 'p':
+        if( !searchPath.empty() ) searchPath += ":";
+        searchPath += optarg;
+        break;
+
+      case '?':
+      case ':':
+      default:
+        throw Exception() << "Parsing options failed";
+        break;
+    }
+  }
+
+  if( optind < argc )
+  {
+    rpgml_file = argv[ optind ];
+  }
+
+  rpgml_argv = new StringArray1D( &gc );
+  for( int i = optind; i < argc; ++i )
+  {
+    rpgml_argv->push_back( argv[ i ] );
+  }
+}
+
 int main( int argc, char **argv )
 {
-  const int num_threads = 1;
-
-  const char *searchPath = getenv( "RPGML_PATH" );
-  if( !searchPath ) searchPath = ".";
-
   try
   {
+    parse_argv( argc, argv );
+
+    const char *searchPath_env = getenv( "RPGML_PATH" );
+    if( searchPath_env )
+    {
+      if( !searchPath.empty() ) searchPath += ":";
+      searchPath += searchPath_env;
+    }
+
+    if( searchPath.empty() )
+    {
+      searchPath = ".";
+    }
+
+    if( num_threads < 1 )
+    {
+      const char *num_threads_env = getenv( "RPGML_NUM_THREADS" );
+      if( num_threads_env ) num_threads = atoi( num_threads_env );
+      if( num_threads < 1 ) num_threads = 1;
+    }
+
     CountPtr< Source > source;
     String filename;
 
-    if( argc > 1 )
+    if( rpgml_file )
     {
-      filename = argv[ 1 ];
+      filename = rpgml_file;
       FILE *file = fopen( filename, "r" );
       if( !file )
       {
-        std::cerr << "Could not open file '" << argv[ 1 ] << "': " << strerror( errno ) << std::endl;
-        return -1;
+        throw Exception() << "Could not open file '" << filename << "': " << strerror( errno );
       }
       source = new FileSource( file );
     }
@@ -136,6 +212,9 @@ int main( int argc, char **argv )
     CountPtr< StringUnifier > unifier = new StringUnifier();
     CountPtr< Context > context = new Context( &gc, unifier, searchPath );
     CountPtr< Scope > scope = context->createScope();
+
+    scope->create( String::Static( "argc" ), Value( int( rpgml_argv->size() ) ) );
+    scope->create( String::Static( "argv" ), Value( rpgml_argv ) );
 
     CountPtr< InterpretingParser >  parser = new InterpretingParser( &gc, scope, source );
     parser->setFilename( filename );
