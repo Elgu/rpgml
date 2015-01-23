@@ -1,6 +1,6 @@
 Function counter( start=0, step=1 )
 {
-  Counter ret();
+  .core.Counter ret();
   if( start != 0 ) ret.start = start;
   if( step  != 1 ) ret.step  = step ;
   return ret.out;

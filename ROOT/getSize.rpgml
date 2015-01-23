@@ -1,5 +1,5 @@
 
 Function getSize( x )
 {
-  return get( x, "size" );
+  return .core.get( x, "size" );
 }

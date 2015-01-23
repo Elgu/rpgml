@@ -1,6 +1,6 @@
 
 Function getType( x )
 {
-  return get( x, "type" );
+  return .core.get( x, "type" );
 }
 
