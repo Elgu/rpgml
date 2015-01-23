@@ -90,7 +90,7 @@ bool Graph::alreadyAdded( const Node *node, index_t *index ) const
 
 void Graph::merge( void )
 {
-  cerr << "merge: starting with " << m_nodes.size() << " nodes" << endl;
+//  cerr << "merge: starting with " << m_nodes.size() << " nodes" << endl;
 
   bool merged_one;
   do
@@ -125,11 +125,13 @@ void Graph::merge( void )
           GN_Array_t::Element &gn_merge_node = m_nodes[ merge_i ];
           Node *const merge_node = gn_merge_node->node;
 
+          /*
           cerr
             << "Merging '" << merge_node->getIdentifier() << "'"
             << " into '" << merge_into->getIdentifier() << "'"
             << endl
             ;
+            */
 
           bool merge_failed = false;
 
@@ -198,7 +200,7 @@ void Graph::merge( void )
     m_Node_to_index[ m_nodes[ i ]->node.get() ] = i;
   }
 
-  cerr << "merge: ending with " << m_nodes.size() << " nodes" << endl;
+//  cerr << "merge: ending with " << m_nodes.size() << " nodes" << endl;
 }
 
 void Graph::setEverythingChanged( bool changed )
@@ -555,10 +557,11 @@ int Graph::GraphNode::compare( const GraphNode &other ) const
     }
     if( !other_param ) return 1;
 
+    CountPtr< Param::SettingsIterator >
+        node_settings = node_param->getSettings()
+      , other_settings = other_param->getSettings()
+      ;
     for(
-        CountPtr< Param::SettingsIterator >
-          node_settings = node_param->getSettings()
-        , other_settings = other_param->getSettings()
       ;     !node_settings->done()
         && !other_settings->done()
       ;    node_settings->next()
@@ -568,6 +571,9 @@ int Graph::GraphNode::compare( const GraphNode &other ) const
       const int cmp_param = node_settings->get().compare( other_settings->get() );
       if( 0 != cmp_param ) return cmp_param;
     }
+
+    if( !node_settings->done() ) return -1;
+    if( !other_settings->done() ) return 1;
   }
 
   return 0;
