@@ -171,13 +171,13 @@ bool PrettyPrinter::visit( const ParenthisSequenceExpression *node )
 {
   if( node->sequence )
   {
-    (*o) << "( ";
+    (*o) << "Sequence( ";
     node->sequence->invite( this );
     (*o) << " )";
   }
   else
   {
-    (*o) << "()";
+    (*o) << "Sequence()";
   }
 
   return true;
