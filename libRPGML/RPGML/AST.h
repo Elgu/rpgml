@@ -97,8 +97,10 @@ public:
 class Visitor
 {
 public:
-  Visitor( index_t _recursion_depth=0 )
-  : m_rd( _recursion_depth )
+  explicit
+  Visitor( const Location *call_loc=0, index_t _recursion_depth=0 )
+  : m_call_loc( call_loc )
+  , m_rd( _recursion_depth )
   {}
   virtual ~Visitor( void ) {}
 
@@ -151,25 +153,26 @@ public:
       --m_rd;
       return ret;
     }
-    catch( const ParseException & )
+    catch( const CallLocException & )
     {
       throw;
     }
     catch( const RPGML::Exception &e )
     {
-      throw ParseException( node->loc, e );
+      // Includes ParseException
+      throw CallLocException( new Location( node->loc, getCallLoc() ), e );
     }
     catch( const char *e )
     {
-      throw ParseException( node->loc, e );
+      throw ParseException( new Location( node->loc, m_call_loc ), e );
     }
     catch( const std::exception &e )
     {
-      throw ParseException( node->loc ) << e.what();
+      throw ParseException( new Location( node->loc, m_call_loc ) ) << e.what();
     }
     catch( ... )
     {
-      throw ParseException( node->loc, "Caught some unknown exception" );
+      throw ParseException( new Location( node->loc, m_call_loc ), "Caught some unknown exception" );
     }
   }
 
@@ -178,7 +181,45 @@ public:
     return m_rd;
   }
 
+  const Location *getCallLoc( void ) const
+  {
+    return m_call_loc;
+  }
+
+protected:
+  class CallLoc
+  {
+  public:
+    CallLoc( Visitor *parent, const Location *new_call_loc )
+    : m_parent( parent )
+    {
+      m_parent->m_call_loc = new Location( new_call_loc, m_parent->m_call_loc );
+    }
+    ~CallLoc( void )
+    {
+      m_parent->m_call_loc = m_parent->m_call_loc->getParent();
+    }
+  private:
+    Visitor *m_parent;
+  };
+
+  class CallLocException : public ParseException
+  {
+    typedef ParseException Base;
+  public:
+    explicit
+    CallLocException( const Location *call_loc )
+    : ParseException( call_loc )
+    {}
+    CallLocException( const Location *call_loc, const RPGML::Exception &e )
+    : ParseException( call_loc, e )
+    {}
+    EXCEPTION_BODY( CallLocException )
+  };
+
 private:
+  friend class CallLoc;
+  CountPtr< const Location > m_call_loc;
   index_t m_rd; //!< Current recursion depth (getRD())
 };
 
@@ -319,7 +360,8 @@ public:
 class ParenthisSequenceExpression : public Expression
 {
 public:
-  ParenthisSequenceExpression( const Location *_loc, const SequenceExpression *_sequence )
+  explicit
+  ParenthisSequenceExpression( const Location *_loc, const SequenceExpression *_sequence=0 )
   : Expression( _loc )
   , sequence( _sequence )
   {}
