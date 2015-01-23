@@ -30,25 +30,22 @@ namespace RPGML {
 class StringUnifier : public Refcounted
 {
 public:
-  StringUnifier( void ) {}
-  virtual ~StringUnifier( void ) {}
+  StringUnifier( void );
+  virtual ~StringUnifier( void );
+
+  void clear( void );
+  void cleanup( void );
 
   class Unified : public StdString
   {
   private:
     friend class StringUnifier;
-    Unified( StringUnifier *unifier, const char *s )
-    : StdString( s )
-    , m_unifier( unifier )
-    {}
-    Unified( StringUnifier *unifier, const std::string &s )
-    : StdString( s )
-    , m_unifier( unifier )
-    {}
+    Unified( StringUnifier *unifier, const char *s );
+    Unified( StringUnifier *unifier, const std::string &s );
+    Unified( void );
   public:
-    Unified( void ) : m_unifier( 0 ) {}
-    virtual ~Unified( void ) {}
-    virtual const void *getUnifier( void ) const { return m_unifier; }
+    virtual ~Unified( void );
+    virtual const void *getUnifier( void ) const;
   private:
     Unified( const Unified & );
     Unified &operator=( const Unified & );
@@ -58,109 +55,43 @@ public:
   template< class S >
   const Unified *unify( const S &s )
   {
-    const char *const c_in = getCharPtr( s );
-    const Unified *const ret1 = get( c_in );
-    if( ret1 ) return ret1;
-
-    CountPtr< const Unified > ret2 = new Unified( this, c_in );
-    const char *const c_out = ret2->get();
-    m_map.insert( std::make_pair( c_out, ret2 ) );
-    return ret2;
+    return unify_impl( getCharPtr( s ) );
   }
 
-  const Unified *unify_move( std::string &s )
-  {
-    const char *const c_in = getCharPtr( s );
-    const Unified *const ret1 = get( c_in );
-    if( ret1 ) return ret1;
-
-    CountPtr< Unified > ret2 = new Unified();
-    ret2->moveFrom( s );
-    const char *const c_out = ret2->get();
-    m_map.insert( std::make_pair( c_out, CountPtr< const Unified >( ret2 ) ) );
-    return ret2;
-  }
-
-  void clear( void )
-  {
-    m_map.clear();
-  }
-
-  void cleanup( void )
-  {
-    typedef std::vector< const char* > to_be_removed_t;
-    to_be_removed_t to_be_removed;
-    to_be_removed.reserve( 16 );
-
-    for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
-    {
-      if( 1 == i->second->count() )
-      {
-        to_be_removed.push_back( i->second->get() );
-      }
-    }
-
-    for( to_be_removed_t::const_iterator i( to_be_removed.begin() ), end( to_be_removed.end() ); i != end; ++i )
-    {
-      remove( (*i) );
-    }
-  }
+  const Unified *unify_move( std::string &s );
 
   template< class S >
   void remove( const S &s )
   {
-    m_map.erase( getCharPtr( s ) );
+    return remove_impl( getCharPtr( s ) );
   }
 
 private:
-  static
-  const char *getCharPtr( const StringData *s )
-  {
-    return s->get();
-  }
+  static const char *getCharPtr( const StringData *s );
+  static const char *getCharPtr( const String &s );
+  static const char *getCharPtr( const char *s );
+  static const char *getCharPtr( const std::string &s );
 
-  static
-  const char *getCharPtr( const String &s )
-  {
-    return s.c_str();
-  }
-
-  static
-  const char *getCharPtr( const char *s )
-  {
-    return s;
-  }
-
-  static
-  const char *getCharPtr( const std::string &s )
-  {
-    return s.c_str();
-  }
+  const Unified *unify_impl( const char *s );
+  const Unified *get_impl( const char *s );
+  void remove_impl( const char *s );
 
   template< class S >
   const Unified *get( const S &s )
   {
-    const char *const c_in = getCharPtr( s );
-    map_t::const_iterator found = m_map.find( c_in );
-    if( found != m_map.end() )
-    {
-      return found->second;
-    }
-    else
-    {
-      return 0;
-    }
+    return get_impl( getCharPtr( s ) );
   }
 
   struct compare
   {
+    inline
     bool operator()( const char *x, const char *y )
     {
       return 0 > ::strcmp( x, y );
     }
   };
 
-  typedef std::map< const char*, CountPtr< const Unified >, compare > map_t;
+  typedef std::map< const char*, CountPtr< Unified >, compare > map_t;
   map_t m_map;
 };
 
