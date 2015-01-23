@@ -20,6 +20,10 @@ SUBDIRS=\
 
 all: $(foreach subdir, $(SUBDIRS), .$(subdir).all )
 
+.rpgml.all: .libRPGML.all
+
+.ROOT.all: .libRPGML.all
+
 clean: $(foreach subdir, $(SUBDIRS), .$(subdir).clean )
 	rm -f $(STEST_SCRIPTS:.rpgml=.output) $(STEST_SCRIPTS:.rpgml=.pretty)
 	find . -name ".rerun_stest" -exec rm {} \;
