@@ -22,6 +22,7 @@
 #include "Iterator.h"
 #include "Refcounted.h"
 #include "Mutex.h"
+#include "Atomic.h"
 
 #include <vector>
 
@@ -66,10 +67,12 @@ private:
   GarbageCollector &operator=( const GarbageCollector &other );
 };
 
-class Collectable : public Refcounted
+class Collectable
 {
   friend class GarbageCollector;
 public:
+  typedef index_t count_t;
+
 	explicit
   Collectable( GarbageCollector *_gc );
   Collectable( const Collectable &other );
@@ -77,6 +80,22 @@ public:
   Collectable &operator=( const Collectable & );
 
   virtual ~Collectable( void );
+
+  count_t ref( void ) const
+  {
+    return ++m_count;
+  }
+
+  count_t unref( void ) const
+  {
+    gc_generation = 0;
+    return --m_count;
+  }
+
+  count_t count( void ) const
+  {
+    return m_count;
+  }
 
   GarbageCollector *getGC( void ) const
   {
@@ -108,7 +127,14 @@ public:
   virtual void gc_getChildren( Children &children ) const = 0;
 
 private:
+  void deactivate_deletion( void ) const throw()
+  {
+    // That way the next one gets count_t(-1), which is not 0
+    m_count = 0;
+  }
+
   mutable GarbageCollector *gc;
+  mutable Atomic< count_t > m_count;
   mutable index_t gc_index;
   mutable uint8_t gc_generation;
 };

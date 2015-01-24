@@ -236,6 +236,7 @@ void GarbageCollector::run( uint8_t up_to_generation )
 
 Collectable::Collectable( GarbageCollector *_gc )
 : gc( 0 )
+, m_count( 0 )
 , gc_index( 0 )
 , gc_generation( 0 )
 {
