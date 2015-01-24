@@ -33,7 +33,7 @@ Function_print::Function_print( GarbageCollector *_gc, Frame *parent, const Shar
 Function_print::~Function_print( void )
 {}
 
-bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_print::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( n_args != 1 ) throw Exception() << "Function 'print' requires 1 argument, specified " << n_args;
   const Value &in = args[ ARG_IN ];
@@ -45,10 +45,9 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
         CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".core.Print" ) ) );
 
         in.getOutput()->connect( node->getInput( "in" ) );
-        scope->call( loc, recursion_depth+1, String::Static( ".needing" ), ret, Value( node.get() ) );
 
-        ret = Value( true );
-        return true;
+        scope->call( loc, recursion_depth+1, String::Static( ".needing" ), Value( node.get() ) );
+        return Value( true );
       }
       break;
 
@@ -58,8 +57,7 @@ bool Function_print::call_impl( const Location *loc, index_t recursion_depth, Sc
     //  throw "Invalid type for Function_print argument 'str'";
   }
 
-  ret = Value( true );
-  return true;
+  return Value( true );
 }
 
 CountPtr< Function::Args > Function_print::genDeclArgs( void )

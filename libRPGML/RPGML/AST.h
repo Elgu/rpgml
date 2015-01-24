@@ -83,7 +83,7 @@ public:
   virtual ~Node( void ) {}
 
   // Implement using visitor->invite_impl( this )
-  virtual bool invite( Visitor *visitor ) const = 0;
+  virtual void invite( Visitor *visitor ) const = 0;
 
   // Overloads for "is a"
   virtual Expression         *getExpression        ( void ) { return 0; }
@@ -104,54 +104,53 @@ public:
   {}
   virtual ~Visitor( void ) {}
 
-  virtual bool visit( const Node *node )
+  virtual void visit( const Node *node )
   {
-    return node->invite( this );
+    node->invite( this );
   }
 
-  virtual bool visit( const ConstantExpression           *node ) = 0;
-  virtual bool visit( const ThisExpression               *node ) = 0;
-  virtual bool visit( const ArrayConstantExpression      *node ) = 0;
-  virtual bool visit( const FrameConstantExpression      *node ) = 0;
-  virtual bool visit( const ParenthisSequenceExpression  *node ) = 0;
-  virtual bool visit( const ExpressionSequenceExpression *node ) = 0;
-  virtual bool visit( const FromToStepSequenceExpression *node ) = 0;
-  virtual bool visit( const LookupVariableExpression     *node ) = 0;
-  virtual bool visit( const FunctionCallExpression       *node ) = 0;
-  virtual bool visit( const DotExpression                *node ) = 0;
-  virtual bool visit( const FrameAccessExpression        *node ) = 0;
-  virtual bool visit( const ArrayAccessExpression        *node ) = 0;
-  virtual bool visit( const UnaryExpression              *node ) = 0;
-  virtual bool visit( const BinaryExpression             *node ) = 0;
-  virtual bool visit( const IfThenElseExpression         *node ) = 0;
-  virtual bool visit( const TypeExpression               *node ) = 0;
-  virtual bool visit( const DimensionsExpression         *node ) = 0;
+  virtual void visit( const ConstantExpression           *node ) = 0;
+  virtual void visit( const ThisExpression               *node ) = 0;
+  virtual void visit( const ArrayConstantExpression      *node ) = 0;
+  virtual void visit( const FrameConstantExpression      *node ) = 0;
+  virtual void visit( const ParenthisSequenceExpression  *node ) = 0;
+  virtual void visit( const ExpressionSequenceExpression *node ) = 0;
+  virtual void visit( const FromToStepSequenceExpression *node ) = 0;
+  virtual void visit( const LookupVariableExpression     *node ) = 0;
+  virtual void visit( const FunctionCallExpression       *node ) = 0;
+  virtual void visit( const DotExpression                *node ) = 0;
+  virtual void visit( const FrameAccessExpression        *node ) = 0;
+  virtual void visit( const ArrayAccessExpression        *node ) = 0;
+  virtual void visit( const UnaryExpression              *node ) = 0;
+  virtual void visit( const BinaryExpression             *node ) = 0;
+  virtual void visit( const IfThenElseExpression         *node ) = 0;
+  virtual void visit( const TypeExpression               *node ) = 0;
+  virtual void visit( const DimensionsExpression         *node ) = 0;
 
-  virtual bool visit( const CompoundStatement            *node ) = 0;
-  virtual bool visit( const FunctionDefinitionStatement  *node ) = 0;
-  virtual bool visit( const ConnectStatement             *node ) = 0;
-  virtual bool visit( const AssignIdentifierStatement    *node ) = 0;
-  virtual bool visit( const AssignDotStatement           *node ) = 0;
-  virtual bool visit( const AssignBracketStatement       *node ) = 0;
-  virtual bool visit( const IfStatement                  *node ) = 0;
-  virtual bool visit( const NOPStatement                 *node ) = 0;
-  virtual bool visit( const ForSequenceStatement         *node ) = 0;
-  virtual bool visit( const ForContainerStatement        *node ) = 0;
-  virtual bool visit( const ExpressionStatement          *node ) = 0;
-  virtual bool visit( const VariableCreationStatement    *node ) = 0;
-  virtual bool visit( const VariableConstructionStatement*node ) = 0;
-  virtual bool visit( const ReturnStatement              *node ) = 0;
+  virtual void visit( const CompoundStatement            *node ) = 0;
+  virtual void visit( const FunctionDefinitionStatement  *node ) = 0;
+  virtual void visit( const ConnectStatement             *node ) = 0;
+  virtual void visit( const AssignIdentifierStatement    *node ) = 0;
+  virtual void visit( const AssignDotStatement           *node ) = 0;
+  virtual void visit( const AssignBracketStatement       *node ) = 0;
+  virtual void visit( const IfStatement                  *node ) = 0;
+  virtual void visit( const NOPStatement                 *node ) = 0;
+  virtual void visit( const ForSequenceStatement         *node ) = 0;
+  virtual void visit( const ForContainerStatement        *node ) = 0;
+  virtual void visit( const ExpressionStatement          *node ) = 0;
+  virtual void visit( const VariableCreationStatement    *node ) = 0;
+  virtual void visit( const VariableConstructionStatement*node ) = 0;
+  virtual void visit( const ReturnStatement              *node ) = 0;
 
   template< class NodeType >
-  bool invite_impl( const NodeType *node )
+  void invite_impl( const NodeType *node )
   {
     try
     {
       ++m_rd;
       if( m_rd > 100 ) throw "Maximum recursion depth reached";
-      bool ret = visit( node );
+      visit( node );
       --m_rd;
-      return ret;
     }
     catch( const CallLocException & )
     {
@@ -237,7 +236,7 @@ public:
   explicit ConstantExpression( const Location *_loc, const Value &v ) : Expression( _loc ), value( v ) {}
   virtual ~ConstantExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const Value value;
 };
@@ -248,7 +247,7 @@ public:
   explicit ThisExpression( const Location *_loc ) : Expression( _loc ) {}
   virtual ~ThisExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 };
 
 class ArrayConstantExpression : public Expression
@@ -266,7 +265,7 @@ public:
 
   virtual ~ArrayConstantExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const ArrayBase > descr_array;
   int dims;
@@ -282,7 +281,7 @@ public:
 
   virtual ~FrameConstantExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const CompoundStatement > body;
 };
@@ -307,7 +306,7 @@ public:
   {}
   virtual ~ExpressionSequenceExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   void append( const Expression *expression )
   {
@@ -343,7 +342,7 @@ public:
 
   virtual ~FromToStepSequenceExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   virtual index_t length( void ) const { return unknown; }
 
@@ -367,7 +366,7 @@ public:
   {}
   virtual ~ParenthisSequenceExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   virtual index_t length( void ) const { return sequence->length(); }
 
@@ -389,7 +388,7 @@ public:
   {}
   virtual ~LookupVariableExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const String identifier;
   bool at_root;
@@ -407,7 +406,7 @@ public:
   {}
   virtual ~FunctionCallExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   class Arg : public Refcounted
   {
@@ -451,7 +450,7 @@ public:
   {}
   virtual ~DotExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const String member;
@@ -467,7 +466,7 @@ public:
   {}
   virtual ~FrameAccessExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const String identifier;
@@ -483,7 +482,7 @@ public:
   {}
   virtual ~ArrayAccessExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const CountPtr< const CoordinatesExpression > coord;
@@ -499,7 +498,7 @@ public:
   {}
   virtual ~UnaryExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > arg;
   const UOP op;
@@ -516,7 +515,7 @@ public:
   {}
   virtual ~BinaryExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const CountPtr< const Expression > right;
@@ -534,7 +533,7 @@ public:
   {}
   virtual ~IfThenElseExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > condition;
   const CountPtr< const Expression > then_value;
@@ -552,7 +551,7 @@ public:
   {}
   virtual ~TypeExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const TypeExpression > of;
   const CountPtr< const DimensionsExpression > dims;
@@ -567,7 +566,7 @@ public:
   {}
   virtual ~DimensionsExpression( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   void push_back( const Expression *dim )
   {
@@ -601,7 +600,7 @@ public:
 
   virtual CompoundStatement *getCompoundStatement ( void ) { return this; }
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   void append( const Statement *statement )
   {
@@ -636,7 +635,7 @@ public:
 
   virtual ~FunctionDefinitionStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   class ArgDecl : public Refcounted
   {
@@ -685,7 +684,7 @@ public:
   {}
   virtual ~ConnectStatement ( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > output;
   const CountPtr< const Expression > input;
@@ -701,7 +700,7 @@ public:
   {}
   virtual ~AssignmentStatementBase( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > value;
   const ASSIGN op;
@@ -716,7 +715,7 @@ public:
   {}
   virtual ~AssignIdentifierStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const String identifier;
 };
@@ -731,7 +730,7 @@ public:
   {}
   virtual ~AssignDotStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const String identifier;
@@ -747,7 +746,7 @@ public:
   {}
   virtual ~AssignBracketStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > left;
   const CountPtr< const CoordinatesExpression > coord;
@@ -764,7 +763,7 @@ public:
   {}
   virtual ~IfStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > condition;
   const CountPtr< const Statement > then_body;
@@ -779,7 +778,7 @@ public:
   {}
   virtual ~NOPStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 };
 
 class ForStatement : public Statement
@@ -792,7 +791,7 @@ public:
   {}
   virtual ~ForStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const String identifier;
   const CountPtr< const Statement > body;
@@ -807,7 +806,7 @@ public:
   {}
   virtual ~ForSequenceStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const SequenceExpression > sequence;
 };
@@ -821,7 +820,7 @@ public:
   {}
   virtual ~ForContainerStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > container;
 };
@@ -836,7 +835,7 @@ public:
   {}
   virtual ~ExpressionStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > expr;
 };
@@ -852,7 +851,7 @@ public:
   {}
   virtual ~VariableCreationStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const String identifier;
   const CountPtr< const Expression > value;
@@ -869,7 +868,7 @@ public:
   {}
   virtual ~VariableConstructionStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const String identifier;
   const CountPtr< const FunctionCallExpression > value;
@@ -884,7 +883,7 @@ public:
   {}
   virtual ~ReturnStatement( void ) {}
 
-  virtual bool invite( Visitor *visitor ) const { return visitor->invite_impl( this ); }
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
   const CountPtr< const Expression > value;
 };

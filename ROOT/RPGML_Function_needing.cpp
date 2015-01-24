@@ -54,7 +54,7 @@ void Function_needing::gc_getChildren( Children &children ) const
   children.add( m_needed );
 }
 
-bool Function_needing::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_needing::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( recursion_depth > MAX_RECURSION_DEPTH )
   {
@@ -104,8 +104,7 @@ bool Function_needing::call_impl( const Location *loc, index_t recursion_depth, 
       ;
   }
 
-  ret = Value( true );
-  return true;
+  return Value( true );
 }
 
 CountPtr< Function::Args > Function_needing::genDeclArgs( void )

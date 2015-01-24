@@ -37,38 +37,38 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  virtual bool visit( const AST::ConstantExpression           *node );
-  virtual bool visit( const AST::ThisExpression               *node );
-  virtual bool visit( const AST::ArrayConstantExpression      *node );
-  virtual bool visit( const AST::FrameConstantExpression      *node );
-  virtual bool visit( const AST::ParenthisSequenceExpression  *node );
-  virtual bool visit( const AST::ExpressionSequenceExpression *node );
-  virtual bool visit( const AST::FromToStepSequenceExpression *node );
-  virtual bool visit( const AST::LookupVariableExpression     *node );
-  virtual bool visit( const AST::FunctionCallExpression       *node );
-  virtual bool visit( const AST::DotExpression                *node );
-  virtual bool visit( const AST::FrameAccessExpression        *node );
-  virtual bool visit( const AST::ArrayAccessExpression        *node );
-  virtual bool visit( const AST::UnaryExpression              *node );
-  virtual bool visit( const AST::BinaryExpression             *node );
-  virtual bool visit( const AST::IfThenElseExpression         *node );
-  virtual bool visit( const AST::TypeExpression               *node );
-  virtual bool visit( const AST::DimensionsExpression         *node );
+  virtual void visit( const AST::ConstantExpression           *node );
+  virtual void visit( const AST::ThisExpression               *node );
+  virtual void visit( const AST::ArrayConstantExpression      *node );
+  virtual void visit( const AST::FrameConstantExpression      *node );
+  virtual void visit( const AST::ParenthisSequenceExpression  *node );
+  virtual void visit( const AST::ExpressionSequenceExpression *node );
+  virtual void visit( const AST::FromToStepSequenceExpression *node );
+  virtual void visit( const AST::LookupVariableExpression     *node );
+  virtual void visit( const AST::FunctionCallExpression       *node );
+  virtual void visit( const AST::DotExpression                *node );
+  virtual void visit( const AST::FrameAccessExpression        *node );
+  virtual void visit( const AST::ArrayAccessExpression        *node );
+  virtual void visit( const AST::UnaryExpression              *node );
+  virtual void visit( const AST::BinaryExpression             *node );
+  virtual void visit( const AST::IfThenElseExpression         *node );
+  virtual void visit( const AST::TypeExpression               *node );
+  virtual void visit( const AST::DimensionsExpression         *node );
 
-  virtual bool visit( const AST::CompoundStatement            *node );
-  virtual bool visit( const AST::FunctionDefinitionStatement  *node );
-  virtual bool visit( const AST::ConnectStatement             *node );
-  virtual bool visit( const AST::AssignIdentifierStatement    *node );
-  virtual bool visit( const AST::AssignDotStatement           *node );
-  virtual bool visit( const AST::AssignBracketStatement       *node );
-  virtual bool visit( const AST::IfStatement                  *node );
-  virtual bool visit( const AST::NOPStatement                 *node );
-  virtual bool visit( const AST::ForSequenceStatement         *node );
-  virtual bool visit( const AST::ForContainerStatement        *node );
-  virtual bool visit( const AST::ExpressionStatement          *node );
-  virtual bool visit( const AST::VariableCreationStatement    *node );
-  virtual bool visit( const AST::VariableConstructionStatement*node );
-  virtual bool visit( const AST::ReturnStatement              *node );
+  virtual void visit( const AST::CompoundStatement            *node );
+  virtual void visit( const AST::FunctionDefinitionStatement  *node );
+  virtual void visit( const AST::ConnectStatement             *node );
+  virtual void visit( const AST::AssignIdentifierStatement    *node );
+  virtual void visit( const AST::AssignDotStatement           *node );
+  virtual void visit( const AST::AssignBracketStatement       *node );
+  virtual void visit( const AST::IfStatement                  *node );
+  virtual void visit( const AST::NOPStatement                 *node );
+  virtual void visit( const AST::ForSequenceStatement         *node );
+  virtual void visit( const AST::ForContainerStatement        *node );
+  virtual void visit( const AST::ExpressionStatement          *node );
+  virtual void visit( const AST::VariableCreationStatement    *node );
+  virtual void visit( const AST::VariableConstructionStatement*node );
+  virtual void visit( const AST::ReturnStatement              *node );
 
   bool get_return_encountered( void ) const { return return_encountered; }
   const Value &get_return_value( void ) const { return return_value; }
@@ -92,8 +92,8 @@ public:
   };
 
 private:
-  bool dot_access_impl( Value &left, const String &identifier, Value *&value );
-  bool assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue );
+  void dot_access_impl( Value &left, const String &identifier, Value *&value );
+  void assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue );
 
   void determine_size( const ArrayBase *array, int dims, index_t *size, int dim );
   void fill_array( const ArrayBase *array, const ArrayBase::Size &size, Value *dest, int dim );

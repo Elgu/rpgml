@@ -173,36 +173,36 @@ namespace binaryOp_impl {
   }
 
   static inline
-  void bop( Value &ret, const Value &left, const BOP op, const Value &right )
+  Value bop( const Value &left, const BOP op, const Value &right )
   {
     switch( op )
     {
-      case BOP_LEFT   : ret = Value( left << right ); break;
-      case BOP_RIGHT  : ret = Value( left >> right ); break;
-      case BOP_LT     : ret = Value( left <  right ); break;
-      case BOP_LE     : ret = Value( left <= right ); break;
-      case BOP_GT     : ret = Value( left >  right ); break;
-      case BOP_GE     : ret = Value( left >= right ); break;
-      case BOP_EQ     : ret = Value( left == right ); break;
-      case BOP_NE     : ret = Value( left != right ); break;
-      case BOP_LOG_AND: ret = Value( left && right ); break;
-      case BOP_LOG_OR : ret = Value( left || right ); break;
-      case BOP_LOG_XOR: ret = Value( left.log_xor( right ) ); break;
-      case BOP_BIT_AND: ret = Value( left & right ); break;
-      case BOP_BIT_OR : ret = Value( left | right ); break;
-      case BOP_BIT_XOR: ret = Value( left ^ right ); break;
-      case BOP_MUL    : ret = Value( left * right ); break;
-      case BOP_DIV    : ret = Value( left / right ); break;
-      case BOP_ADD    : ret = Value( left + right ); break;
-      case BOP_SUB    : ret = Value( left - right ); break;
-      case BOP_MOD    : ret = Value( left % right ); break;
+      case BOP_LEFT   : return Value( left << right );
+      case BOP_RIGHT  : return Value( left >> right );
+      case BOP_LT     : return Value( left <  right );
+      case BOP_LE     : return  Value( left <= right );
+      case BOP_GT     : return Value( left >  right );
+      case BOP_GE     : return Value( left >= right );
+      case BOP_EQ     : return Value( left == right );
+      case BOP_NE     : return Value( left != right );
+      case BOP_LOG_AND: return Value( left && right );
+      case BOP_LOG_OR : return Value( left || right );
+      case BOP_LOG_XOR: return Value( left.log_xor( right ) );
+      case BOP_BIT_AND: return Value( left & right );
+      case BOP_BIT_OR : return Value( left | right );
+      case BOP_BIT_XOR: return Value( left ^ right );
+      case BOP_MUL    : return Value( left * right );
+      case BOP_DIV    : return Value( left / right );
+      case BOP_ADD    : return Value( left + right );
+      case BOP_SUB    : return Value( left - right );
+      case BOP_MOD    : return Value( left % right );
       default:
         throw "Invalid op";
     }
   }
 } // namespace binaryOp_impl
 
-bool Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   using namespace binaryOp_impl;
 
@@ -225,14 +225,12 @@ bool Function_binaryOp::call_impl( const Location *loc, index_t recursion_depth,
     node->getParam( "op"  )->set( op_v );
     node->getInput( "in2" )->connect( right_output );
 
-    ret = Value( node->getOutput( "out" ) );
-    return true;
+    return Value( node->getOutput( "out" ) );
   }
 
   const BOP op = getBOP( op_v.getString() );
 
-  bop( ret, left, op, right );
-  return true;
+  return bop( left, op, right );
 }
 
 CountPtr< Function::Args > Function_binaryOp::genDeclArgs( void )

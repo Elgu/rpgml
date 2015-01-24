@@ -191,11 +191,10 @@ const StringData *Scope::unify( const std::string &identifier ) const
   return m_context->getUnifier()->unify( identifier );
 }
 
-bool Scope::call(
+Value Scope::call(
     const Location *loc
   , index_t recursion_depth
   , const String &function_identifier
-  , Value &ret
   , const Function::Args *call_args
   )
 {
@@ -205,10 +204,7 @@ bool Scope::call(
 
   try
   {
-    if( !func->getFunction()->call( loc, recursion_depth, this, ret, call_args ) )
-    {
-      throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
-    }
+    return func->getFunction()->call( loc, recursion_depth, this, call_args );
   }
   catch( const ParseException & )
   {
@@ -219,14 +215,14 @@ bool Scope::call(
     throw ParseException( loc, e );
   }
 
-  return true;
+  // Never reached
+  return Value();
 }
 
-bool Scope::call(
+Value Scope::call(
     const Location *loc
   , index_t recursion_depth
   , const String &function_identifier
-  , Value &ret
   , const Value &arg0
   , const Value &arg1
   , const Value &arg2
@@ -247,14 +243,13 @@ bool Scope::call(
   }
   while( false );
 
-  return call( loc, recursion_depth, function_identifier, ret, n_args, args );
+  return call( loc, recursion_depth, function_identifier, n_args, args );
 }
 
-bool Scope::call(
+Value Scope::call(
     const Location *loc
   , index_t recursion_depth
   , const String &function_identifier
-  , Value &ret
   , index_t n_args
   , const Value *args
   )
@@ -265,10 +260,7 @@ bool Scope::call(
 
   try
   {
-    if( !func->getFunction()->call( loc, recursion_depth, this, ret, n_args, args ) )
-    {
-      throw ParseException( loc ) << "Calling Function '" << function_identifier << "' failed";
-    }
+    return func->getFunction()->call( loc, recursion_depth, this, n_args, args );
   }
   catch( const ParseException & )
   {
@@ -279,7 +271,8 @@ bool Scope::call(
     throw ParseException( loc, e );
   }
 
-  return true;
+  // Never reached
+  return Value();
 }
 
 CountPtr< Node > Scope::createNode(
@@ -291,12 +284,7 @@ CountPtr< Node > Scope::createNode(
   Value ret;
   try
   {
-    if( !call( loc, recursion_depth+1, name, ret, 0, (const Value*)0 ) )
-    {
-      throw ParseException( loc )
-        << "Could not find/instantiate Node '" << name << "'"
-        ;
-    }
+    ret = call( loc, recursion_depth+1, name, 0, (const Value*)0 );
   }
   catch( const ParseException & )
   {

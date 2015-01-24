@@ -31,7 +31,7 @@ public:
   Function_get( GarbageCollector *gc, Frame *parent, const SharedObject *so=0 );
   virtual ~Function_get( void );
 
-  virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
+  virtual Value call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
   virtual const char *getName( void ) const;
 
 private:

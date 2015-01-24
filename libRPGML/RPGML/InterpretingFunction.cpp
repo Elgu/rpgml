@@ -40,7 +40,7 @@ InterpretingFunction::InterpretingFunction(
 InterpretingFunction::~InterpretingFunction( void )
 {}
 
-bool InterpretingFunction::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t, const Value * )
+Value InterpretingFunction::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t, const Value * )
 {
   CountPtr< Frame > frame = new Frame( scope->getGC(), scope->getCurr() );
   frame->setThis( !isMethod() );
@@ -48,15 +48,14 @@ bool InterpretingFunction::call_impl( const Location *loc, index_t recursion_dep
   Scope::EnterLeaveGuard guard( scope, frame );
 
   CountPtr< InterpretingASTVisitor > interpreter = new InterpretingASTVisitor( getGC(), scope, loc, recursion_depth+1 );
-  if( !m_body->invite( interpreter.get() ) ) return false;
+  m_body->invite( interpreter.get() );
 
   if( !interpreter->get_return_encountered() )
   {
-    throw "No return statement";
+    throw ParseException( loc ) << "Function '" << getName() << "': No return statement";
   }
 
-  ret = interpreter->get_return_value();
-  return true;
+  return interpreter->get_return_value();
 }
 
 } // namespace RPGML

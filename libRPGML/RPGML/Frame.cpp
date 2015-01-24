@@ -44,9 +44,9 @@ public:
   NodeCreator( GarbageCollector *gc, const Location *loc, Frame *parent, const String &name, create_Node_t create_Node, const SharedObject *so=0 );
   virtual ~NodeCreator( void );
 
-  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args );
-  virtual bool call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
-  virtual bool call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args );
+  virtual Value call( const Location *loc, index_t recursion_depth, Scope *scope, const Args *call_args );
+  virtual Value call( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
+  virtual Value call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
@@ -66,7 +66,7 @@ NodeCreator::NodeCreator( GarbageCollector *_gc, const Location *loc, Frame *par
 NodeCreator::~NodeCreator( void )
 {}
 
-bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args )
+Value NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, const Args *call_args )
 {
   (void)recursion_depth;
   (void)call_args;
@@ -96,23 +96,24 @@ bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *sco
     }
   }
 
-  ret = Value( node.get() );
-  return true;
+  return Value( node.get() );
 }
 
-bool NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value NodeCreator::call( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( 0 == n_args )
   {
-    return call( loc, recursion_depth, scope, ret, (const Args*)0 );
+    return call( loc, recursion_depth, scope, (const Args*)0 );
   }
-  return call_impl( loc, recursion_depth, scope, ret, n_args, args );
+  else
+  {
+    return call_impl( loc, recursion_depth, scope, n_args, args );
+  }
 }
 
-bool NodeCreator::call_impl( const Location *, index_t, Scope *, Value &, index_t, const Value * )
+Value NodeCreator::call_impl( const Location *, index_t, Scope *, index_t, const Value * )
 {
   throw Exception() << "NodeCreator::call_impl() should never be called";
-  return false;
 }
 
 void NodeCreator::gc_clear( void )

@@ -36,38 +36,38 @@ public:
 
   std::ostream &getStream( void ) { return (*o); }
 
-  virtual bool visit( const ConstantExpression           *node );
-  virtual bool visit( const ThisExpression               *node );
-  virtual bool visit( const ArrayConstantExpression      *node );
-  virtual bool visit( const FrameConstantExpression      *node );
-  virtual bool visit( const ParenthisSequenceExpression  *node );
-  virtual bool visit( const ExpressionSequenceExpression *node );
-  virtual bool visit( const FromToStepSequenceExpression *node );
-  virtual bool visit( const LookupVariableExpression     *node );
-  virtual bool visit( const FunctionCallExpression       *node );
-  virtual bool visit( const DotExpression                *node );
-  virtual bool visit( const FrameAccessExpression        *node );
-  virtual bool visit( const ArrayAccessExpression        *node );
-  virtual bool visit( const UnaryExpression              *node );
-  virtual bool visit( const BinaryExpression             *node );
-  virtual bool visit( const IfThenElseExpression         *node );
-  virtual bool visit( const TypeExpression               *node );
-  virtual bool visit( const DimensionsExpression         *node );
+  virtual void visit( const ConstantExpression           *node );
+  virtual void visit( const ThisExpression               *node );
+  virtual void visit( const ArrayConstantExpression      *node );
+  virtual void visit( const FrameConstantExpression      *node );
+  virtual void visit( const ParenthisSequenceExpression  *node );
+  virtual void visit( const ExpressionSequenceExpression *node );
+  virtual void visit( const FromToStepSequenceExpression *node );
+  virtual void visit( const LookupVariableExpression     *node );
+  virtual void visit( const FunctionCallExpression       *node );
+  virtual void visit( const DotExpression                *node );
+  virtual void visit( const FrameAccessExpression        *node );
+  virtual void visit( const ArrayAccessExpression        *node );
+  virtual void visit( const UnaryExpression              *node );
+  virtual void visit( const BinaryExpression             *node );
+  virtual void visit( const IfThenElseExpression         *node );
+  virtual void visit( const TypeExpression               *node );
+  virtual void visit( const DimensionsExpression         *node );
 
-  virtual bool visit( const CompoundStatement            *node );
-  virtual bool visit( const FunctionDefinitionStatement  *node );
-  virtual bool visit( const ConnectStatement             *node );
-  virtual bool visit( const AssignIdentifierStatement    *node );
-  virtual bool visit( const AssignDotStatement           *node );
-  virtual bool visit( const AssignBracketStatement       *node );
-  virtual bool visit( const IfStatement                  *node );
-  virtual bool visit( const NOPStatement                 *node );
-  virtual bool visit( const ForSequenceStatement         *node );
-  virtual bool visit( const ForContainerStatement        *node );
-  virtual bool visit( const ExpressionStatement          *node );
-  virtual bool visit( const VariableCreationStatement    *node );
-  virtual bool visit( const VariableConstructionStatement*node );
-  virtual bool visit( const ReturnStatement              *node );
+  virtual void visit( const CompoundStatement            *node );
+  virtual void visit( const FunctionDefinitionStatement  *node );
+  virtual void visit( const ConnectStatement             *node );
+  virtual void visit( const AssignIdentifierStatement    *node );
+  virtual void visit( const AssignDotStatement           *node );
+  virtual void visit( const AssignBracketStatement       *node );
+  virtual void visit( const IfStatement                  *node );
+  virtual void visit( const NOPStatement                 *node );
+  virtual void visit( const ForSequenceStatement         *node );
+  virtual void visit( const ForContainerStatement        *node );
+  virtual void visit( const ExpressionStatement          *node );
+  virtual void visit( const VariableCreationStatement    *node );
+  virtual void visit( const VariableConstructionStatement*node );
+  virtual void visit( const ReturnStatement              *node );
 
 private:
   void indent( void );

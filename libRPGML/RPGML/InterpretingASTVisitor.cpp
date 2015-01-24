@@ -59,26 +59,24 @@ void InterpretingASTVisitor::gc_getChildren( Children &children ) const
   children.add( return_value.getCollectable() );
 }
 
-bool InterpretingASTVisitor::visit( const AST::ConstantExpression           *node )
+void InterpretingASTVisitor::visit( const AST::ConstantExpression           *node )
 {
   return_value = node->value;
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ThisExpression           * )
+void InterpretingASTVisitor::visit( const AST::ThisExpression           * )
 {
   for( Frame *frame = scope->getCurr(); frame; frame = frame->getParent() )
   {
     if( frame->isThis() )
     {
       return_value = Value( frame );
-      return true;
+      return;
     }
   }
 
   throw Exception() << "No parent Frame that qualifies as 'this'";
   return_value.clear();
-  return false;
 }
 
 void InterpretingASTVisitor::determine_size( const ArrayBase *array, int dims, index_t *size, int dim )
@@ -264,7 +262,7 @@ not_equal_sides:
     ;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *node )
+void InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *node )
 {
   const ArrayBase *const array = node->descr_array;
 
@@ -296,35 +294,32 @@ bool InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
   fill_array( array, size, ret->elements(), dims-1 );
 
   return_value = Value( ret.get() );
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::FrameConstantExpression *node )
+void InterpretingASTVisitor::visit( const AST::FrameConstantExpression *node )
 {
   CountPtr< Frame > ret = new Frame( scope->getGC(), scope->getCurr() );
   ret->setThis( true );
   Scope::EnterLeaveGuard guard( scope, ret );
 
-  if( !node->body->invite( this ) ) return false;
+  node->body->invite( this );
 
   return_value = Value( ret.get() );
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ParenthisSequenceExpression  *node )
+void InterpretingASTVisitor::visit( const AST::ParenthisSequenceExpression  *node )
 {
   if( node->sequence )
   {
-    return node->sequence->invite( this );
+    node->sequence->invite( this );
   }
   else
   {
     return_value = Value( genSequenceFromToStep( getGC(), Value( 1 ), Value( -1 ), Value( 1 ) ) );
-    return true;
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *node )
+void InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *node )
 {
   const index_t n = index_t( node->expressions.size() );
 
@@ -333,17 +328,16 @@ bool InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *nod
 
   for( index_t i=0; i<n; ++i )
   {
-    if( !node->expressions[ i ]->invite( this ) ) return false;
+    node->expressions[ i ]->invite( this );
     array->at( i ).swap( return_value );
   }
 
   return_value = Value( new SequenceValueArray( scope->getGC(), array ) );
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *node )
+void InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *node )
 {
-  if( !node->from->invite( this ) ) return false;
+  node->from->invite( this );
   Value from; from.swap( return_value );
 
   if( !from.isScalar() )
@@ -353,7 +347,7 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
       ;
   }
 
-  if( !node->to->invite( this ) ) return false;
+  node->to->invite( this );
   Value to; to.swap( return_value );
 
   if( !to.isScalar() )
@@ -366,7 +360,7 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
   Value step;
   if( node->step )
   {
-    if( !node->step->invite( this ) ) return false;
+    node->step->invite( this );
     step.swap( return_value );
 
     if( !step.isScalar() )
@@ -383,11 +377,9 @@ bool InterpretingASTVisitor::visit( const AST::FromToStepSequenceExpression *nod
   }
 
   return_value.set( genSequenceFromToStep( scope->getGC(), from, to, step ) );
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *node )
+void InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *node )
 {
   const String identifier =
     ( node->at_root
@@ -400,7 +392,6 @@ bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *nod
   {
 //    cerr << "AST::LookupVariableExpression( '" << node->identifier << "' ): value = '" << (*value) << "'" << endl;
     return_value = (*value);
-    return true;
   }
   else
   {
@@ -409,9 +400,9 @@ bool InterpretingASTVisitor::visit( const AST::LookupVariableExpression     *nod
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *node )
+void InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *node )
 {
-  if( !node->function->invite( this ) ) return false;
+  node->function->invite( this );
   Value function; function.swap( return_value );
 
   if( !function.isFunction() )
@@ -429,18 +420,18 @@ bool InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
 
   for( size_t i=0; i < n_args; ++i )
   {
-    if( !node->args->at( i )->value->invite( this ) ) return false;
+    node->args->at( i )->value->invite( this );
     Value value; value.swap( return_value );
     args.push_back( Function::Arg( node->args->at( i )->identifier, value ) );
   }
 
   CallLoc guard( this, node->loc );
-  return function.getFunction()->call( getCallLoc(), getRD()+1, scope, return_value, &args );
+  return_value = function.getFunction()->call( getCallLoc(), getRD()+1, scope, &args );
 }
 
-bool InterpretingASTVisitor::visit( const AST::DotExpression                *node )
+void InterpretingASTVisitor::visit( const AST::DotExpression                *node )
 {
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   Value left; left.swap( return_value );
 
   if( !left.isFrame() )
@@ -454,7 +445,6 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
   if( value )
   {
     return_value = (*value);
-    return true;
   }
   else
   {
@@ -462,31 +452,24 @@ bool InterpretingASTVisitor::visit( const AST::DotExpression                *nod
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::FrameAccessExpression             *node )
+void InterpretingASTVisitor::visit( const AST::FrameAccessExpression             *node )
 {
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   Value left; left.swap( return_value );
 
   Value *value = 0;
 
   CallLoc guard( this, node->loc );
-  if( dot_access_impl( left, node->identifier, value ) )
-  {
-    return_value = (*value);
-    return true;
-  }
-  else
-  {
-    throw Exception() << "Identifier '" << node->identifier << "' not found right of '.'";
-  }
+  dot_access_impl( left, node->identifier, value );
+  return_value = (*value);
 }
 
-bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression             *node )
+void InterpretingASTVisitor::visit( const AST::ArrayAccessExpression             *node )
 {
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   Value left; left.swap( return_value );
 
-  if( !node->coord->invite( this ) ) return false;
+  node->coord->invite( this );
   CountPtr< Array< Value, 1 > > coord;
   swap( coord, return_value_dims );
 
@@ -526,7 +509,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
         }
 
         CallLoc guard( this, node->loc );
-        scope->call( getCallLoc(), getRD()+1, String::Static( ".core.at" ), return_value, 1+Dims, at_args );
+        return_value = scope->call( getCallLoc(), getRD()+1, String::Static( ".core.at" ), 1+Dims, at_args );
         if( !return_value.isOutput() )
         {
           throw ParseException( node->loc )
@@ -534,7 +517,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
             << ", returned " << return_value.getType()
             ;
         }
-        return true;
+        return;
       }
       else
       {
@@ -545,7 +528,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
     }
 
     return_value = array->getValue_v( Dims, coords_int.elements() );
-    return true;
+    return;
   }
   else if( left.isFrame() || left.isNode() )
   {
@@ -574,7 +557,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
     }
 
     return_value = (*value);
-    return true;
+    return;
   }
   else if( left.isOutput() )
   {
@@ -614,7 +597,7 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
     }
 
     return_value = Value( at->getOutput( String::Static( "out" ) ) );
-    return true;
+    return;
   }
   else
   {
@@ -624,38 +607,38 @@ bool InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::UnaryExpression              *node )
+void InterpretingASTVisitor::visit( const AST::UnaryExpression              *node )
 {
   Value args[ 2 ];
 
   args[ 0 ].set( getUOPStr( node->op ) );
 
-  if( !node->arg->invite( this ) ) return false;
+  node->arg->invite( this );
   args[ 1 ].swap( return_value );
 
   CallLoc guard( this, node->loc );
-  return scope->call( getCallLoc(), getRD()+1, String::Static( ".math.mathOp1" ), return_value, 2, args );
+  return_value = scope->call( getCallLoc(), getRD()+1, String::Static( ".math.mathOp1" ), 2, args );
 }
 
-bool InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
+void InterpretingASTVisitor::visit( const AST::BinaryExpression             *node )
 {
   Value args[ 3 ];
 
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   args[ 0 ].swap( return_value );
 
   args[ 1 ].set( getBOPStr( node->op ) );
 
-  if( !node->right->invite( this ) ) return false;
+  node->right->invite( this );
   args[ 2 ].swap( return_value );
 
   CallLoc guard( this, node->loc );
-  return scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), return_value, 3, args );
+  return_value = scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), 3, args );
 }
 
-bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *node )
+void InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *node )
 {
-  if( !node->condition->invite( this ) ) return false;
+  node->condition->invite( this );
   Value condition; condition.swap( return_value );
 
   bool is_true;
@@ -672,21 +655,19 @@ bool InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
 
   if( is_true )
   {
-    if( !node->then_value->invite( this ) ) return false;
-    return true;
+    node->then_value->invite( this );
   }
   else
   {
-    if( !node->else_value->invite( this ) ) return false;
-    return true;
+    node->else_value->invite( this );
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::TypeExpression               *node )
+void InterpretingASTVisitor::visit( const AST::TypeExpression               *node )
 {
   if( !node->of.isNull() )
   {
-    if( !node->of->invite( this ) ) return false;
+    node->of->invite( this );
   }
   else
   {
@@ -695,7 +676,7 @@ bool InterpretingASTVisitor::visit( const AST::TypeExpression               *nod
 
   if( !node->dims.isNull() )
   {
-    if( !node->dims->invite( this ) ) return false;
+    node->dims->invite( this );
   }
   else
   {
@@ -709,11 +690,9 @@ bool InterpretingASTVisitor::visit( const AST::TypeExpression               *nod
       , node->type
       );
   return_value_dims.reset();
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::DimensionsExpression         *node )
+void InterpretingASTVisitor::visit( const AST::DimensionsExpression         *node )
 {
   CountPtr< Array< Value, 1 > > dims( new Array< Value, 1 >( scope->getGC(), index_t( node->dims.size() ) ) );
 
@@ -721,16 +700,15 @@ bool InterpretingASTVisitor::visit( const AST::DimensionsExpression         *nod
   {
     if( !node->dims[ i ].isNull() )
     {
-      if( !node->dims[ i ]->invite( this ) ) return false;
+      node->dims[ i ]->invite( this );
       swap( dims->at( index_t( i ) ), return_value );
     }
   }
 
   swap( return_value_dims, dims );
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
+void InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
   CountPtr< Frame > body = ( node->own_frame ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
   Scope::EnterLeaveGuard guard( scope, body );
@@ -739,14 +717,13 @@ bool InterpretingASTVisitor::visit( const AST::CompoundStatement            *nod
 
   for( index_t i=0; i<n && !return_encountered; ++i )
   {
-    if( !node->statements[ i ]->invite( this ) ) return false;
+    node->statements[ i ]->invite( this );
   }
 
   // do not modify return_value, could have been set by return statement
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *node )
+void InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *node )
 {
   if( !node->ret->type.isFunction() )
   {
@@ -765,7 +742,7 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
     const AST::Expression *const default_value_expr = decl->default_value;
     if( default_value_expr )
     {
-      if( !default_value_expr->invite( this ) ) return false;
+      default_value_expr->invite( this );
       const Value &default_value = return_value;
       decl_args->at( i ) = Function::Arg( identifier, default_value );
     }
@@ -777,13 +754,11 @@ bool InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
 
   Value function( new InterpretingFunction( scope->getGC(), node->loc, scope->getCurr(), node->identifier, decl_args, node->body, node->is_method ) );
 
-  if( !scope->create_unified( node->identifier, function ) ) return false;
-
+  scope->create_unified( node->identifier, function );
   return_value = function;
-  return true;
 }
 
-bool InterpretingASTVisitor::dot_access_impl( Value &left, const String &identifier, Value *&value )
+void InterpretingASTVisitor::dot_access_impl( Value &left, const String &identifier, Value *&value )
 {
   value = 0;
 
@@ -808,13 +783,11 @@ bool InterpretingASTVisitor::dot_access_impl( Value &left, const String &identif
       << "Identifier '" << identifier << "' not found right of '.'"
       ;
   }
-
-  return true;
 }
 
-bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue )
+void InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue )
 {
-  if( !node->value->invite( this ) ) return false;
+  node->value->invite( this );
   Value value; value.swap( return_value );
 
   const Type lvalue_type = lvalue->getType();
@@ -866,30 +839,27 @@ bool InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *no
     args[ 1 ] = Value( String::Static( getBOPStr( bop ) ) );
     args[ 2 ] = value;
 
-    Value new_value;
-    scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), new_value, 3, args );
+    Value new_value = scope->call( getCallLoc(), getRD()+1, String::Static( ".binaryOp" ), 3, args );
 
     save_assign( (*lvalue), new_value );
   }
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
+void InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
 {
   CountPtr< Output > output;
   CountPtr< Input > input;
 
   {
     CallLoc guard( this, node->output->loc );
-    if( !node->output->invite( this ) ) return false;
+    node->output->invite( this );
     Value output_v; output_v.swap( return_value );
     output = toOutput( output_v );
   }
 
   {
     CallLoc guard( this, node->input->loc );
-    if( !node->input->invite( this ) ) return false;
+    node->input->invite( this );
     Value input_v; input_v.swap( return_value );
     if( !input_v.isInput() )
     {
@@ -903,10 +873,9 @@ bool InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
   // output might be null, but that is ok
   CallLoc guard( this, node->loc );
   input->connect( output );
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *node )
+void InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *node )
 {
   const String &identifier = node->identifier;
 
@@ -916,31 +885,27 @@ bool InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *nod
     throw Exception() << "Identifier '" << identifier << "' not found";
   }
 
-  return assign_impl( node, lvalue );
+  assign_impl( node, lvalue );
 }
 
-bool InterpretingASTVisitor::visit( const AST::AssignDotStatement           *node )
+void InterpretingASTVisitor::visit( const AST::AssignDotStatement           *node )
 {
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   Value left; left.swap( return_value );
 
   Value *lvalue = 0;
 
   CallLoc guard( this, node->loc );
-  if( !dot_access_impl( left, node->identifier, lvalue ) )
-  {
-    return false;
-  }
-
-  return assign_impl( node, lvalue );
+  dot_access_impl( left, node->identifier, lvalue );
+  assign_impl( node, lvalue );
 }
 
-bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *node )
+void InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *node )
 {
-  if( !node->left->invite( this ) ) return false;
+  node->left->invite( this );
   Value left; left.swap( return_value );
 
-  if( !node->coord->invite( this ) ) return false;
+  node->coord->invite( this );
   CountPtr< Array< Value, 1 > > coords;
   swap( coords, return_value_dims );
 
@@ -980,10 +945,10 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
 
     // Assign to temporary
     Value lvalue = array->getValue_v( coords_int.size(), coords_int.elements() );
-    if( !assign_impl( node, &lvalue ) ) return false;
+    assign_impl( node, &lvalue );
     // Copy temporary to final location
     array->setValue_v( lvalue, coords_int.size(), coords_int.elements() );
-    return true;
+    return;
   }
   else if( left.isFrame() || left.isNode() )
   {
@@ -1016,7 +981,7 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
     }
 
     // Do assignment
-    return assign_impl( node, lvalue );
+    assign_impl( node, lvalue );
   }
   else
   {
@@ -1026,9 +991,9 @@ bool InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
   }
 }
 
-bool InterpretingASTVisitor::visit( const AST::IfStatement                  *node )
+void InterpretingASTVisitor::visit( const AST::IfStatement                  *node )
 {
-  if( !node->condition->invite( this ) ) return false;
+  node->condition->invite( this );
   Value condition; condition.swap( return_value );
 
   bool condition_is_true;
@@ -1045,25 +1010,22 @@ bool InterpretingASTVisitor::visit( const AST::IfStatement                  *nod
 
   if( condition_is_true )
   {
-    if( !node->then_body->invite( this ) ) return false;
+    node->then_body->invite( this );
   }
   else if( node->else_body )
   {
-    if( !node->else_body->invite( this ) ) return false;
+    node->else_body->invite( this );
   }
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::NOPStatement                 * )
+void InterpretingASTVisitor::visit( const AST::NOPStatement                 * )
 {
   // Do nothing
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *node )
+void InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *node )
 {
-  if( !node->sequence->invite( this ) ) return false;
+  node->sequence->invite( this );
   Value sequence; sequence.swap( return_value );
 
   if( !sequence.isSequence() )
@@ -1088,17 +1050,15 @@ bool InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
   {
     (*for_variable) = i->get();
 
-    if( !node->body->invite( this ) ) return false;
+    node->body->invite( this );
 
     if( return_encountered ) break;
   }
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *node )
+void InterpretingASTVisitor::visit( const AST::ForContainerStatement        *node )
 {
-  if( !node->container->invite( this ) ) return false;
+  node->container->invite( this );
   Value container; container.swap( return_value );
 
   const String &identifier = node->identifier;
@@ -1118,7 +1078,7 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
     {
       (*for_variable) = array->getValue( i );
 
-      if( !node->body->invite( this ) ) return false;
+      node->body->invite( this );
 
       if( return_encountered ) break;
     }
@@ -1131,7 +1091,7 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
     {
       (*for_variable) = i->get().second;
 
-      if( !node->body->invite( this ) ) return false;
+      node->body->invite( this );
 
       if( return_encountered ) break;
     }
@@ -1142,26 +1102,24 @@ bool InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
       << "Invalid type '" << container.getType() << "' for container after 'in'"
       ;
   }
-
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ExpressionStatement        *node )
+void InterpretingASTVisitor::visit( const AST::ExpressionStatement        *node )
 {
-  return node->expr->invite( this );
+  node->expr->invite( this );
 }
 
-bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
+void InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
 {
   const String &identifier = node->identifier;
 
   // Evaluate type expression
   CountPtr< TypeDescr > expected_type;
-  if( !node->type->invite( this ) ) return false;
+  node->type->invite( this );
   swap( expected_type, return_value_type_descr );
 
   // Evaluate initializer value expression
-  if( !node->value->invite( this ) ) return false;
+  node->value->invite( this );
   Value value; value.swap( return_value );
 
   CallLoc guard( this, node->loc );
@@ -1171,13 +1129,12 @@ bool InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   {
     throw CallLocException( getCallLoc() ) << "Could not create variable '" << identifier << "'";
   }
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *node )
+void InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *node )
 {
   CallLoc guard( this, node->loc );
-  if( !node->value->invite( this ) ) return false;
+  node->value->invite( this );
   Value value; value.swap( return_value );
 
   const String &identifier = node->identifier;
@@ -1186,14 +1143,12 @@ bool InterpretingASTVisitor::visit( const AST::VariableConstructionStatement *no
   {
     throw CallLocException( getCallLoc() ) << "Could not create variable '" << identifier << "'";
   }
-  return true;
 }
 
-bool InterpretingASTVisitor::visit( const AST::ReturnStatement              *node )
+void InterpretingASTVisitor::visit( const AST::ReturnStatement              *node )
 {
   node->value->invite( this );
   return_encountered = true;
-  return true;
 }
 
 Value InterpretingASTVisitor::save_cast( const Value &x, Type type )

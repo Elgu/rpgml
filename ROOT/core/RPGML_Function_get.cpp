@@ -41,7 +41,7 @@ const char *Function_get::getName( void ) const
   return "core.get";
 }
 
-bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( n_args != NUM_ARGS ) throw Exception() << "Function get requires " << NUM_ARGS << " arguments.";
   const Value &what  = args[ ARG_WHAT  ];
@@ -57,8 +57,7 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
   if( what_str == "type" )
   {
-    ret = Value( scope->unify( in.getTypeName() ) );
-    return true;
+    return Value( scope->unify( in.getTypeName() ) );
   }
 
   if( in.isOutput() )
@@ -69,22 +68,19 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
     if( what_str == "array_type" )
     {
-      ret = Value( node->getOutput( String::Static( "array_type" ) ) );
-      return true;
+      return Value( node->getOutput( String::Static( "array_type" ) ) );
     }
 
     if( what_str == "dims" )
     {
-      ret = Value( node->getOutput( String::Static( "dims" ) ) );
-      return true;
+      return Value( node->getOutput( String::Static( "dims" ) ) );
     }
 
     if( what_str == "size" )
     {
       const Value *const size = node->getVariable( "size" );
       if( !size ) throw Exception() << "Internal: Could not get 'size' from Node 'Get'.";
-      ret = (*size);
-      return true;
+      return (*size);
     }
 
     throw Exception()
@@ -97,8 +93,7 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
     if( what_str == "array_type" )
     {
-      ret = Value( scope->unify( in_array->getTypeName() ) );
-      return true;
+      return Value( scope->unify( in_array->getTypeName() ) );
     }
 
     const ArrayBase::Size in_size = in_array->getSize();
@@ -106,8 +101,7 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
     if( what_str == "dims" )
     {
-      ret = Value( in_dims );
-      return true;
+      return Value( in_dims );
     }
 
     if( what_str == "size" )
@@ -124,8 +118,7 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
         size_array->at( i ) = 1;
       }
 
-      ret = Value( size_array );
-      return true;
+      return Value( size_array );
     }
 
     throw Exception()
@@ -143,14 +136,12 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
 
     if( what_str == "dims" )
     {
-      ret = Value( int( 0 ) );
-      return true;
+      return Value( int( 0 ) );
     }
 
     if( what_str == "size" )
     {
-      ret = Value( new Array< index_t, 1 >( getGC() ) );
-      return true;
+      return Value( new Array< index_t, 1 >( getGC() ) );
     }
 
     throw Exception()
@@ -158,7 +149,8 @@ bool Function_get::call_impl( const Location *loc, index_t recursion_depth, Scop
       ;
   }
 
-  return true;
+  // Never reached
+  return Value();
 }
 
 CountPtr< Function::Args > Function_get::genDeclArgs( void )

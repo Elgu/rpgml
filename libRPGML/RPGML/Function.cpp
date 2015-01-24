@@ -84,7 +84,7 @@ size_t Function::getFrameSize( void ) const
   return getNumArgs();
 }
 
-bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, const Args *call_args )
+Value Function::call( const Location *loc, index_t recursion_depth, Scope *scope, const Args *call_args )
 {
   Scope::EnterLeaveGuard guard1( scope, getParent() );
   CountPtr< Frame > function_frame = new Frame( scope->getGC(), scope->getCurr() );
@@ -92,17 +92,17 @@ bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope,
 
   setupFunctionFrame( *function_frame, *call_args );
   const index_t n_args = index_t( function_frame->getSize() );
-  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
+  return call_impl( loc, recursion_depth, scope, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
 }
 
-bool Function::call( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function::call( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   Scope::EnterLeaveGuard guard1( scope, getParent() );
   CountPtr< Frame > function_frame = new Frame( scope->getGC(), scope->getCurr() );
   Scope::EnterLeaveGuard guard2( scope, function_frame );
 
   setupFunctionFrame( *function_frame, n_args, args );
-  return call_impl( loc, recursion_depth, scope, ret, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
+  return call_impl( loc, recursion_depth, scope, n_args, ( n_args ? function_frame->getStack( 0 ) : (Value*)0 ) );
 }
 
 void Function::setupFunctionFrame( Frame &frame, const Args &call_args )

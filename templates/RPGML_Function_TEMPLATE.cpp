@@ -52,7 +52,7 @@ void Function_TEMPLATE::gc_getChildren( Children &children ) const
   Base::gc_getChildren( children );
 }
 
-bool Function_TEMPLATE::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_TEMPLATE::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( recursion_depth > MAX_RECURSION_DEPTH )
   {
@@ -69,8 +69,7 @@ bool Function_TEMPLATE::call_impl( const Location *loc, index_t recursion_depth,
     //  throw "Invalid type for Function_TEMPLATE argument 'str'";
   }
 
-  ret = Value( true );
-  return true;
+  return Value( true );
 }
 
 CountPtr< Function::Args > Function_TEMPLATE::genDeclArgs( void )

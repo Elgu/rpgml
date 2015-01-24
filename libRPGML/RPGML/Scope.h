@@ -77,19 +77,17 @@ public:
   const StringData *unify( const char *identifier ) const;
   const StringData *unify( const std::string &identifier ) const;
 
-  bool call(
+  Value call(
       const Location *loc
     , index_t recursion_depth
     , const String &function_identifier
-    , Value &ret
     , const Function::Args *call_args
     );
 
-  bool call(
+  Value call(
       const Location *loc
     , index_t recursion_depth
     , const String &function_identifier
-    , Value &ret
     , const Value &arg0 = Value()
     , const Value &arg1 = Value()
     , const Value &arg2 = Value()
@@ -97,11 +95,10 @@ public:
     , const Value &arg4 = Value()
     );
 
-  bool call(
+  Value call(
       const Location *loc
     , index_t recursion_depth
     , const String &function_identifier
-    , Value &ret
     , index_t n_args
     , const Value *args
     );

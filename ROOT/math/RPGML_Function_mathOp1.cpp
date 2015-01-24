@@ -54,7 +54,7 @@ void Function_mathOp1::gc_getChildren( Children &children ) const
   Base::gc_getChildren( children );
 }
 
-bool Function_mathOp1::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, Value &ret, index_t n_args, const Value *args )
+Value Function_mathOp1::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( recursion_depth > MAX_RECURSION_DEPTH )
   {
@@ -76,21 +76,18 @@ bool Function_mathOp1::call_impl( const Location *loc, index_t recursion_depth, 
     CountPtr< Node > node = scope->createNode( loc, recursion_depth+1, String::Static( ".math.MathOp1" ) );
     node->getParam( "op" )->set( op_v );
     node->getInput( "in" )->connect( in_v.getOutput() );
-    ret = Value( node->getOutput( "out" ) );
-    return true;
+    return Value( node->getOutput( "out" ) );
   }
 
   try
   {
     const MOP1 op = getMOP1( op_v.getString() );
-    ret = mathOp1( op, in_v );
+    return mathOp1( op, in_v );
   }
   catch( const RPGML::Exception &e )
   {
     throw ParseException( loc, e );
   }
-
-  return true;
 }
 
 CountPtr< Function::Args > Function_mathOp1::genDeclArgs( void )
