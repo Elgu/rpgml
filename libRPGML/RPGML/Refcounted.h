@@ -27,11 +27,8 @@
 
 namespace RPGML {
 
-class GarbageCollector;
-
 class Refcounted
 {
-  friend class GarbageCollector;
 public:
   typedef index_t count_t;
 
@@ -58,12 +55,6 @@ public:
   }
 
 private:
-  void deactivate_deletion( void ) const throw()
-  {
-    // That way the next one gets count_t(-1), which is not 0
-    m_count = 0;
-  }
-
   mutable Atomic< count_t > m_count;
 };
 
