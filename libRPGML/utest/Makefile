@@ -16,6 +16,8 @@ vpath %.cc ../RPGML/
 
 OBJECTS=\
 	utest_main.o\
+	Backtrace.o\
+	StringUnifier.o\
 	GarbageCollector.o\
 	Location.o\
 	Value.o\
