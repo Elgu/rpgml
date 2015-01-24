@@ -28,6 +28,7 @@
 #include <RPGML/InterpretingParser.h>
 #include <RPGML/ThreadPool.h>
 #include <RPGML/Guard.h>
+#include <RPGML/make_printable.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -160,7 +161,7 @@ void parse_argv( int argc, char **argv )
   rpgml_argv = new StringArray1D( &gc );
   for( int i = optind; i < argc; ++i )
   {
-    rpgml_argv->push_back( argv[ i ] );
+    rpgml_argv->push_back( from_printable( String::Static( argv[ i ] ) ) );
   }
 }
 
