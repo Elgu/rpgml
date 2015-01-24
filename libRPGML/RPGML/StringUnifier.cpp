@@ -18,6 +18,7 @@
 #include "StringUnifier.h"
 
 #include <iostream>
+#include <vector>
 
 // RPGML_CXXFLAGS =
 // RPGML_LDFLAGS =
