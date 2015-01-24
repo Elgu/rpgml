@@ -348,6 +348,8 @@ private:
   Type m_type;
 };
 
+class GarbageCollector;
+
 CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, const Value &fill_value = Value() );
 
 template< class T > struct CreateValue { static Value doit( const T & ) { throw Exception() << "Cannot use getValue() with custom type"; } };
