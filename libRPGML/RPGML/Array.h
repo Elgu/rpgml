@@ -18,6 +18,7 @@
 #ifndef RPGML_Array_h
 #define RPGML_Array_h
 
+#include "ArrayBase.h"
 #include "GarbageCollector.h"
 #include "Value.h"
 #include "Iterator.h"
@@ -25,7 +26,6 @@
 #include "Type.h"
 #include "Exception.h"
 
-#include <typeinfo>
 #include <ostream>
 
 namespace RPGML {
@@ -46,143 +46,6 @@ CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, 
 
 template< class Element >
 CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value );
-
-class ArrayBase : public Collectable
-{
-  typedef Collectable Base;
-public:
-  //! @brief Array Exception base class
-  EXCEPTION_BASE( Exception );
-
-  //! @brief Exception for when the specified dimensions do not match the Array's
-  class DimensionsMismatch : public Exception
-  {
-  public:
-    typedef Exception Base;
-    DimensionsMismatch( int _specified, int _expected )
-    : specified( _specified )
-    , expected( _expected )
-    {
-      (*this)
-        << "Specified dims (" << specified << ")"
-        << " does not match Array Dims (" << expected << ")"
-        ;
-    }
-    EXCEPTION_BODY( DimensionsMismatch );
-    int specified;
-    int expected;
-  };
-
-  class Coordinates
-  {
-  public:
-    explicit
-    Coordinates( int dims, const index_t *coords )
-    : m_coords( dims > 0 ? coords : 0 )
-    , m_dims( dims )
-    {}
-
-    int            getDims  ( void ) const { return m_dims; }
-    const index_t *getCoords( void ) const { return m_coords; }
-
-    operator const index_t *( void ) const { return getCoords(); }
-    const index_t &operator[]( int d ) const { return getCoords()[ d ]; }
-
-    bool operator==( const Coordinates &other ) const
-    {
-      return
-           getDims() == other.getDims()
-        && std::equal( getCoords(), getCoords() + getDims(), other.getCoords() )
-        ;
-    }
-
-    bool operator!=( const Coordinates &other ) const
-    {
-      return !( (*this) == other );
-    }
-
-  private:
-    const index_t *const m_coords;
-    int m_dims;
-  };
-
-  typedef Coordinates Size;
-
-  class OutOfRange : public Exception
-  {
-  public:
-    typedef Exception Base;
-    explicit
-    OutOfRange( const Size &size, const Coordinates &coords )
-    {
-      (*this)
-        << "Out of range: Size is " << size
-        << ", coordinates are " << coords
-        ;
-    }
-    EXCEPTION_BODY( OutOfRange );
-  };
-
-  explicit
-  ArrayBase( GarbageCollector *_gc )
-  : Base( _gc )
-  {}
-
-  ArrayBase( const ArrayBase &other )
-  : Base( other )
-  {}
-
-  virtual ~ArrayBase( void ) {}
-
-  template< class DataType >
-  DataType *getAs( DataType* &as )
-  {
-    as = dynamic_cast< DataType* >( this );
-    return as;
-  }
-
-  template< class DataType >
-  const DataType *getAs( const DataType* &as ) const
-  {
-    as = dynamic_cast< const DataType* >( this );
-    return as;
-  }
-
-  virtual const std::type_info &getTypeInfo( void ) const = 0;
-
-  virtual ArrayBase &clear( void ) = 0;
-
-  virtual index_t        getDims( void ) const = 0;
-  virtual Type           getType( void ) const = 0;
-  virtual Size           getSize( void ) const = 0;
-  virtual index_t        size   ( void ) const = 0;
-
-  virtual ArrayBase &resize_v( index_t dims, const index_t *new_size ) = 0;
-  virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 ) = 0;
-  virtual ArrayBase &resize( const Size &size ) = 0;
-
-  virtual CountPtr< ArrayBase > clone( void ) const = 0;
-
-  typedef Iterator< Value > ValueIterator;
-  virtual CountPtr< ValueIterator > getValueIterator( void ) const = 0;
-
-  typedef Iterator< Coordinates > CoordinatesIterator;
-  virtual CountPtr< CoordinatesIterator > getCoordinatesIterator( void ) const = 0;
-
-  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const = 0;
-  virtual Value getValue_v( index_t dims, const index_t *x ) const = 0;
-  virtual Value getValue( const Coordinates &x ) const = 0;
-  virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) = 0;
-  virtual void setValue_v( const Value &value, index_t dims, const index_t *x ) = 0;
-  virtual void setValue( const Value &value, const Coordinates &x ) = 0;
-  virtual void fillValue( const Value &value ) = 0;
-  virtual bool isValue( void ) const = 0;
-
-  const char *getTypeName( void ) const
-  {
-    return getType().getTypeName();
-  }
-};
 
 template< class _Element >
 class ArrayElements : public ArrayBase
@@ -252,8 +115,8 @@ public:
     std::fill( m_elements.begin(), m_elements.end(), x );
   }
 
-  virtual reference       at_v( index_t dims, const index_t *x ) = 0;
-  virtual const_reference at_v( index_t dims, const index_t *x ) const = 0;
+  virtual reference       at_v( int dims, const index_t *x ) = 0;
+  virtual const_reference at_v( int dims, const index_t *x ) const = 0;
 
   virtual bool isValue( void ) const { return _isValue( (const Element*)0 ); }
 
@@ -282,7 +145,7 @@ public:
     {
       for( size_t i=0; i<m_elements.size(); ++i )
       {
-        addElement( children, m_elements[ i ] );
+        children << m_elements[ i ];
       }
     }
   }
@@ -315,50 +178,6 @@ protected:
   }
 
 private:
-  static inline
-  void addElement( Children &children, const void *element )
-  {
-//    std::cerr << " addElement (void) T " << std::endl;
-    (void)children;
-    (void)element;
-  }
-
-  static inline
-  void addElement( Children &children, const Collectable *const *element )
-  {
-//    std::cerr << " addElement Collectable* " << std::endl;
-    children.add( *element );
-  }
-
-  static inline
-  void addElement( Children &children, const Collectable *element )
-  {
-//    std::cerr << " addElement Collectable* " << std::endl;
-    children.add( element );
-  }
-
-  template< class T >
-  static inline
-  void addElement( Children &children, const CountPtr< T > *element )
-  {
-//    std::cerr << " addElement CountPtr< T > " << std::endl;
-    if( !element->isNull() ) addElement( children, element->get() );
-  }
-
-  static inline
-  void addElement( Children &children, const Element &element )
-  {
-    addElement( children, &element );
-  }
-
-  static inline
-  void addElement( Children &children, std::vector< bool >::reference element )
-  {
-//    std::cerr << " addElement (bool) T " << std::endl;
-    (void)children;
-    (void)element;
-  }
-
   static inline bool _isValue( const Value* ) { return true; }
   template< class T >
   static inline bool _isValue( const T* ) { return false; }
@@ -379,7 +198,7 @@ public:
   typedef typename Base::const_reverse_iterator const_reverse_iterator;
   typedef typename Base::reference              reference;
   typedef typename Base::const_reference        const_reference;
-  typedef typename Base::ValueIterator          ValueIterator;
+  typedef typename Base::ConstValueIterator     ConstValueIterator;
   typedef typename Base::CoordinatesIterator    CoordinatesIterator;
   typedef typename Base::Children               Children;
   typedef typename Base::Coordinates            Coordinates;
@@ -455,7 +274,7 @@ public:
     return Size( Dims, m_size );
   }
 
-  virtual Array &resize_v( index_t dims, const index_t *new_size )
+  virtual Array &resize_v( int dims, const index_t *new_size )
   {
     if( dims != Dims )
     {
@@ -519,7 +338,7 @@ public:
     return true;
   }
 
-  bool inRange_v( index_t dims, const index_t *x ) const
+  bool inRange_v( int dims, const index_t *x ) const
   {
     if( dims != Dims )
     {
@@ -567,7 +386,7 @@ public:
     return pos;
   }
 
-  index_t getPos_v( index_t dims, const index_t *x ) const
+  index_t getPos_v( int dims, const index_t *x ) const
   {
   #ifndef NDEBUG
     if( Dims != dims )
@@ -585,6 +404,8 @@ public:
           ;
       }
     }
+  #else
+    (void)dims;
   #endif
     index_t pos = x[ 0 ];
     for( index_t i=1; i<Dims; ++i )
@@ -599,7 +420,7 @@ public:
     return Base::elements_at( getPos( x, y, z, t ) );
   }
 
-  virtual reference at_v( index_t dims, const index_t *x )
+  virtual reference at_v( int dims, const index_t *x )
   {
     return Base::elements_at( getPos_v( dims, x ) );
   }
@@ -609,7 +430,7 @@ public:
     return Base::elements_at( getPos( x, y, z, t ) );
   }
 
-  virtual const_reference at_v( index_t dims, const index_t *x ) const
+  virtual const_reference at_v( int dims, const index_t *x ) const
   {
     return Base::elements_at( getPos_v( dims, x ) );
   }
@@ -668,9 +489,9 @@ public:
     }
   }
 
-  virtual CountPtr< ValueIterator > getValueIterator( void ) const
+  virtual CountPtr< ConstValueIterator > getConstValueIterator( void ) const
   {
-    return new _ValueIterator( this );
+    return new _ConstValueIterator( this );
   }
 
   virtual CountPtr< CoordinatesIterator > getCoordinatesIterator( void ) const
@@ -682,7 +503,7 @@ public:
   {
     if( inRange( x, y, z, t ) )
     {
-      return CreateValue< Element >::doit( at( x, y, z, t ) );
+      return CreateValue< Element >()( at( x, y, z, t ) );
     }
     else
     {
@@ -691,11 +512,11 @@ public:
     }
   }
 
-  virtual Value getValue_v( index_t dims, const index_t *x ) const
+  virtual Value getValue_v( int dims, const index_t *x ) const
   {
     if( inRange_v( dims, x ) )
     {
-      return CreateValue< Element >::doit( at_v( dims, x ) );
+      return CreateValue< Element >()( at_v( dims, x ) );
     }
     else
     {
@@ -721,7 +542,7 @@ public:
     }
   }
 
-  virtual void setValue_v( const Value &value, index_t dims, const index_t *x )
+  virtual void setValue_v( const Value &value, int dims, const index_t *x )
   {
     if( inRange_v( dims, x ) )
     {
@@ -743,11 +564,11 @@ public:
     Base::fill( value.get< Element >() );
   }
 
-  typedef Iterator< Element& > Elements;
-  typedef Iterator< const Element& > ConstElements;
-  CountPtr< Elements      > getElements( void ) { return new _Elements( this ); }
-  CountPtr< ConstElements > getElements( void ) const { return new _ConstElements( this ); }
-  CountPtr< ConstElements > getElementsConst( void ) const { return getElements(); }
+  typedef RPGML::Iterator< Element& > Iterator;
+  typedef RPGML::Iterator< const Element& > ConstIterator;
+  CountPtr< Iterator      > getIterator( void ) { return new _Iterator( this ); }
+  CountPtr< ConstIterator > getIterator( void ) const { return new _ConstIterator( this ); }
+  CountPtr< ConstIterator > getConstIterator( void ) const { return getIterator(); }
 
 private:
   reference _elements_at( index_t i )
@@ -760,55 +581,55 @@ private:
     return Base::elements_at( i );
   }
 
-  class _Elements;
-  class _ConstElements;
+  class _Iterator;
+  class _ConstIterator;
   friend class _Children;
-  friend class _Elements;
-  friend class _ConstElements;
+  friend class _Iterator;
+  friend class _ConstIterator;
 
-  class _ConstElements : public ConstElements
+  class _ConstIterator : public ConstIterator
   {
   public:
-    _ConstElements( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_ConstElements( void ) {}
+    _ConstIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
+    virtual ~_ConstIterator( void ) {}
 
     virtual bool done( void ) { return ( m_i >= m_array->size() ); }
     virtual void next( void ) { ++m_i; }
     virtual const Element &get( void ) { return m_array->_elements_at( m_i ); }
-    virtual CountPtr< ConstElements > clone( void ) const { return new _ConstElements( *this ); }
+    virtual CountPtr< ConstIterator > clone( void ) const { return new _ConstIterator( *this ); }
 
   private:
     CountPtr< const Array > m_array;
     index_t m_i;
   };
 
-  class _Elements : public Elements
+  class _Iterator : public Iterator
   {
   public:
-    _Elements( Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_Elements( void ) {}
+    _Iterator( Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
+    virtual ~_Iterator( void ) {}
 
     virtual bool done( void ) { return ( m_i >= m_array->size() ); }
     virtual void next( void ) { ++m_i; }
     virtual Element &get( void ) { return m_array->_elements_at( m_i ); }
-    virtual CountPtr< Elements > clone( void ) const { return new _Elements( *this ); }
+    virtual CountPtr< Iterator > clone( void ) const { return new _Iterator( *this ); }
 
   private:
     CountPtr< Array > m_array;
     index_t m_i;
   };
 
-  class _ValueIterator : public ValueIterator
+  class _ConstValueIterator : public ConstValueIterator
   {
   public:
     explicit
-    _ValueIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_ValueIterator( void ) {}
+    _ConstValueIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
+    virtual ~_ConstValueIterator( void ) {}
 
     virtual bool done( void ) { return ( m_i >= m_array->size() ); }
     virtual void next( void ) { ++m_i; }
-    virtual Value get( void ) { return CreateValue< Element >::doit( m_array->_elements_at( m_i ) ); }
-    virtual CountPtr< ValueIterator > clone( void ) const { return new _ValueIterator( *this ); }
+    virtual Value get( void ) { return CreateValue< Element >()( m_array->_elements_at( m_i ) ); }
+    virtual CountPtr< ConstValueIterator > clone( void ) const { return new _ConstValueIterator( *this ); }
 
   private:
     CountPtr< const Array > m_array;
