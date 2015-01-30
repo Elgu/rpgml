@@ -12,7 +12,6 @@ CFLAGS=\
 	-Wformat\
 	-Winit-self\
 	-Wuninitialized\
-	-Wsuggest-attribute=pure\
 	-Wsuggest-attribute=const\
 	-Wshadow\
 	-Wwrite-strings\
@@ -25,6 +24,7 @@ CFLAGS=\
 	-DDEBUG\
 
 #	-Wsuggest-attribute=noreturn\
+#	-Wsuggest-attribute=pure\
 
 CXXFLAGS=$(CFLAGS)
 
