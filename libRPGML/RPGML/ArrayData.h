@@ -173,6 +173,12 @@ public:
     , m_b( b )
     {}
 
+    void swap( pointer &other )
+    {
+      std::swap( m_p, other.m_p );
+      std::swap( m_b, other.m_b );
+    }
+
     typedef SaveBool::bool_type bool_type;
     operator bool_type( void ) const { return SaveBool()( m_p || m_b ); }
 
@@ -285,6 +291,12 @@ public:
     : m_p( p )
     , m_b( b )
     {}
+
+    void swap( const_pointer &other )
+    {
+      std::swap( m_p, other.m_p );
+      std::swap( m_b, other.m_b );
+    }
 
     typedef SaveBool::bool_type bool_type;
     operator bool_type( void ) const { return SaveBool()( bool( m_p || m_b ) ); }
@@ -497,6 +509,11 @@ public:
     return m_elements.begin() + pos;
   }
 
+  index_t capacity( void ) const
+  {
+    return m_elements.size();
+  }
+
   ArrayBase::Size getSize( void ) const
   {
     return ArrayBase::Size( m_dims, m_size );
@@ -542,12 +559,12 @@ namespace std {
 
 std::ostream &operator<<( std::ostream &o, const RPGML::ArrayContainer< bool >::const_pointer &p )
 {
-  o << p.getP() << ":" << int( p.getB() );
+  o << p.getP() << "." << int( p.getB() );
 }
 
 std::ostream &operator<<( std::ostream &o, const RPGML::ArrayContainer< bool >::pointer &p )
 {
-  o << p.getP() << ":" << int( p.getB() );
+  o << p.getP() << "." << int( p.getB() );
 }
 
 template<>
@@ -569,6 +586,16 @@ struct iterator_traits< RPGML::ArrayContainer< bool >::const_pointer >
   typedef RPGML::ArrayContainer< bool >::const_reference const_reference;
   typedef ptrdiff_t                                      difference_tpe;
 };
+
+void swap( RPGML::ArrayContainer< bool >::pointer &x1, RPGML::ArrayContainer< bool >::pointer &x2 )
+{
+  x1.swap( x2 );
+}
+
+void swap( RPGML::ArrayContainer< bool >::const_pointer &x1, RPGML::ArrayContainer< bool >::const_pointer &x2 )
+{
+  x1.swap( x2 );
+}
 
 } // namespace std
 
