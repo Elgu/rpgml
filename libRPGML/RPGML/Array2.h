@@ -141,6 +141,26 @@ public:
   virtual ~Array2( void )
   {}
 
+  void swap( RPGML::Array2< Element > &other )
+  {
+    const int dims = m_dims;
+    if( dims != other.m_dims )
+    {
+      throw Exception()
+        << "Cannot swap an Array2 with another one with different dimensions"
+        << ", this has " << dims
+        << ", the other has " << other.m_dims
+        ;
+    }
+    m_elements_data.swap( other.m_elements_data );
+    std::swap( m_element0, other.m_element0 );
+    for( int d=0; d<dims; ++d )
+    {
+      std::swap( m_size[ d ], other.m_size[ d ] );
+      std::swap( m_stride[ d ], other.m_stride[ d ] );
+    }
+  }
+
   virtual void gc_clear( void )
   {
     m_element0 = pointer();
@@ -516,6 +536,39 @@ public:
     return ret;
   }
 
+  index_t capacity( void ) const
+  {
+    if( !m_elements_data.isNull() )
+    {
+      return m_elements_data->capacity();
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  void push_back( const Element &x )
+  {
+    if( m_dims != 1 ) throw Exception() << "push_back() only makes sense on 1D-Arrays, is " << m_dims;
+    const index_t curr_size = m_size[ 0 ];
+    if( capacity() < curr_size+1 )
+    {
+      reserve( curr_size*2 );
+    }
+    ++m_size[ 0 ];
+    at( curr_size ) = x;
+  }
+
+  void pop_back( void )
+  {
+    if( m_dims != 1 ) throw Exception() << "pop_back() only makes sense on 1D-Arrays, is " << m_dims;
+    if( m_size[ 0 ] > 0 )
+    {
+      --m_size[ 0 ];
+    }
+  }
+
   bool isDense( void ) const
   {
     if( m_element0 == pointer() ) return true;
@@ -542,25 +595,6 @@ public:
   pointer elements( void )
   {
     return m_element0;
-  }
-
-  void swap( Array2 &other )
-  {
-    if( m_dims != other.m_dims )
-    {
-      throw Exception()
-        << "Cannot swap Arrays of different dimensions"
-        << ": This is " << m_dims
-        << ", other is " << other.m_dims
-        ;
-    }
-    m_elements_data.swap( other.m_elements_data );
-    std::swap( m_element0, other.m_element0 );
-    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
-    {
-      std::swap( m_size[ d ], other.m_size[ d ] );
-      std::swap( m_stride[ d ], other.m_stride[ d ] );
-    }
   }
 
   ArrayBase &resize( index_t sx=1, index_t sy=1, index_t sz=1, index_t st=1 )
@@ -955,6 +989,8 @@ public:
     return setROI( x.getDims(), x.getCoords(), s.getCoords() );
   }
 
+  Array2 &mirror( int d ) { return setMirrored( d ); }
+
   Array2 &setMirrored( int d )
   {
     if( d < 0 || d >= m_dims )
@@ -970,6 +1006,8 @@ public:
 
     return (*this);
   }
+
+  Array2 &sparse( int d, stride_t nth, index_t offset=0 ) { return setSparse( d, nth, offset ); }
 
   Array2 &setSparse( int d, stride_t nth, index_t offset=0 )
   {
@@ -1000,6 +1038,8 @@ public:
 
     return (*this);
   }
+
+  Array2 &rotate( int times90deg, int d1=0, int d2=1 ) { return setRotated( times90deg, d1, d2 ); }
 
   //! Rotates in screen-coordinates (d1=0("x"), d2=1("y")) clock-wise, cartesian anti-clockwise
   Array2 &setRotated( int times90deg, int d1=0, int d2=1 )
@@ -1266,8 +1306,90 @@ private:
   const int m_dims;
 };
 
+template< class Element >
+CountPtr< ArrayElements< Element > > new_Array2( GarbageCollector *gc, int dims, const Element *fill_value=0 )
+{
+  if( dims < 0 || dims > 4 )
+  {
+    throw ArrayBase::Exception()
+      << "Only dimensions for 0 to 4 supported, is " << dims
+      ;
+  }
+  CountPtr< Array2< Element > > ret = new Array2< Element >( gc, dims );
+  if( fill_value ) ret->fill( *fill_value );
+  return ret;
+}
+
+template< class Element >
+CountPtr< Array2< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value )
+{
+  const Type element_type( TypeOf< Element >::E );
+  if( element_type.isOther() )
+  {
+    throw ArrayBase::Exception() << "Cannot create an Array of 'other' custom type";
+  }
+
+  if( !fill_value.isNil() )
+  {
+    const Value fill_value_cast = fill_value.save_cast( element_type );
+    const Element fill_element = fill_value_cast.get< Element >();
+    return new_Array2< Element >( gc, dims, &fill_element );
+  }
+  return new_Array2< Element >( gc, dims );
+}
+
+typedef Array2< bool                       >     BoolArray;
+typedef Array2< uint8_t                    >    UInt8Array;
+typedef Array2< int8_t                     >     Int8Array;
+typedef Array2< uint16_t                   >   UInt16Array;
+typedef Array2< int16_t                    >    Int16Array;
+typedef Array2< uint32_t                   >   UInt32Array;
+typedef Array2< int32_t                    >    Int32Array;
+typedef Array2< uint64_t                   >   UInt64Array;
+typedef Array2< int64_t                    >    Int64Array;
+typedef Array2< float                      >    FloatArray;
+typedef Array2< double                     >   DoubleArray;
+typedef Array2< String                     >   StringArray;
+typedef Array2< CountPtr< Frame          > >    FrameArray;
+typedef Array2< CountPtr< Function       > > FunctionArray;
+typedef Array2< CountPtr< Node           > >     NodeArray;
+typedef Array2< CountPtr< Output         > >   OutputArray;
+typedef Array2< CountPtr< Input          > >    InputArray;
+typedef Array2< CountPtr< Param          > >    ParamArray;
+typedef Array2< CountPtr< const Sequence > > SequenceArray;
+typedef Array2< CountPtr< ArrayBase      > >    ArrayArray;
+typedef Array2< int                        >      IntArray;
+
+template< class Element >
+struct MakeSigned< Array2< Element > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef Array2< SignedElement > T;
+  static const Type::Enum E = Type::OTHER;
+  static const bool B = true;
+};
+
+template< class Element >
+struct MakeSigned< CountPtr< Array2< Element > > >
+{
+  typedef typename MakeSigned< Element >::T SignedElement;
+  typedef CountPtr< Array2< SignedElement > > T;
+  static const Type::Enum E = Type::ARRAY;
+  static const bool B = true;
+};
 
 } // namespace RPGML
+
+namespace std {
+
+template< class Element >
+inline
+void swap( RPGML::Array2< Element > &x1, RPGML::Array2< Element > &x2 )
+{
+  x1.swap( x2 );
+}
+
+} // namespace std
 
 #endif
 
