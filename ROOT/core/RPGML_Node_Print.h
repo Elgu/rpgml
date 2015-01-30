@@ -23,8 +23,9 @@
 namespace RPGML {
 namespace core {
 
-class Print : public RPGML::Node
+class Print : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

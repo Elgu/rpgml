@@ -27,8 +27,8 @@ namespace math {
 
 class MathOp1 : public Node
 {
-public:
   typedef Node Base;
+public:
   EXCEPTION_BASE( Exception );
 
   MathOp1( GarbageCollector *gc, const String &identifier, const SharedObject *so );

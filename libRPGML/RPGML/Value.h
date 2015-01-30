@@ -21,6 +21,7 @@
 #include "Type.h"
 #include "String.h"
 #include "Exception.h"
+#include "GarbageCollector.h"
 
 #include <cassert>
 
@@ -348,32 +349,30 @@ private:
   Type m_type;
 };
 
-class GarbageCollector;
-
 CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, const Value &fill_value = Value() );
 
-template< class T > struct CreateValue { static Value doit( const T & ) { throw Exception() << "Cannot use getValue() with custom type"; } };
-template<> struct CreateValue< Value                      >{ static Value doit( const Value                      &x ) { return        x; } };
-template<> struct CreateValue< bool                       >{ static Value doit( const bool                       &x ) { return Value( x ); } };
-template<> struct CreateValue< uint8_t                    >{ static Value doit( const uint8_t                    &x ) { return Value( x ); } };
-template<> struct CreateValue< int8_t                     >{ static Value doit( const int8_t                     &x ) { return Value( x ); } };
-template<> struct CreateValue< uint16_t                   >{ static Value doit( const uint16_t                   &x ) { return Value( x ); } };
-template<> struct CreateValue< int16_t                    >{ static Value doit( const int16_t                    &x ) { return Value( x ); } };
-template<> struct CreateValue< uint32_t                   >{ static Value doit( const uint32_t                   &x ) { return Value( x ); } };
-template<> struct CreateValue< int32_t                    >{ static Value doit( const int32_t                    &x ) { return Value( x ); } };
-template<> struct CreateValue< uint64_t                   >{ static Value doit( const uint64_t                   &x ) { return Value( x ); } };
-template<> struct CreateValue< int64_t                    >{ static Value doit( const int64_t                    &x ) { return Value( x ); } };
-template<> struct CreateValue< float                      >{ static Value doit( const float                      &x ) { return Value( x ); } };
-template<> struct CreateValue< double                     >{ static Value doit( const double                     &x ) { return Value( x ); } };
-template<> struct CreateValue< String                     >{ static Value doit( const String                     &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Frame          > >{ static Value doit( const CountPtr< Frame          > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Function       > >{ static Value doit( const CountPtr< Function       > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Node           > >{ static Value doit( const CountPtr< Node           > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Output         > >{ static Value doit( const CountPtr< Output         > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Input          > >{ static Value doit( const CountPtr< Input          > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< Param          > >{ static Value doit( const CountPtr< Param          > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< const Sequence > >{ static Value doit( const CountPtr< const Sequence > &x ) { return Value( x ); } };
-template<> struct CreateValue< CountPtr< ArrayBase      > >{ static Value doit( const CountPtr< ArrayBase      > &x ) { return Value( x ); } };
+template< class T > struct CreateValue { Value operator()( const T & ) const { throw Exception() << "Cannot use getValue() with custom type"; } };
+template<> struct CreateValue< Value                      >{ Value operator()( const Value                      &x ) const { return        x; } };
+template<> struct CreateValue< bool                       >{ Value operator()( const bool                       &x ) const { return Value( x ); } };
+template<> struct CreateValue< uint8_t                    >{ Value operator()( const uint8_t                    &x ) const { return Value( x ); } };
+template<> struct CreateValue< int8_t                     >{ Value operator()( const int8_t                     &x ) const { return Value( x ); } };
+template<> struct CreateValue< uint16_t                   >{ Value operator()( const uint16_t                   &x ) const { return Value( x ); } };
+template<> struct CreateValue< int16_t                    >{ Value operator()( const int16_t                    &x ) const { return Value( x ); } };
+template<> struct CreateValue< uint32_t                   >{ Value operator()( const uint32_t                   &x ) const { return Value( x ); } };
+template<> struct CreateValue< int32_t                    >{ Value operator()( const int32_t                    &x ) const { return Value( x ); } };
+template<> struct CreateValue< uint64_t                   >{ Value operator()( const uint64_t                   &x ) const { return Value( x ); } };
+template<> struct CreateValue< int64_t                    >{ Value operator()( const int64_t                    &x ) const { return Value( x ); } };
+template<> struct CreateValue< float                      >{ Value operator()( const float                      &x ) const { return Value( x ); } };
+template<> struct CreateValue< double                     >{ Value operator()( const double                     &x ) const { return Value( x ); } };
+template<> struct CreateValue< String                     >{ Value operator()( const String                     &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Frame          > >{ Value operator()( const CountPtr< Frame          > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Function       > >{ Value operator()( const CountPtr< Function       > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Node           > >{ Value operator()( const CountPtr< Node           > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Output         > >{ Value operator()( const CountPtr< Output         > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Input          > >{ Value operator()( const CountPtr< Input          > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< Param          > >{ Value operator()( const CountPtr< Param          > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< const Sequence > >{ Value operator()( const CountPtr< const Sequence > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< ArrayBase      > >{ Value operator()( const CountPtr< ArrayBase      > &x ) const { return Value( x ); } };
 
 typedef ArrayElements< Value > ValueArrayElements;
 typedef Array< Value, 0 > ValueArray0D;
@@ -381,6 +380,13 @@ typedef Array< Value, 1 > ValueArray1D;
 typedef Array< Value, 2 > ValueArray2D;
 typedef Array< Value, 3 > ValueArray3D;
 typedef Array< Value, 4 > ValueArray4D;
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const Value &e )
+{
+  children.add( e.getCollectable() );
+  return children;
+}
 
 } // namespace RPGML
 

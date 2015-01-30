@@ -156,8 +156,8 @@ class Node;
 
 class Port : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
   Port( GarbageCollector *gc, Node *parent );
   virtual ~Port( void );
 
@@ -176,8 +176,8 @@ private:
 
 class Input : public Port
 {
-public:
   typedef Port Base;
+public:
   Input( GarbageCollector *gc, Node *parent );
   virtual ~Input( void );
 
@@ -202,8 +202,8 @@ private:
 
 class Output : public Port
 {
-public:
   typedef Port Base;
+public:
   Output( GarbageCollector *gc, Node *parent );
   virtual ~Output( void );
 
@@ -264,6 +264,7 @@ private:
 
 class Param : public Collectable
 {
+  typedef Collectable Base;
 public:
   explicit
   Param( GarbageCollector *_gc , const String &identifier );
@@ -308,8 +309,8 @@ private:
 
 class Node : public Frame
 {
-public:
   typedef Frame Base;
+public:
   EXCEPTION_BASE( Exception );
 
   EXCEPTION_DERIVED( ExitRequest   , Exception );

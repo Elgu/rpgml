@@ -49,7 +49,7 @@ public:
 
   virtual void gc_getChildren( Children &children ) const
   {
-    children.add( interpreter );
+    children << interpreter;
   }
 
   virtual void append( CountPtr< Statement > statement )

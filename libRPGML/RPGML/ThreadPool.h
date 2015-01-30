@@ -27,8 +27,8 @@ namespace RPGML {
 
 class ThreadPool : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
   EXCEPTION_BASE( Exception );
 
   explicit
@@ -56,6 +56,7 @@ private:
 
   class Worker : public Thread
   {
+    typedef Thread Base;
   public:
     explicit
     Worker( GarbageCollector *_gc, JobQueue *queue );

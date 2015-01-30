@@ -125,7 +125,7 @@ void NodeCreator::gc_clear( void )
 
 void NodeCreator::gc_getChildren( Children &children ) const
 {
-  Function::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
 const char *NodeCreator::getName( void ) const
@@ -693,12 +693,11 @@ void Frame::gc_clear( void )
 
 void Frame::gc_getChildren( Children &children ) const
 {
-  children.add( m_parent );
+  children << m_parent;
 
   for( size_t i( 0 ), end( m_values.size() ); i<end; ++i )
   {
-    const Value &value = m_values[ i ];
-    children.add( value.getCollectable() );
+    children << m_values[ i ];
   }
 }
 

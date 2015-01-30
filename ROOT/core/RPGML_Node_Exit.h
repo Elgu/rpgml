@@ -25,6 +25,7 @@ namespace core {
 
 class Exit : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

@@ -138,7 +138,7 @@ void NamedWindow::gc_clear( void )
 
 void NamedWindow::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
  } // namespace cv {

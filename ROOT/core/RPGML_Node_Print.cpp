@@ -94,7 +94,7 @@ void Print::gc_clear( void )
 
 void Print::gc_getChildren( Children &children ) const
 {
-  RPGML::Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
 } // namespace core

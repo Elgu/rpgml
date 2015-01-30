@@ -25,6 +25,7 @@ namespace core {
 
 class At : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

@@ -42,10 +42,10 @@ OBJECTS=\
 	ParseException.o\
 	WaitLock.o\
 	rpgml.tab.o\
-	utest_Exception.o\
+	utest_Array.o\
+#	utest_Exception.o\
 	utest_Type.o\
 	utest_String.o\
-	utest_Array.o\
 	utest_GarbageCollector.o\
 	utest_Thread.o\
 	utest_JobQueue.o\

@@ -25,6 +25,7 @@ namespace RPGML {
 
 class BinaryOp : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

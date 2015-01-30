@@ -359,7 +359,7 @@ void Graph::gc_clear( void )
 void Graph::gc_getChildren( Children &children ) const
 {
   m_nodes.gc_getChildren( children );
-  children.add( m_end_node );
+  children << m_end_node;
 }
 
 Graph::Error Graph::error( void )
@@ -591,8 +591,10 @@ void Graph::GraphNode::gc_getChildren( Children &children ) const
 {
   predecessors.gc_getChildren( children );
   successors.gc_getChildren( children );
-  children.add( graph );
-  children.add( node );
+  children
+   << graph
+   << node
+   ;
 }
 
 size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )

@@ -25,6 +25,7 @@ namespace core {
 
 class Constant : public Node
 {
+  typedef Node Base;
 public:
   Constant( GarbageCollector *gc, const String &identifier, const SharedObject *so );
   virtual ~Constant( void );

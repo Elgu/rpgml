@@ -26,8 +26,8 @@ namespace math {
 
 class Function_mathOp1 : public Function
 {
-public:
   typedef Function Base;
+public:
   EXCEPTION_BASE( Exception );
 
   Function_mathOp1( GarbageCollector *gc, Frame *parent, const SharedObject *so=0 );

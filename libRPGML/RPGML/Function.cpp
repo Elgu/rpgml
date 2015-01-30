@@ -232,18 +232,13 @@ void Function::gc_clear( void )
 
 void Function::gc_getChildren( Children &children ) const
 {
-  children.add( m_parent.get() );
+  children << m_parent;
 
   if( !m_decl.isNull() )
   {
     for( size_t i( 0 ), end( m_decl->size() ); i<end; ++i )
     {
-      const Value &value = m_decl->at( i ).getValue();
-
-      if( value.isCollectable() )
-      {
-        children.add( value.getCollectable() );
-      }
+      children << m_decl->at( i ).getValue();
     }
   }
 }

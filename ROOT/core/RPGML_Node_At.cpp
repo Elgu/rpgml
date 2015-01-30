@@ -236,7 +236,7 @@ void At::gc_clear( void )
 
 void At::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
 } // namespace core

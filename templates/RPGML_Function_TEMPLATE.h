@@ -25,8 +25,8 @@ ADDITIONAL_NAMESPACES_BEGIN
 
 class Function_TEMPLATE : public Function
 {
-public:
   typedef Function Base;
+public:
   EXCEPTION_BASE( Exception );
 
   Function_TEMPLATE( GarbageCollector *gc, Frame *parent, const SharedObject *so=0 );

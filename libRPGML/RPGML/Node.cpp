@@ -57,7 +57,7 @@ void Port::gc_clear( void )
 
 void Port::gc_getChildren( Children &children ) const
 {
-  children.add( m_parent );
+  children << m_parent;
 }
 
 Input::Input( GarbageCollector *_gc, Node *parent )

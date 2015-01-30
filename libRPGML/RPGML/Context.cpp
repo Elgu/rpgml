@@ -67,8 +67,8 @@ void Context::gc_clear( void )
 
 void Context::gc_getChildren( Children &children ) const
 {
-  children.add( m_root );
-//  children.add( m_unifier );
+  children << m_root;
+  children << m_unifier;
 }
 
 Context &Context::setSearchPath( const String &searchPath )

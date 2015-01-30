@@ -34,8 +34,8 @@ class StringUnifier;
 //! Do not allocate on the stack
 class Context : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
   explicit
   Context( GarbageCollector *_gc, StringUnifier *unifier, const String &searchPath = String::Static( "." ) );
 

@@ -153,7 +153,7 @@ void Image::gc_clear( void )
 
 void Image::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
  } // namespace SDL {

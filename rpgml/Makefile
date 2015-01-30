@@ -4,9 +4,23 @@ include ../Makefile.rules
 
 .PHONY: all clean undepend
 
+#%.source: %.executable
+#	@echo Getting SOURCE from $<
+#	@grep SOURCE $< | sed "s/^.*SOURCE.*=//" > $@
+#
+#%.objects: %.source
+#	@echo $(addsuffix .o, $(basename $(shell cat $<) ) ) > $@
+#
+#%.prequisites: %.objects
+#
+#%: %.prequisites $(shell cat $*.objects)
+#	g++ -o $@ $(shell cat $*.objects) $(LDFLAGS) $(shell cat $(addsuffix .LDFLAGS, $(shell cat $*.objects) ) )
+
+
 all:\
  	rpgml\
 	prettyprinter\
+	performance_Array\
 
 rpgml_SOURCE=\
 	main.cpp\
@@ -26,9 +40,19 @@ prettyprinter_LDFLAGS_files=$(addsuffix .LDFLAGS, $(prettyprinter_OBJECTS) )
 prettyprinter: $(prettyprinter_OBJECTS) $(prettyprinter_LDFLAGS_files)
 	g++ -o $@ $(prettyprinter_OBJECTS) $(LDFLAGS) -L. -lRPGML $(shell cat $(prettyprinter_LDFLAGS_files))
 
+performance_Array_SOURCE=\
+	performance_Array.cpp\
+
+performance_Array_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(performance_Array_SOURCE)))
+performance_Array_LDFLAGS_files=$(addsuffix .LDFLAGS, $(performance_Array_OBJECTS) )
+
+performance_Array: $(performance_Array_OBJECTS) $(performance_Array_LDFLAGS_files)
+	g++ -o $@ $(performance_Array_OBJECTS) $(LDFLAGS) -L. -lRPGML $(shell cat $(performance_Array_LDFLAGS_files))
+
 SOURCE=\
 	$(rpgml_SOURCE)\
 	$(prettyprinter_SOURCE)\
+	$(performance_Array_SOURCE)\
 
 DEP_FILES=$(foreach s, $(SOURCE), .$(s).dep)
 

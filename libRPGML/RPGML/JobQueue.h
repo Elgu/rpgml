@@ -30,6 +30,7 @@ namespace RPGML {
 
 class JobQueue : public Collectable
 {
+  typedef Collectable Base;
 public:
   explicit
   JobQueue( GarbageCollector *_gc );
@@ -41,6 +42,7 @@ public:
 
   class Job : public Collectable
   {
+    typedef Collectable Base;
   public:
     explicit
     Job( GarbageCollector *_gc, size_t priority = 0 );
@@ -99,6 +101,7 @@ public:
 
   class EndJob : public Job
   {
+    typedef Job Base;
   public:
     EndJob( GarbageCollector *_gc );
     virtual ~EndJob( void );
@@ -120,6 +123,7 @@ private:
 
   class Queue : public Collectable
   {
+    typedef Collectable Base;
   public:
     Queue( GarbageCollector *_gc = 0 );
     virtual ~Queue( void );

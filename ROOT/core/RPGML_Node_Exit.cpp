@@ -83,7 +83,7 @@ void Exit::gc_clear( void )
 
 void Exit::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
 } // namespace core

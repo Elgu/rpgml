@@ -47,8 +47,10 @@ void ThreadPool::gc_clear( void )
 
 void ThreadPool::gc_getChildren( Children &children ) const
 {
-  children.add( m_workers );
-  children.add( m_queue );
+  children
+    << m_workers
+    << m_queue
+    ;
 }
 
 void ThreadPool::clear( void )

@@ -26,8 +26,8 @@ namespace cv {
 
 class VideoCapture : public Node
 {
-public:
   typedef Node Base;
+public:
   EXCEPTION_BASE( Exception );
 
   VideoCapture( GarbageCollector *gc, const String &identifier, const SharedObject *so );

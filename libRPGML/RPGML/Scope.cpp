@@ -73,8 +73,10 @@ void Scope::gc_clear( void )
 
 void Scope::gc_getChildren( Children &children ) const
 {
-  children.add( m_context );
-  children.add( m_curr );
+  children
+    << m_context
+    << m_curr
+    ;
 }
 
 GarbageCollector *Scope::getGC( void ) const
@@ -414,8 +416,8 @@ CountPtr< Output > Scope::toOutput(
 
       InputArrayElements::iterator in_iter = in->begin();
       for(
-          CountPtr< ArrayBase::ValueIterator >
-          array_iter = array_base->getValueIterator()
+          CountPtr< ArrayBase::ConstValueIterator >
+          array_iter = array_base->getConstValueIterator()
         ; !array_iter->done()
         ; array_iter->next(), ++in_iter
         )

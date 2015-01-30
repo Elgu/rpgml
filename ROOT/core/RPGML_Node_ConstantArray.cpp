@@ -270,7 +270,7 @@ void ConstantArray::gc_clear( void )
 void ConstantArray::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_array );
+  children << m_array;
 }
 
 } // namespace core

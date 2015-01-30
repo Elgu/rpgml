@@ -29,8 +29,8 @@ namespace RPGML {
 //! @brief Thread base class, overload run() or start in an object's method
 class Thread : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
   //! @brief Thread exception base class
   EXCEPTION_BASE( Exception );
   //! @brief Exception for when the thread is already running, but start() is called

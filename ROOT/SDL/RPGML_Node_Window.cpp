@@ -189,7 +189,7 @@ void Window::Update::gc_clear( void )
 void Window::Update::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_self );
+  children << m_self;
 }
 
 size_t Window::update( void )

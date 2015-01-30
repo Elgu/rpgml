@@ -36,6 +36,7 @@ class StringUnifier;
 
 class Scope : public Collectable
 {
+  typedef Collectable Base;
 public:
   EXCEPTION_BASE( Exception );
 

@@ -108,10 +108,10 @@ public:
   public:
     Children( void ) {}
     ~Children( void ) {}
-    void add( Collectable *c ) { if( c ) m_children.push_back( c ); }
+    void add( const void * ) {}
     void add( const Collectable *c ) { if( c ) m_children.push_back( c ); }
     //! For testing (utest) only
-    bool contains( Collectable *c ) const;
+    bool contains( const Collectable *c ) const;
   private:
     void reserve( size_t n ) { m_children.reserve( n ); }
     size_t size( void ) const { return m_children.size(); }
@@ -144,6 +144,54 @@ static inline bool isCollectable( const void * ) { return false; }
 
 template< class T >
 inline bool isCollectable( const CountPtr< T > * ) { return isCollectable( (const T*)0 ); }
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, Collectable *e )
+{
+  children.add( e );
+  return children;
+}
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const Collectable *e )
+{
+  children.add( e );
+  return children;
+}
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const void * )
+{
+  return children;
+}
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const std::vector< bool >::reference & )
+{
+  return children;
+}
+
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const std::vector< bool >::const_reference & )
+{
+  return children;
+}
+
+template< class T >
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const CountPtr<       T > &e )
+{
+  children.add( e.get() );
+  return children;
+}
+
+template< class T >
+static inline
+Collectable::Children &operator<<( Collectable::Children &children, const CountPtr< const T > &e )
+{
+  children.add( e.get() );
+  return children;
+}
 
 } // namespace RPGML
 

@@ -27,6 +27,7 @@ namespace cv {
 
 class NamedWindow : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

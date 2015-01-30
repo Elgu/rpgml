@@ -139,10 +139,8 @@ size_t JobQueue::Job::done( size_t return_value )
 void JobQueue::Job::gc_clear( void )
 {}
 
-void JobQueue::Job::gc_getChildren( Children &children ) const
-{
-  (void)children;
-}
+void JobQueue::Job::gc_getChildren( Children & ) const
+{}
 
 CountPtr< JobQueue::Job::Token > JobQueue::Job::getToken( void )
 {
@@ -170,7 +168,7 @@ void JobQueue::Job::Token::gc_clear( void )
 
 void JobQueue::Job::Token::gc_getChildren( Children &children ) const
 {
-  children.add( m_job );
+  children << m_job;
 }
 
 size_t JobQueue::Job::Token::wait( void )

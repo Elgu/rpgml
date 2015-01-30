@@ -539,6 +539,11 @@ struct AppropFloat
   static const Type::Enum E = TypeOf< T >::E;
 };
 
+template< class _T > struct RemoveConst { typedef _T T; };
+template< class _T > struct RemoveConst< const _T > { typedef _T T; };
+template< class _T > struct IsConst { static const bool B = false; };
+template< class _T > struct IsConst< const _T > { static const bool B = true; };
+
 template< class T >
 static inline
 Type typeOf( const T & ) { return Type( TypeOf< T >::E  ); }

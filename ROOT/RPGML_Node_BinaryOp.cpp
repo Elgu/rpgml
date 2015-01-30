@@ -558,7 +558,7 @@ void BinaryOp::gc_clear( void )
 
 void BinaryOp::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
 }
 
 

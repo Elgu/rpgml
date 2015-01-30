@@ -31,6 +31,7 @@ namespace Sequence_impl {
   template< class _scalar_t >
   class SequenceFromToStep : public Sequence
   {
+    typedef Sequence Base;
   public:
     typedef _scalar_t scalar_t;
 
@@ -185,7 +186,7 @@ void SequenceValueArray::gc_clear( void )
 
 void SequenceValueArray::gc_getChildren( Children &children ) const
 {
-  children.add( m_array.get() );
+  children << m_array;
 }
 
 CountPtr< Sequence > SequenceValueArray::clone( void ) const
@@ -195,7 +196,7 @@ CountPtr< Sequence > SequenceValueArray::clone( void ) const
 
 CountPtr< Sequence::Iter > SequenceValueArray::getIter( void ) const
 {
-  return m_array->getValueIterator();
+  return m_array->getConstValueIterator();
 }
 
 index_t SequenceValueArray::length( void ) const

@@ -25,8 +25,8 @@ ADDITIONAL_NAMESPACES_BEGIN
 
 class TEMPLATE : public Node
 {
-public:
   typedef Node Base;
+public:
   EXCEPTION_BASE( Exception );
 
   TEMPLATE( GarbageCollector *gc, const String &identifier, const SharedObject *so );

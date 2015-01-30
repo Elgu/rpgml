@@ -272,7 +272,7 @@ Collectable::~Collectable( void )
 #endif
 }
 
-bool Collectable::Children::contains( Collectable *c ) const
+bool Collectable::Children::contains( const Collectable *c ) const
 {
   return ( m_children.end() != std::find( m_children.begin(), m_children.end(), c ) );
 }

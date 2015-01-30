@@ -51,7 +51,7 @@ void Function_needing::gc_clear( void )
 void Function_needing::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_needed );
+  children << m_needed;
 }
 
 Value Function_needing::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )

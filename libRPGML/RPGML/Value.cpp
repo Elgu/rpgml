@@ -1311,9 +1311,9 @@ namespace Value_impl {
 
     typedef ArrayBase::Coordinates X;
     typedef ArrayBase::CoordinatesIterator C;
-    typedef ArrayBase::ValueIterator I;
+    typedef ArrayBase::ConstValueIterator I;
 
-    CountPtr< I > i( array->getValueIterator() );
+    CountPtr< I > i( array->getConstValueIterator() );
     CountPtr< C > c( array->getCoordinatesIterator() );
 
     index_t last_p[ dims ];

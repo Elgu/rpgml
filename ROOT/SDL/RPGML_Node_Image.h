@@ -25,6 +25,7 @@ namespace SDL {
 
 class Image : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

@@ -35,8 +35,8 @@ class JobQueue;
 
 class Graph : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
 
   explicit
   Graph( GarbageCollector *_gc );
@@ -94,6 +94,7 @@ private:
 
   class GraphNode : public JobQueue::Job
   {
+    typedef JobQueue::Job Base;
   public:
     explicit
     GraphNode( GarbageCollector *_gc, Graph *_graph, Node *_node );
