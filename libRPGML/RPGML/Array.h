@@ -930,21 +930,6 @@ void swap( RPGML::Array< Element, Dims > &x1, RPGML::Array< Element, Dims > &x2 
   x1.swap( x2 );
 }
 
-inline
-std::ostream &operator<<( std::ostream &o, const RPGML::ArrayBase::Coordinates &x )
-{
-  const int dims = x.getDims();
-  if( dims < 1 ) return o;
-  o << "[ ";
-  for( int i=0; i<dims; ++i )
-  {
-    if( i > 0 ) o << ", ";
-    o << x[ i ];
-  }
-  o << " ]";
-  return o;
-}
-
 } // namespace std
 
 
