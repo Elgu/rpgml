@@ -43,10 +43,10 @@ void PrettyPrinter::visit( const ThisExpression           * )
 
 void PrettyPrinter::print( const ArrayConstantExpression::SequenceExpressionArray *seq_array )
 {
-  typedef ArrayConstantExpression::SequenceExpressionArray::ConstElements I;
+  typedef ArrayConstantExpression::SequenceExpressionArray::ConstIterator I;
 
   bool first = true;
-  for( CountPtr< I > i( seq_array->getElements() ); !i->done(); i->next() )
+  for( CountPtr< I > i( seq_array->getIterator() ); !i->done(); i->next() )
   {
     if( first )
     {
@@ -98,10 +98,10 @@ void PrettyPrinter::print( const ArrayBase *array_base, int dims )
         ;
     }
 
-    typedef ArrayConstantExpression::ArrayBaseArray::ConstElements I;
+    typedef ArrayConstantExpression::ArrayBaseArray::ConstIterator I;
 
     bool first = true;
-    for( CountPtr< I > i( array_array->getElements() ); !i->done(); i->next() )
+    for( CountPtr< I > i( array_array->getIterator() ); !i->done(); i->next() )
     {
       if( first )
       {

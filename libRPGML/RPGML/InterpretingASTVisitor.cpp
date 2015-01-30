@@ -53,10 +53,12 @@ void InterpretingASTVisitor::gc_clear( void )
 
 void InterpretingASTVisitor::gc_getChildren( Children &children ) const
 {
-  children.add( scope );
-//  children.add( return_value_type_descr );
-  children.add( return_value_dims );
-  children.add( return_value.getCollectable() );
+  children
+    << scope
+    << return_value_type_descr
+    << return_value_dims
+    << return_value
+    ;
 }
 
 void InterpretingASTVisitor::visit( const AST::ConstantExpression           *node )
@@ -193,10 +195,10 @@ void InterpretingASTVisitor::fill_array( const ArrayBase *array, const ArrayBase
 
 //    cerr << "size = " << size << endl;
 
-    typedef AST::ArrayConstantExpression::SequenceExpressionArray::ConstElements E;
+    typedef AST::ArrayConstantExpression::SequenceExpressionArray::ConstIterator E;
     const index_t sizeX = size[ 0 ];
     index_t y = 0;
-    for( CountPtr< E > e( seq_array->getElements() ); !e->done(); e->next(), ++y )
+    for( CountPtr< E > e( seq_array->getIterator() ); !e->done(); e->next(), ++y )
     {
       if( dims > 1 && y >= size[ 1 ] ) goto not_equal_sides;
 
@@ -246,9 +248,9 @@ void InterpretingASTVisitor::fill_array( const ArrayBase *array, const ArrayBase
 //    cerr << "array_array_size " << dim << " = " << array_array_size << ", size = " << size << endl;
     if( array_array_size != size[ dim ] ) goto not_equal_sides;
 
-    typedef AST::ArrayConstantExpression::ArrayBaseArray::ConstElements I;
+    typedef AST::ArrayConstantExpression::ArrayBaseArray::ConstIterator I;
     index_t s = 0;
-    for( CountPtr< I > i( array_array->getElements() ); !i->done(); i->next(), ++s )
+    for( CountPtr< I > i( array_array->getIterator() ); !i->done(); i->next(), ++s )
     {
       fill_array( i->get(), size, dest + s*stride, dim-1 );
     }
