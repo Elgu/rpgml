@@ -18,6 +18,8 @@
 #ifndef RPGML_Backtrace_h
 #define RPGML_Backtrace_h
 
+#include <ostream>
+
 namespace RPGML {
 
 class Backtrace
@@ -26,7 +28,7 @@ public:
   Backtrace( void );
   ~Backtrace( void );
 
-  void print( void ) const;
+  void print( std::ostream &o ) const;
   void copy( Backtrace &dest ) const;
 
 private:
@@ -36,6 +38,17 @@ private:
 };
 
 } // namespace RPGML
+
+namespace std {
+
+static inline
+std::ostream &operator<<( std::ostream &o, const RPGML::Backtrace &backtrace )
+{
+  backtrace.print( o );
+  return o;
+}
+
+} // namespace std
 
 #endif
 
