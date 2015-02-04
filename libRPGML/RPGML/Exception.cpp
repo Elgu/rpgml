@@ -40,11 +40,6 @@ void NOINLINE Exception::breakpoint( void )
   return;
 }
 
-void Exception::print_backtrace( void ) const
-{
-  m_backtrace.print();
-}
-
 Exception::~Exception( void ) throw()
 {}
 
