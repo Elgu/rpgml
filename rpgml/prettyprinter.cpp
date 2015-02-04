@@ -99,8 +99,7 @@ int main( int argc, char **argv )
   }
   catch( const RPGML::Exception &e )
   {
-    e.print_backtrace();
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.getBacktrace() << "\n" << e.what() << std::endl;
     return -1;
   }
   catch( const std::exception &e )

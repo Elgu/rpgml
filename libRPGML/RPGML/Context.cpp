@@ -34,7 +34,7 @@ Context::Context( GarbageCollector *_gc, StringUnifier *unifier, const String &s
 {
   m_root = new Frame( getGC() );
   setSearchPath( searchPath );
-  addGlobal( "@needed", new Array< CountPtr< Node >, 1 >( getGC() ) );
+  addGlobal( "@needed", new Array< CountPtr< Node > >( getGC(), 1 ) );
   addGlobal( "M_E"       , M_E        );
   addGlobal( "M_LOG10E"  , M_LOG10E   );
   addGlobal( "M_LN2"     , M_LN2      );
@@ -160,7 +160,7 @@ CountPtr< Graph > Context::createGraph( void ) const
     throw Exception() << "Found Array '@needed', but is null";
   }
 
-  NodeArray1D *needed_p = 0;
+  NodeArray *needed_p = 0;
   if( !needed_base->getAs( needed_p ) )
   {
     throw Exception()
@@ -170,7 +170,7 @@ CountPtr< Graph > Context::createGraph( void ) const
       ;
   }
 
-  for( NodeArray1D::const_iterator n( needed_p->begin() ), end( needed_p->end() ); n != end; ++n )
+  for( NodeArray::const_iterator n( needed_p->begin() ), end( needed_p->end() ); n != end; ++n )
   {
     Node *const node = n->get();
     if( !node ) continue;

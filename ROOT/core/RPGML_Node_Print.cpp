@@ -39,8 +39,10 @@ const char *Print::getName( void ) const
 template< class T >
 bool Print::tick_scalar( const ArrayBase *in_base )
 {
-  const Array< T, 0 > *in = 0;
+  const Array< T > *in = 0;
   if( !in_base->getAs( in ) ) throw Exception() << "Could not get 'in'";
+
+  if( in->getDims() != 0 ) throw Exception() << "Only printing of 0-dimensional (scalar) data supported at the moment.";
 
   std::cout << (**in);
   return true;

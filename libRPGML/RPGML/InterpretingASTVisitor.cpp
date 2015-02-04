@@ -278,20 +278,7 @@ void InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
 
 //  cerr << "ArrayConstantExpression" << ": determined size " << size << endl ;
 
-  CountPtr< ValueArrayElements > ret;
-
-  switch( node->dims )
-  {
-    case 1: ret = new ValueArray1D( getGC(), size ); break;
-    case 2: ret = new ValueArray2D( getGC(), size ); break;
-    case 3: ret = new ValueArray3D( getGC(), size ); break;
-    case 4: ret = new ValueArray4D( getGC(), size ); break;
-    default:
-      throw Exception()
-        << "Internal: ArrayConstantExpression's dims is supposed to be at least 1 and at most 4"
-        << ", is " << node->dims
-        ;
-  }
+  CountPtr< ValueArray > ret = new ValueArray( getGC(), node->dims, size );
 
   fill_array( array, size, ret->elements(), dims-1 );
 
@@ -325,7 +312,7 @@ void InterpretingASTVisitor::visit( const AST::ExpressionSequenceExpression *nod
 {
   const index_t n = index_t( node->expressions.size() );
 
-  CountPtr< Array< Value, 1 > > array = new Array< Value, 1 >( scope->getGC() );
+  CountPtr< ValueArray > array = new ValueArray( scope->getGC(), 1 );
   array->resize( n );
 
   for( index_t i=0; i<n; ++i )
@@ -472,7 +459,7 @@ void InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
   Value left; left.swap( return_value );
 
   node->coord->invite( this );
-  CountPtr< Array< Value, 1 > > coord;
+  CountPtr< ValueArray > coord;
   swap( coord, return_value_dims );
 
   if( left.isArray() )
@@ -487,7 +474,7 @@ void InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
         ;
     }
 
-    Array< index_t, 1 > coords_int( 0, Dims );
+    vector< index_t > coords_int( Dims );
     for( index_t i=0; i<Dims; ++i )
     {
       const Value &c = coord->at( i );
@@ -529,7 +516,7 @@ void InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
       }
     }
 
-    return_value = array->getValue_v( Dims, coords_int.elements() );
+    return_value = array->getValue_v( Dims, &coords_int[ 0 ] );
     return;
   }
   else if( left.isFrame() || left.isNode() )
@@ -696,7 +683,7 @@ void InterpretingASTVisitor::visit( const AST::TypeExpression               *nod
 
 void InterpretingASTVisitor::visit( const AST::DimensionsExpression         *node )
 {
-  CountPtr< Array< Value, 1 > > dims( new Array< Value, 1 >( scope->getGC(), index_t( node->dims.size() ) ) );
+  CountPtr< ValueArray > dims( new ValueArray( scope->getGC(), 1, index_t( node->dims.size() ) ) );
 
   for( size_t i=0; i<node->dims.size(); ++i )
   {
@@ -908,7 +895,7 @@ void InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
   Value left; left.swap( return_value );
 
   node->coord->invite( this );
-  CountPtr< Array< Value, 1 > > coords;
+  CountPtr< ValueArray > coords;
   swap( coords, return_value_dims );
 
   if( left.isArray() )
@@ -923,7 +910,7 @@ void InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
         ;
     }
 
-    Array< index_t, 1 > coords_int( 0, Dims );
+    vector< index_t > coords_int( Dims );
     for( index_t i=0; i<Dims; ++i )
     {
       const Value &c = coords->at( i );
@@ -946,10 +933,10 @@ void InterpretingASTVisitor::visit( const AST::AssignBracketStatement       *nod
     }
 
     // Assign to temporary
-    Value lvalue = array->getValue_v( coords_int.size(), coords_int.elements() );
+    Value lvalue = array->getValue_v( int( coords_int.size() ), &coords_int[ 0 ] );
     assign_impl( node, &lvalue );
     // Copy temporary to final location
-    array->setValue_v( lvalue, coords_int.size(), coords_int.elements() );
+    array->setValue_v( lvalue, int( coords_int.size() ), &coords_int[ 0 ] );
     return;
   }
   else if( left.isFrame() || left.isNode() )

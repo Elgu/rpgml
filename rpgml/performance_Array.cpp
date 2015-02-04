@@ -1,5 +1,5 @@
 #include <RPGML/Array.h>
-#include <RPGML/Array2.h>
+//#include <RPGML/Array2.h>
 
 #include <cstdlib>
 #include <ctime>
@@ -61,18 +61,18 @@ void compare_random( void )
 {
   GarbageCollector *gc = 0;
   const index_t size[ 4 ] = { 123, 67, 31, 51 };
-  Array< int, Dims > a1( gc, Dims, size );
-  Array2< int > a2( gc, Dims, size );
+//  Array< int, Dims > a1( gc, Dims, size );
+  Array< int > a1( gc, Dims, size );
 
   const uint64_t t1 = getNanoSeconds();
   access_random( a1, Dims );
   const uint64_t t2 = getNanoSeconds();
-  access_random( a2, Dims );
-  const uint64_t t3 = getNanoSeconds();
+//  access_random( a2, Dims );
+//  const uint64_t t3 = getNanoSeconds();
 
   std::cerr
     << "access_random Array < int  , " << Dims << " > took " << double( t2-t1 )/1000000 << "ms" << endl
-    << "access_random Array2< int >( " << Dims << " ) took " << double( t3-t2 )/1000000 << "ms" << endl
+//    << "access_random Array2< int >( " << Dims << " ) took " << double( t3-t2 )/1000000 << "ms" << endl
     ;
 }
 

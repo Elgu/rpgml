@@ -49,7 +49,7 @@ public:
   ArrayContainer( index_t n ) : m_elements( n ) {}
 
   void clear( void ) { m_elements.clear(); }
-  index_t size( void ) const { return m_elements.size(); }
+  index_t size( void ) const { return index_t( m_elements.size() ); }
 
   iterator       begin( void )       { return m_elements.begin(); }
   const_iterator begin( void ) const { return m_elements.begin(); }
@@ -104,8 +104,8 @@ public:
 
     reference &operator=( bool b )
     {
-      const uint8_t mask = ~( 1 << m_b );
-      (*m_p) = ( (*m_p) & mask ) | ( uint8_t( b ) << m_b );
+      const uint8_t mask = uint8_t( ~( 1 << m_b ) );
+      (*m_p) = ( (*m_p) & mask ) | uint8_t( uint8_t( b ) << m_b );
       return (*this);
     }
 
@@ -399,7 +399,7 @@ public:
 
   void clear( void ) { m_elements.clear(); m_size = 0; }
   index_t size( void ) const { return m_size; }
-  index_t capacity( void ) const { return m_elements.size() * 8; }
+  index_t capacity( void ) const { return index_t( m_elements.size() * 8 ); }
 
   iterator       begin( void )       { return iterator( m_elements, 0 ); }
   const_iterator begin( void ) const { return const_iterator( m_elements, 0 ); }
@@ -417,11 +417,13 @@ private:
   index_t m_size;
 };
 
+static inline
 ArrayContainer< bool >::pointer operator+( ptrdiff_t n, const ArrayContainer< bool >::pointer &i )
 {
   return ( i + n );
 }
 
+static inline
 ArrayContainer< bool >::const_pointer operator+( ptrdiff_t n, const ArrayContainer< bool >::const_pointer &i )
 {
   return ( i + n );
@@ -495,7 +497,9 @@ public:
 
   pointer getElement( int dims, const index_t *x )
   {
-    assert( dims == m_dims );
+  #ifndef NDEBUG
+    if( m_dims != dims ) throw ArrayBase::DimensionsMismatch( dims, m_dims );
+  #endif
     index_t pos = 0;
     if( dims > 0 )
     {
@@ -521,7 +525,9 @@ public:
 
   bool getCoords( const_pointer e, int dims, index_t *x ) const
   {
-    assert( dims == m_dims );
+  #ifndef NDEBUG
+    if( m_dims != dims ) throw ArrayBase::DimensionsMismatch( dims, m_dims );
+  #endif
     const const_pointer this_e = m_elements.first();
     if( e < this_e || e >= this_e + m_elements.size() )
     {
@@ -557,14 +563,18 @@ private:
 
 namespace std {
 
+static inline
 std::ostream &operator<<( std::ostream &o, const RPGML::ArrayContainer< bool >::const_pointer &p )
 {
   o << p.getP() << "." << int( p.getB() );
+  return o;
 }
 
+static inline
 std::ostream &operator<<( std::ostream &o, const RPGML::ArrayContainer< bool >::pointer &p )
 {
   o << p.getP() << "." << int( p.getB() );
+  return o;
 }
 
 template<>
@@ -587,11 +597,13 @@ struct iterator_traits< RPGML::ArrayContainer< bool >::const_pointer >
   typedef ptrdiff_t                                      difference_tpe;
 };
 
+static inline
 void swap( RPGML::ArrayContainer< bool >::pointer &x1, RPGML::ArrayContainer< bool >::pointer &x2 )
 {
   x1.swap( x2 );
 }
 
+static inline
 void swap( RPGML::ArrayContainer< bool >::const_pointer &x1, RPGML::ArrayContainer< bool >::const_pointer &x2 )
 {
   x1.swap( x2 );

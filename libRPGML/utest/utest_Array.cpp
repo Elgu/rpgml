@@ -18,7 +18,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <RPGML/Array.h>
-#include <RPGML/Array2.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -39,11 +38,11 @@ class utest_Array : public CppUnit::TestFixture
   CPPUNIT_TEST( test_getAs );
   CPPUNIT_TEST( test_iterator );
   CPPUNIT_TEST( test_getROI );
+  CPPUNIT_TEST( test_random_access_iterator );
   CPPUNIT_TEST( test_reserve );
   CPPUNIT_TEST( test_mirror_sparse_rotate );
   CPPUNIT_TEST( test_BoolContainer );
-  CPPUNIT_TEST( test_Array2_bool );
-
+  CPPUNIT_TEST( test_Array_bool );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -116,21 +115,19 @@ public:
   {
     Collectable *dummy1 = 0;
     ArrayBase *dummy2 = 0;
-    Array< int, 0 > *dummy3 = 0;
-    Array2< int > *dummy4 = 0;
+    Array< int > *dummy4 = 0;
     CPPUNIT_ASSERT_EQUAL( true, isCollectable( dummy1 ) );
     CPPUNIT_ASSERT_EQUAL( true, isCollectable( dummy2 ) );
-    CPPUNIT_ASSERT_EQUAL( true, isCollectable( dummy3 ) );
     CPPUNIT_ASSERT_EQUAL( true, isCollectable( dummy4 ) );
   }
 
   void test_getType( void )
   {
     GarbageCollector *gc = 0;
-    {
-    Array< int, 2 > i2( gc );
-    Array< float, 1 > f1( gc );
-    Array< String, 0 > s0( gc );
+
+    Array< int > i2( gc, 2 );
+    Array< float > f1( gc, 1 );
+    Array< String > s0( gc, 0 );
     CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getDims() );
     CPPUNIT_ASSERT_EQUAL( index_t( 1 ), f1.getDims() );
     CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
@@ -138,27 +135,12 @@ public:
     CPPUNIT_ASSERT_EQUAL( Type::Int(), i2.getType() );
     CPPUNIT_ASSERT_EQUAL( Type::Float(), f1.getType() );
     CPPUNIT_ASSERT_EQUAL( Type::String(), s0.getType() );
-    }
-
-    {
-    Array2< int > i2( gc, 2 );
-    Array2< float > f1( gc, 1 );
-    Array2< String > s0( gc, 0 );
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), f1.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
-
-    CPPUNIT_ASSERT_EQUAL( Type::Int(), i2.getType() );
-    CPPUNIT_ASSERT_EQUAL( Type::Float(), f1.getType() );
-    CPPUNIT_ASSERT_EQUAL( Type::String(), s0.getType() );
-    }
   }
 
   void test_CoordinatesIterator( void )
   {
-    {
     GarbageCollector gc;
-    CountPtr< Array< int, 2 > > a = new Array< int, 2 >( &gc, 2, 3 );
+    CountPtr< Array< int > > a = new Array< int >( &gc, 2, 2, 3 );
 
     CountPtr< ArrayBase::CoordinatesIterator > coord( a->getCoordinatesIterator() );
 
@@ -198,58 +180,12 @@ public:
 
     CPPUNIT_ASSERT_NO_THROW( coord->next() );
     CPPUNIT_ASSERT_EQUAL( true, coord->done() );
-    }
-
-    {
-    GarbageCollector gc;
-    CountPtr< Array2< int > > a = new Array2< int >( &gc, 2, 2, 3 );
-
-    CountPtr< ArrayBase::CoordinatesIterator > coord( a->getCoordinatesIterator() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-
-    CPPUNIT_ASSERT_EQUAL( false, coord->done() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), coord->get()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), coord->get()[ 1 ] );
-
-    CPPUNIT_ASSERT_NO_THROW( coord->next() );
-    CPPUNIT_ASSERT_EQUAL( true, coord->done() );
-    }
   }
 
   void test_resize( void )
   {
     GarbageCollector *gc = 0;
-    {
-    Array< int, 2 > i2( gc );
+    Array< int > i2( gc, 2 );
 
     CPPUNIT_ASSERT_EQUAL( index_t( 0 ), i2.getSize()[ 0 ] );
     CPPUNIT_ASSERT_EQUAL( index_t( 0 ), i2.getSize()[ 1 ] );
@@ -271,32 +207,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( index_t( 23 ), i2.getSize()[ 0 ] );
     CPPUNIT_ASSERT_EQUAL( index_t( 42 ), i2.getSize()[ 1 ] );
     CPPUNIT_ASSERT_EQUAL( index_t( 23*42 ), i2.size() );
-    }
-
-    {
-    Array2< int > i2( gc, 2 );
-
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), i2.getSize()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), i2.getSize()[ 1 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), i2.size() );
-
-    i2.resize( 2, 3 );
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getSize()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 3 ), i2.getSize()[ 1 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 6 ), i2.size() );
-
-    const index_t size[] = { 5, 7 };
-    i2.resize_v( 2, size );
-    CPPUNIT_ASSERT_EQUAL( index_t( 5 ), i2.getSize()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 7 ), i2.getSize()[ 1 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 35 ), i2.size() );
-
-    const index_t size2[] = { 23, 42 };
-    i2.resize( ArrayBase::Size( 2, size2 ) );
-    CPPUNIT_ASSERT_EQUAL( index_t( 23 ), i2.getSize()[ 0 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 42 ), i2.getSize()[ 1 ] );
-    CPPUNIT_ASSERT_EQUAL( index_t( 23*42 ), i2.size() );
-    }
   }
 
   class Marker : public Collectable
@@ -321,65 +231,11 @@ public:
 
   void test_gc( void )
   {
-    {
     GarbageCollector gc;
 
-    typedef Array< CountPtr< ArrayBase >, 1 > root_array_t;
-    typedef Array< CountPtr< Marker >, 1 > marker_array_t;
-    typedef Array< bool, 1 > bool_array_t;
-
-    CountPtr< root_array_t > root( new root_array_t( &gc, 4 ) );
-    CountPtr< marker_array_t > markers( new marker_array_t( &gc, 5 ) );
-    CountPtr< bool_array_t > bool_array( new bool_array_t( &gc, 3 ) );
-
-    bool m0 = false;
-    bool m1 = false;
-    bool m2 = false;
-
-    markers->at( 0 ) = new Marker( &gc, &m0 );
-    markers->at( 1 ) = new Marker( &gc, &m1 );
-    markers->at( 2 ) = new Marker( &gc, &m2 );
-
-    root->at( 1 ) = markers;
-    root->at( 2 ) = markers;
-    root->at( 3 ) = bool_array;
-
-    gc.run();
-    CPPUNIT_ASSERT_EQUAL( false, m0 );
-    CPPUNIT_ASSERT_EQUAL( false, m1 );
-    CPPUNIT_ASSERT_EQUAL( false, m2 );
-
-    markers->at( 1 ).clear();
-    gc.run();
-    CPPUNIT_ASSERT_EQUAL( false, m0 );
-    CPPUNIT_ASSERT_EQUAL( true , m1 );
-    CPPUNIT_ASSERT_EQUAL( false, m2 );
-
-    markers.clear();
-    gc.run();
-    CPPUNIT_ASSERT_EQUAL( false, m0 );
-    CPPUNIT_ASSERT_EQUAL( true , m1 );
-    CPPUNIT_ASSERT_EQUAL( false, m2 );
-
-    root->at( 1 ).clear();
-    gc.run();
-    CPPUNIT_ASSERT_EQUAL( false, m0 );
-    CPPUNIT_ASSERT_EQUAL( true , m1 );
-    CPPUNIT_ASSERT_EQUAL( false, m2 );
-
-    root->at( 2 ).clear();
-    gc.run();
-    CPPUNIT_ASSERT_EQUAL( true, m0 );
-    CPPUNIT_ASSERT_EQUAL( true , m1 );
-    CPPUNIT_ASSERT_EQUAL( true, m2 );
-    }
-
-    {
-    GarbageCollector gc;
-
-    typedef Array2< CountPtr< ArrayBase > > root_array_t;
-    typedef Array2< CountPtr< Marker > > marker_array_t;
-    typedef Array2< int8_t > bool_array_t;
+    typedef Array< CountPtr< ArrayBase > > root_array_t;
+    typedef Array< CountPtr< Marker > > marker_array_t;
+    typedef Array< int8_t > bool_array_t;
 
     CountPtr< root_array_t > root( new root_array_t( &gc, 1, 4 ) );
     CountPtr< marker_array_t > markers( new marker_array_t( &gc, 1, 5 ) );
@@ -425,7 +281,6 @@ public:
     CPPUNIT_ASSERT_EQUAL( true, m0 );
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( true, m2 );
-    }
   }
 
   class Other : public Collectable
@@ -444,62 +299,9 @@ public:
   template< class T >
   void test_getAs_t( void )
   {
-    {
     GarbageCollector gc;
 
-    typedef Array< T, 2 > TArray2D;
-    typedef ArrayElements< T > TArrayElements;
-
-    {
-      CountPtr< TArray2D       > a = new TArray2D( &gc );
-      CountPtr< TArrayElements > a_elements = a.get();
-      CountPtr< ArrayBase      > a_base     = a.get();
-      CountPtr< const TArray2D       > ac          = a.get();
-      CountPtr< const TArrayElements > ac_elements = a.get();
-      CountPtr< const ArrayBase      > ac_base     = a.get();
-
-      {
-        TArray2D *p = 0;
-        CPPUNIT_ASSERT_EQUAL( a.get(), a         ->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a.get(), a_elements->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a.get(), a_base    ->getAs( p ) );
-
-        const TArray2D *pc = 0;
-        CPPUNIT_ASSERT_EQUAL( ac.get(), a         ->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac.get(), a_elements->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac.get(), a_base    ->getAs( pc ) );
-      }
-
-      {
-        TArrayElements *p = 0;
-        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a         ->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a_elements->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a_elements.get(), a_base    ->getAs( p ) );
-
-        const TArrayElements *pc = 0;
-        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a         ->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a_elements->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac_elements.get(), a_base    ->getAs( pc ) );
-      }
-
-      {
-        ArrayBase *p = 0;
-        CPPUNIT_ASSERT_EQUAL( a_base.get(), a         ->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a_base.get(), a_elements->getAs( p ) );
-        CPPUNIT_ASSERT_EQUAL( a_base.get(), a_base    ->getAs( p ) );
-
-        const ArrayBase *pc = 0;
-        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a         ->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a_elements->getAs( pc ) );
-        CPPUNIT_ASSERT_EQUAL( ac_base.get(), a_base    ->getAs( pc ) );
-      }
-    }
-    }
-
-    {
-    GarbageCollector gc;
-
-    typedef Array2< T > TArray;
+    typedef Array< T > TArray;
 
     {
       CountPtr< TArray         > a = new TArray( &gc, 2 );
@@ -527,7 +329,6 @@ public:
         CPPUNIT_ASSERT_EQUAL( ac_base.get(), a_base    ->getAs( pc ) );
       }
     }
-    }
   }
 
   void test_getAs( void )
@@ -543,13 +344,13 @@ public:
     GarbageCollector *gc = 0;
 
     {
-      Array2< int > a( gc, 0 );
+      Array< int > a( gc, 0 );
 
       (*a) = 42;
 
       {
-        Array2< int >::iterator iter = a.begin();
-        Array2< int >::iterator end  = a.end();
+        Array< int >::iterator iter = a.begin();
+        Array< int >::iterator end  = a.end();
 
         CPPUNIT_ASSERT( iter != end );
         CPPUNIT_ASSERT_EQUAL( 42, *iter );
@@ -561,8 +362,8 @@ public:
       }
 
       {
-        Array2< int >::const_iterator iter = a.begin();
-        Array2< int >::const_iterator end  = a.end();
+        Array< int >::const_iterator iter = a.begin();
+        Array< int >::const_iterator end  = a.end();
 
         CPPUNIT_ASSERT( iter != end );
         CPPUNIT_ASSERT_EQUAL( 142, *iter );
@@ -574,7 +375,7 @@ public:
     }
 
     {
-      Array2< int > a( gc, 2, 3, 5 );
+      Array< int > a( gc, 2, 3, 5 );
 
       for( index_t y=0, i=0; y<5; ++y )
       for( index_t x=0     ; x<3; ++x, ++i )
@@ -583,8 +384,8 @@ public:
       }
 
       {
-        Array2< int >::iterator iter = a.begin();
-        Array2< int >::iterator end  = a.end();
+        Array< int >::iterator iter = a.begin();
+        Array< int >::iterator end  = a.end();
 
         for( index_t y=0, i=0; y<5; ++y )
         for( index_t x=0     ; x<3; ++x, ++i, ++iter )
@@ -601,8 +402,8 @@ public:
       }
 
       {
-        Array2< int >::const_iterator iter = a.begin();
-        Array2< int >::const_iterator end  = a.end();
+        Array< int >::const_iterator iter = a.begin();
+        Array< int >::const_iterator end  = a.end();
 
         for( index_t y=0, i=0; y<5; ++y )
         for( index_t x=0     ; x<3; ++x, ++i, ++iter )
@@ -621,10 +422,10 @@ public:
   void test_getROI( void )
   {
     GarbageCollector gc;
-    typedef Array2< int > IntArray2;
+    typedef Array< int > IntArray;
 
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 1, 5 );
+      CountPtr< IntArray > a = new IntArray( &gc, 1, 5 );
 
       for( index_t x=0; x<5; ++x )
       {
@@ -635,14 +436,14 @@ public:
       {
         const index_t x[ 1 ] = { 0 };
         const index_t s[ 1 ] = { 5 };
-        CountPtr< const IntArray2 > roi = static_cast< const IntArray2* >( a.get() )->getROI( 1, x, s );
+        CountPtr< const IntArray > roi = static_cast< const IntArray* >( a.get() )->getROI( 1, x, s );
 
         CPPUNIT_ASSERT_EQUAL( a->getSize(), roi->getSize() );
 
-        IntArray2::const_iterator a_i   = a->begin();
-        IntArray2::const_iterator a_end = a->end();
-        IntArray2::const_iterator roi_i   = roi->begin();
-        IntArray2::const_iterator roi_end = roi->end();
+        IntArray::const_iterator a_i   = a->begin();
+        IntArray::const_iterator a_end = a->end();
+        IntArray::const_iterator roi_i   = roi->begin();
+        IntArray::const_iterator roi_end = roi->end();
 
         CPPUNIT_ASSERT( a_end == roi_end );
 
@@ -656,12 +457,12 @@ public:
       {
         const index_t x[ 1 ] = { 2 };
         const index_t s[ 1 ] = { 2 };
-        CountPtr< IntArray2 > roi = a->getROI( 1, x, s );
+        CountPtr< IntArray > roi = a->getROI( 1, x, s );
 
-        IntArray2::iterator a_i   = a->begin();
-        IntArray2::iterator a_end = a->end();
-        IntArray2::iterator roi_i   = roi->begin();
-        IntArray2::iterator roi_end = roi->end();
+        IntArray::iterator a_i   = a->begin();
+        IntArray::iterator a_end = a->end();
+        IntArray::iterator roi_i   = roi->begin();
+        IntArray::iterator roi_end = roi->end();
 
         // Move a_i to the beginning of the roi
         for( int i=0; i<2; ++i ) { ++a_i; }
@@ -675,7 +476,7 @@ public:
         CPPUNIT_ASSERT( roi_i == roi_end );
         CPPUNIT_ASSERT( a_i == roi_end );
 
-        IntArray2::const_iterator a_j = a->begin();
+        IntArray::const_iterator a_j = a->begin();
         CPPUNIT_ASSERT_EQUAL(   0, *a_j++ ); CPPUNIT_ASSERT( a_j != a_end );
         CPPUNIT_ASSERT_EQUAL(   1, *a_j++ ); CPPUNIT_ASSERT( a_j != a_end );
         CPPUNIT_ASSERT_EQUAL( 102, *a_j++ ); CPPUNIT_ASSERT( a_j != a_end );
@@ -685,7 +486,7 @@ public:
     }
 
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 3, 5 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 3, 5 );
 
       for( index_t y=0; y<5; ++y )
       for( index_t x=0; x<3; ++x )
@@ -697,14 +498,14 @@ public:
       {
         const index_t x[ 2 ] = { 0, 0 };
         const index_t s[ 2 ] = { 3, 5 };
-        CountPtr< const IntArray2 > roi = static_cast< const IntArray2* >( a.get() )->getROI( 2, x, s );
+        CountPtr< const IntArray > roi = static_cast< const IntArray* >( a.get() )->getROI( 2, x, s );
 
         CPPUNIT_ASSERT_EQUAL( a->getSize(), roi->getSize() );
 
-        IntArray2::const_iterator a_i   = a->begin();
-        IntArray2::const_iterator a_end = a->end();
-        IntArray2::const_iterator roi_i   = roi->begin();
-        IntArray2::const_iterator roi_end = roi->end();
+        IntArray::const_iterator a_i   = a->begin();
+        IntArray::const_iterator a_end = a->end();
+        IntArray::const_iterator roi_i   = roi->begin();
+        IntArray::const_iterator roi_end = roi->end();
 
         CPPUNIT_ASSERT( a_end == roi_end );
 
@@ -718,10 +519,10 @@ public:
       {
         const index_t x[ 2 ] = { 1, 2 };
         const index_t s[ 2 ] = { 2, 2 };
-        CountPtr< IntArray2 > roi = a->getROI( 2, x, s );
+        CountPtr< IntArray > roi = a->getROI( 2, x, s );
 
-        IntArray2::iterator roi_i   = roi->begin();
-        IntArray2::iterator roi_end = roi->end();
+        IntArray::iterator roi_i   = roi->begin();
+        IntArray::iterator roi_end = roi->end();
 
         for( ; roi_i != roi_end; ++roi_i )
         {
@@ -747,19 +548,19 @@ public:
   void test_reserve( void )
   {
     GarbageCollector gc;
-    typedef Array2< int > IntArray2;
+    typedef Array< int > IntArray;
 
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 1, 5 );
+      CountPtr< IntArray > a = new IntArray( &gc, 1, 5 );
 
       for( index_t x=0; x<5; ++x )
       {
         a->at( x ) = x;
       }
 
-      const IntArray2::const_pointer old_elements = a->elements();
+      const IntArray::const_pointer old_elements = a->elements();
       a->reserve( 8 );
-      const IntArray2::const_pointer new_elements = a->elements();
+      const IntArray::const_pointer new_elements = a->elements();
 
       CPPUNIT_ASSERT( old_elements != new_elements );
 
@@ -770,8 +571,8 @@ public:
     }
 
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 5, 7 );
-      CountPtr< IntArray2 > b = new IntArray2( *a );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > b = new IntArray( *a );
 
       CPPUNIT_ASSERT_EQUAL( a->elements(), b->elements() );
 
@@ -796,9 +597,9 @@ public:
       }
 
       {
-        const IntArray2::const_pointer old_elements = a->elements();
+        const IntArray::const_pointer old_elements = a->elements();
         a->resize( 11, 13 );
-        const IntArray2::const_pointer new_elements = a->elements();
+        const IntArray::const_pointer new_elements = a->elements();
         CPPUNIT_ASSERT_EQUAL( old_elements, new_elements );
       }
 
@@ -815,17 +616,17 @@ public:
       }
 
       {
-        const IntArray2::const_pointer old_elements = a->elements();
+        const IntArray::const_pointer old_elements = a->elements();
         a->resize( 5, 6 );
-        const IntArray2::const_pointer new_elements = a->elements();
+        const IntArray::const_pointer new_elements = a->elements();
         CPPUNIT_ASSERT_EQUAL( old_elements, new_elements );
       }
 
       a->fill( 71 );
       {
-        const IntArray2::const_pointer old_elements = a->elements();
+        const IntArray::const_pointer old_elements = a->elements();
         a->resize( 11, 13 );
-        const IntArray2::const_pointer new_elements = a->elements();
+        const IntArray::const_pointer new_elements = a->elements();
         CPPUNIT_ASSERT_EQUAL( old_elements, new_elements );
       }
 
@@ -847,11 +648,11 @@ public:
   void test_mirror_sparse_rotate( void )
   {
     GarbageCollector gc;
-    typedef Array2< int > IntArray2;
+    typedef Array< int > IntArray;
 
     // mirror
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
 
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
@@ -867,7 +668,7 @@ public:
       CPPUNIT_ASSERT_THROW( a->setMirrored( -1 ), ArrayBase::Exception );
       CPPUNIT_ASSERT_THROW( a->setMirrored( 2 ) , ArrayBase::Exception );
 
-      CountPtr< IntArray2 > b = new IntArray2( (*a) );
+      CountPtr< IntArray > b = new IntArray( (*a) );
       CPPUNIT_ASSERT_EQUAL( &a->at( 0, 0 ), &b->at( 0, 0 ) );
       CPPUNIT_ASSERT_EQUAL( &a->at( 4, 6 ), &b->at( 4, 6 ) );
 
@@ -892,7 +693,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2::ConstIterator > iter = b->getConstIterator();
+        CountPtr< IntArray::ConstIterator > iter = b->getConstIterator();
         for( int i = 5*7-1; i >= 0; --i )
         {
           CPPUNIT_ASSERT( !iter->done() );
@@ -905,7 +706,7 @@ public:
 
     // sparse
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
 
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
@@ -918,7 +719,7 @@ public:
       CPPUNIT_ASSERT_THROW( a->setSparse( 0, 0 ), ArrayBase::Exception );
       CPPUNIT_ASSERT_THROW( a->setSparse( 0, 1, 1 ), ArrayBase::Exception );
 
-      CountPtr< IntArray2 > b = new IntArray2( (*a) );
+      CountPtr< IntArray > b = new IntArray( (*a) );
       CPPUNIT_ASSERT_EQUAL( &a->at( 0, 0 ), &b->at( 0, 0 ) );
       CPPUNIT_ASSERT_EQUAL( &a->at( 4, 6 ), &b->at( 4, 6 ) );
 
@@ -947,7 +748,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2::ConstIterator > iter = b->getConstIterator();
+        CountPtr< IntArray::ConstIterator > iter = b->getConstIterator();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 0, 0 ), iter->get() ); iter->next();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 2, 0 ), iter->get() ); iter->next();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 0, 3 ), iter->get() ); iter->next();
@@ -955,7 +756,7 @@ public:
         CPPUNIT_ASSERT( iter->done() );
       }
 
-      CountPtr< IntArray2 > c = new IntArray2( (*a) );
+      CountPtr< IntArray > c = new IntArray( (*a) );
 
       CPPUNIT_ASSERT_NO_THROW( c->setSparse( 0, 2, 1 ) );
       CPPUNIT_ASSERT_EQUAL( index_t( 2 ), c->getSize()[ 0 ] );
@@ -982,7 +783,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2::ConstIterator > iter = c->getConstIterator();
+        CountPtr< IntArray::ConstIterator > iter = c->getConstIterator();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 1, 2 ), iter->get() ); iter->next();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 3, 2 ), iter->get() ); iter->next();
         CPPUNIT_ASSERT( !iter->done() ); CPPUNIT_ASSERT_EQUAL( a->at( 1, 5 ), iter->get() ); iter->next();
@@ -994,37 +795,37 @@ public:
 
     // sparse mirror
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
       {
         a->at( x, y ) = x+y*5;
       }
 
-      CountPtr< IntArray2 > b[ 4 ];
+      CountPtr< IntArray > b[ 4 ];
 
-      b[ 0 ] = new IntArray2( (*a) );
+      b[ 0 ] = new IntArray( (*a) );
       b[ 0 ]->
          setSparse( 0, 2 )
         .setSparse( 1, 3 )
         .setMirrored( 0 )
         .setMirrored( 1 )
         ;
-      b[ 1 ] = new IntArray2( (*a) );
+      b[ 1 ] = new IntArray( (*a) );
       b[ 1 ]->
          setSparse( 1, 3 )
         .setSparse( 0, 2 )
         .setMirrored( 0 )
         .setMirrored( 1 )
         ;
-      b[ 2 ] = new IntArray2( (*a) );
+      b[ 2 ] = new IntArray( (*a) );
       b[ 2 ]->
          setSparse( 0, 2 )
         .setSparse( 1, 3 )
         .setMirrored( 1 )
         .setMirrored( 0 )
         ;
-      b[ 3 ] = new IntArray2( (*a) );
+      b[ 3 ] = new IntArray( (*a) );
       b[ 3 ]->
          setSparse( 1, 3 )
         .setSparse( 0, 2 )
@@ -1042,14 +843,14 @@ public:
 
     // rotate
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
       {
         a->at( x, y ) = x+y*5;
       }
 
-      CountPtr< IntArray2 > b = new IntArray2( (*a) );
+      CountPtr< IntArray > b = new IntArray( (*a) );
 
       CPPUNIT_ASSERT_THROW( b->setRotated( 0, -1,  0 ), ArrayBase::Exception );
       CPPUNIT_ASSERT_THROW( b->setRotated( 0,  2,  0 ), ArrayBase::Exception );
@@ -1059,7 +860,7 @@ public:
 
       CPPUNIT_ASSERT_NO_THROW( b->setRotated( 0 ) );
       {
-        CountPtr< IntArray2 > c = new IntArray2( (*a) );
+        CountPtr< IntArray > c = new IntArray( (*a) );
         CPPUNIT_ASSERT_NO_THROW( c->setRotated( 4 ) );
         for( index_t y=0; y<7; ++y )
         for( index_t x=0; x<5; ++x )
@@ -1071,7 +872,7 @@ public:
 
       CPPUNIT_ASSERT_NO_THROW( b->setRotated( -3 ) );
       {
-        CountPtr< IntArray2 > c = new IntArray2( (*a) );
+        CountPtr< IntArray > c = new IntArray( (*a) );
         CPPUNIT_ASSERT_NO_THROW( c->setRotated( 1 ) );
         for( index_t y=0; y<5; ++y )
         for( index_t x=0; x<7; ++x )
@@ -1083,7 +884,7 @@ public:
 
       CPPUNIT_ASSERT_NO_THROW( b->setRotated( 1 ) );
       {
-        CountPtr< IntArray2 > c = new IntArray2( (*a) );
+        CountPtr< IntArray > c = new IntArray( (*a) );
         CPPUNIT_ASSERT_NO_THROW( c->setRotated( 2 ) );
         for( index_t y=0; y<7; ++y )
         for( index_t x=0; x<5; ++x )
@@ -1095,7 +896,7 @@ public:
 
       CPPUNIT_ASSERT_NO_THROW( b->setRotated( 1 ) );
       {
-        CountPtr< IntArray2 > c = new IntArray2( (*a) );
+        CountPtr< IntArray > c = new IntArray( (*a) );
         CPPUNIT_ASSERT_NO_THROW( c->setRotated( 3 ) );
         for( index_t y=0; y<5; ++y )
         for( index_t x=0; x<7; ++x )
@@ -1108,7 +909,7 @@ public:
 
     // transform resize
     {
-      CountPtr< IntArray2 > a = new IntArray2( &gc, 2, 10, 10 );
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 10, 10 );
       for( index_t y=0; y<10; ++y )
       for( index_t x=0; x<10; ++x )
       {
@@ -1119,7 +920,7 @@ public:
       const int *e_last  = &a->at( 9, 9 );
 
       {
-        CountPtr< IntArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< IntArray > b = a->getROI( 3, 3, 5, 5 );
 
         // Original memory suffices
         CPPUNIT_ASSERT_NO_THROW( b->resize( 7, 7 ) );
@@ -1138,7 +939,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< IntArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 1 ) );
         // Original memory suffices
@@ -1158,7 +959,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< IntArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 2 ) );
         // Original memory suffices
@@ -1178,7 +979,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< IntArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 3 ) );
         // Original memory suffices
@@ -1198,7 +999,7 @@ public:
       }
 
       {
-        CountPtr< IntArray2 > b = a->getROI( 4, 4, 4, 4 );
+        CountPtr< IntArray > b = a->getROI( 4, 4, 4, 4 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 2 ) );
         CPPUNIT_ASSERT_NO_THROW( b->setSparse( 0, 2 ) );
@@ -1226,7 +1027,7 @@ public:
   {
     GarbageCollector gc;
     typedef ArrayContainer< bool > BoolContainer;
-    typedef Array2< bool > BoolArray2;
+    typedef Array< bool > BoolArray;
 
     // operator[] / reference
     {
@@ -1362,20 +1163,20 @@ public:
     }
   }
 
-  void test_Array2_bool( void )
+  void test_Array_bool( void )
   {
     GarbageCollector gc;
 
-    typedef Array2< bool > BoolArray2;
+    typedef Array< bool > BoolArray;
 
     {
-      CountPtr< BoolArray2 > a = new BoolArray2( &gc, 0 );
+      CountPtr< BoolArray > a = new BoolArray( &gc, 0 );
 
       (**a) = true;
 
       {
-        BoolArray2::iterator iter = a->begin();
-        BoolArray2::iterator end  = a->end();
+        BoolArray::iterator iter = a->begin();
+        BoolArray::iterator end  = a->end();
 
         CPPUNIT_ASSERT( iter != end );
         CPPUNIT_ASSERT_EQUAL( true, bool(*iter) );
@@ -1387,8 +1188,8 @@ public:
       }
 
       {
-        BoolArray2::const_iterator iter = a->begin();
-        BoolArray2::const_iterator end  = a->end();
+        BoolArray::const_iterator iter = a->begin();
+        BoolArray::const_iterator end  = a->end();
 
         CPPUNIT_ASSERT( iter != end );
         CPPUNIT_ASSERT_EQUAL( false, bool(*iter) );
@@ -1400,7 +1201,7 @@ public:
     }
 
     {
-      CountPtr< BoolArray2 > a = new BoolArray2( &gc, 2, 3, 5 );
+      CountPtr< BoolArray > a = new BoolArray( &gc, 2, 3, 5 );
 
       const uint32_t bits  = 0x519ea375;
       const uint32_t bits2 = 0xa375519e;
@@ -1412,8 +1213,8 @@ public:
       }
 
       {
-        BoolArray2::iterator iter = a->begin();
-        BoolArray2::iterator end  = a->end();
+        BoolArray::iterator iter = a->begin();
+        BoolArray::iterator end  = a->end();
 
         for( index_t y=0, i=0; y<5; ++y )
         for( index_t x=0     ; x<3; ++x, ++i, ++iter )
@@ -1430,8 +1231,8 @@ public:
       }
 
       {
-        BoolArray2::const_iterator iter = a->begin();
-        BoolArray2::const_iterator end  = a->end();
+        BoolArray::const_iterator iter = a->begin();
+        BoolArray::const_iterator end  = a->end();
 
         for( index_t y=0, i=0; y<5; ++y )
         for( index_t x=0     ; x<3; ++x, ++i, ++iter )
@@ -1455,18 +1256,18 @@ public:
         bits[ i ] = bool( rand_r( &seed ) & 1 );
       }
 
-      CountPtr< BoolArray2 > a = new BoolArray2( &gc, 2, 10, 10 );
+      CountPtr< BoolArray > a = new BoolArray( &gc, 2, 10, 10 );
       for( index_t y=0; y<10; ++y )
       for( index_t x=0; x<10; ++x )
       {
         a->at( x, y ) = bits[ x+y*10 ];
       }
 
-      BoolArray2::const_pointer e_first = &a->at( 0, 0 );
-      BoolArray2::const_pointer e_last  = &a->at( 9, 9 );
+      BoolArray::const_pointer e_first = &a->at( 0, 0 );
+      BoolArray::const_pointer e_last  = &a->at( 9, 9 );
 
       {
-        CountPtr< BoolArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< BoolArray > b = a->getROI( 3, 3, 5, 5 );
 
         // Original memory suffices
         CPPUNIT_ASSERT_NO_THROW( b->resize( 7, 7 ) );
@@ -1485,7 +1286,7 @@ public:
       }
 
       {
-        CountPtr< BoolArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< BoolArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 1 ) );
         // Original memory suffices
@@ -1505,7 +1306,7 @@ public:
       }
 
       {
-        CountPtr< BoolArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< BoolArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 2 ) );
         // Original memory suffices
@@ -1525,7 +1326,7 @@ public:
       }
 
       {
-        CountPtr< BoolArray2 > b = a->getROI( 3, 3, 5, 5 );
+        CountPtr< BoolArray > b = a->getROI( 3, 3, 5, 5 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 3 ) );
         // Original memory suffices
@@ -1545,7 +1346,7 @@ public:
       }
 
       {
-        CountPtr< BoolArray2 > b = a->getROI( 4, 4, 4, 4 );
+        CountPtr< BoolArray > b = a->getROI( 4, 4, 4, 4 );
 
         CPPUNIT_ASSERT_NO_THROW( b->setRotated( 2 ) );
         CPPUNIT_ASSERT_NO_THROW( b->setSparse( 0, 2 ) );
@@ -1564,6 +1365,152 @@ public:
         // Reallocated
         CPPUNIT_ASSERT_NO_THROW( b->resize( 5, 5 ) );
         CPPUNIT_ASSERT( !( b->elements() >= e_first && b->elements() <= e_last ) );
+      }
+    }
+  }
+
+  void test_random_access_iterator( void )
+  {
+    GarbageCollector gc;
+
+    {
+      CountPtr< IntArray > b = new IntArray( &gc, 2, 13, 17 );
+      CountPtr< IntArray > a = b->getROI( 2, 3, 10, 10 );
+
+      for( index_t y=0; y<10; ++y )
+      for( index_t x=0; x<10; ++x )
+      {
+        a->at( x, y ) = x+y*10;
+      }
+
+      {
+        Array< int >::const_iterator iter1 = a->begin();
+        Array< int >::const_iterator iter2 = a->begin();
+        Array< int >::const_iterator iter3 = a->end();
+        Array< int >::const_iterator iter4 = a->end();
+        for( int i=0; i<7; ++i )
+        {
+          CPPUNIT_ASSERT_EQUAL( i*7, iter1[ i*7 ] );
+          CPPUNIT_ASSERT_EQUAL( i*11, iter1[ i*11 ] );
+
+          CPPUNIT_ASSERT_EQUAL( i* 7, *( iter1 + i* 7 ) );
+          CPPUNIT_ASSERT_EQUAL( i*11, *( iter1 + i*11 ) );
+          CPPUNIT_ASSERT_EQUAL( i* 7, *( i* 7 + iter1 ) );
+          CPPUNIT_ASSERT_EQUAL( i*11, *( i*11 + iter1 ) );
+
+          CPPUNIT_ASSERT_EQUAL( i*5, *iter2 );
+          iter2 += 5;
+
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*11, iter3[ -(i+1)*11 ] );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*7, iter3[ -(i+1)*7 ] );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*11, *( iter3 - (i+1)*11 ) );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*7, *( iter3 - (i+1)*7 ) );
+
+          iter4 -= 13;
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*13, *iter4 );
+        }
+      }
+
+      {
+        Array< int >::iterator iter1 = a->begin();
+        Array< int >::iterator iter2 = a->begin();
+        Array< int >::iterator iter3 = a->end();
+        Array< int >::iterator iter4 = a->end();
+        for( int i=0; i<7; ++i )
+        {
+          CPPUNIT_ASSERT_EQUAL( i*7, iter1[ i*7 ] );
+          CPPUNIT_ASSERT_EQUAL( i*11, iter1[ i*11 ] );
+
+          CPPUNIT_ASSERT_EQUAL( i* 7, *( iter1 + i* 7 ) );
+          CPPUNIT_ASSERT_EQUAL( i*11, *( iter1 + i*11 ) );
+          CPPUNIT_ASSERT_EQUAL( i* 7, *( i* 7 + iter1 ) );
+          CPPUNIT_ASSERT_EQUAL( i*11, *( i*11 + iter1 ) );
+
+          CPPUNIT_ASSERT_EQUAL( i*5, *iter2 );
+          iter2 += 5;
+
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*11, iter3[ -(i+1)*11 ] );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*7, iter3[ -(i+1)*7 ] );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*11, *( iter3 - (i+1)*11 ) );
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*7, *( iter3 - (i+1)*7 ) );
+
+          iter4 -= 13;
+          CPPUNIT_ASSERT_EQUAL( 100 - (i+1)*13, *iter4 );
+        }
+      }
+    }
+
+    {
+      bool bits[ 100 ];
+      unsigned int seed = 42;
+      for( int i=0; i<100; ++i )
+      {
+        bits[ i ] = bool( rand_r( &seed ) & 1 );
+      }
+
+      CountPtr< BoolArray > b = new BoolArray( &gc, 2, 13, 17 );
+      CountPtr< BoolArray > a = b->getROI( 2, 3, 10, 10 );
+
+      for( index_t y=0; y<10; ++y )
+      for( index_t x=0; x<10; ++x )
+      {
+        a->at( x, y ) = bits[ x+y*10 ];
+      }
+
+      {
+        BoolArray::const_iterator iter1 = a->begin();
+        BoolArray::const_iterator iter2 = a->begin();
+        BoolArray::const_iterator iter3 = a->end();
+        BoolArray::const_iterator iter4 = a->end();
+        for( int i=0; i<7; ++i )
+        {
+          CPPUNIT_ASSERT_EQUAL( bits[ i*7 ], bool( iter1[ i*7 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( iter1[ i*11 ] ) );
+
+          CPPUNIT_ASSERT_EQUAL( bits[ i* 7 ], bool( *( iter1 + i* 7 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( *( iter1 + i*11 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i* 7 ], bool( *( i* 7 + iter1 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( *( i*11 + iter1 ) ) );
+
+          CPPUNIT_ASSERT_EQUAL( bits[ i*5 ], bool( *iter2 ) );
+          iter2 += 5;
+
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*11 ], bool( iter3[ -(i+1)*11 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)* 7 ], bool( iter3[ -(i+1)*7 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*11 ], bool( *( iter3 - (i+1)*11 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)* 7 ], bool( *( iter3 - (i+1)*7 ) ) );
+
+          iter4 -= 13;
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*13 ], bool(*iter4 ) );
+        }
+      }
+
+      {
+        BoolArray::iterator iter1 = a->begin();
+        BoolArray::iterator iter2 = a->begin();
+        BoolArray::iterator iter3 = a->end();
+        BoolArray::iterator iter4 = a->end();
+        for( int i=0; i<7; ++i )
+        {
+          CPPUNIT_ASSERT_EQUAL( bits[ i*7 ], bool( iter1[ i*7 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( iter1[ i*11 ] ) );
+
+          CPPUNIT_ASSERT_EQUAL( bits[ i* 7 ], bool( *( iter1 + i* 7 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( *( iter1 + i*11 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i* 7 ], bool( *( i* 7 + iter1 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ i*11 ], bool( *( i*11 + iter1 ) ) );
+
+          CPPUNIT_ASSERT_EQUAL( bits[ i*5 ], bool( *iter2 ) );
+          iter2 += 5;
+
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*11 ], bool( iter3[ -(i+1)*11 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)* 7 ], bool( iter3[ -(i+1)*7 ] ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*11 ], bool( *( iter3 - (i+1)*11 ) ) );
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)* 7 ], bool( *( iter3 - (i+1)*7 ) ) );
+
+          iter4 -= 13;
+          CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*13 ], bool(*iter4 ) );
+        }
       }
     }
   }

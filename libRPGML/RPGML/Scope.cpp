@@ -406,7 +406,7 @@ CountPtr< Output > Scope::toOutput(
           ;
       }
       ArrayBase *const in_base = in_v->getArray();
-      InputArrayElements *in = 0;
+      InputArray *in = 0;
       if( !in_base->getAs( in ) )
       {
         throw ParseException( new Location( __FILE__, __LINE__ ) )
@@ -414,7 +414,7 @@ CountPtr< Output > Scope::toOutput(
           ;
       }
 
-      InputArrayElements::iterator in_iter = in->begin();
+      InputArray::iterator in_iter = in->begin();
       for(
           CountPtr< ArrayBase::ConstValueIterator >
           array_iter = array_base->getConstValueIterator()

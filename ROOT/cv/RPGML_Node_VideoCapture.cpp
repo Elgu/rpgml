@@ -64,8 +64,8 @@ void VideoCapture::set_foo( const Value &value, index_t, int, const index_t* )
 
 bool VideoCapture::tick( void )
 {
-  const ArrayBase *const device_base = getInput( INPUT_DEVICE )->getData();
-  GET_INPUT_IF_CONNECTED( INPUT_FILENAME, filename, String, 0 );
+  GET_INPUT_BASE_IF_CONNECTED( INPUT_DEVICE, device_base );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_FILENAME, filename, String, 0 );
 
   if( device_base && filename )
   {
@@ -145,7 +145,7 @@ bool VideoCapture::tick( void )
     throw Exception() << "Opening VideoCapture failed: " << e.what();
   }
 
-  CountPtr< ArrayArray1D > channels = createArrays( getGC(), frame );
+  CountPtr< ArrayArray > channels = createArrays( getGC(), frame );
 
   if( channels->size() == 1 )
   {

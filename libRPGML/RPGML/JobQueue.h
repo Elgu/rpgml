@@ -136,7 +136,8 @@ private:
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
   private:
-    Array< CountPtr< Job >, 1 > m_heap;
+    typedef Array< CountPtr< Job > > JobArray;
+    CountPtr< JobArray > m_heap;
   };
 
   typedef Queue queue_t;

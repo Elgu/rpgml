@@ -48,11 +48,11 @@ bool Get::tick( void )
 {
   if( !hasAnyInputChanged() ) return true;
 
-  GET_INPUT_DATA( INPUT_IN, in_base );
+  GET_INPUT_BASE( INPUT_IN, in_base );
 
-  GET_OUTPUT_IF_CONNECTED( OUTPUT_ARRAY_TYPE, array_type, String , 0 );
-  GET_OUTPUT_IF_CONNECTED( OUTPUT_DIMS, dims, int    , 0 );
-  GET_OUTPUT_IF_CONNECTED( OUTPUT_SIZE, size, index_t, 1 );
+  GET_OUTPUT_AS_IF_CONNECTED( OUTPUT_ARRAY_TYPE, array_type, String );
+  GET_OUTPUT_AS_IF_CONNECTED( OUTPUT_DIMS, dims, int     );
+  GET_OUTPUT_AS_IF_CONNECTED( OUTPUT_SIZE, size, index_t );
 
   const ArrayBase::Size in_size = in_base->getSize();
   const int in_dims = in_size.getDims();

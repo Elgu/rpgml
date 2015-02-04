@@ -61,8 +61,8 @@ namespace RPGML
   FunctionCallExpression::Args             *args;
   TypeExpression                           *type;
   DimensionsExpression                     *dims;
-  Array< CountPtr< const SequenceExpression>, 1 > *seq_array;
-  Array< CountPtr< const ArrayBase >, 1 >  *array_array;
+  Array< CountPtr< const SequenceExpression> > *seq_array;
+  Array< CountPtr< const ArrayBase > >  *array_array;
 }
 
 %destructor {} <ival>
@@ -246,17 +246,17 @@ array_constant_line
 
 array_constant_slice
   : array_constant_slice ';' array_constant_line { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_line { ($$) = new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  | array_constant_line { ($$) = new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant_volume
   : array_constant_volume DOUBLE_SEMI array_constant_slice { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_slice { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  | array_constant_slice { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant_hyper
   : array_constant_hyper TRI_SEMI array_constant_volume { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_volume { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC() ); ($$)->push_back( ($1) ); }
+  | array_constant_volume { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant
@@ -264,7 +264,7 @@ array_constant
     {
       ($$) = new ArrayConstantExpression(
           RPGML_LOC(@$)
-        , new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC() )
+        , new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC(), 1 )
         , 1
         );
     }

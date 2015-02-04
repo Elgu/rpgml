@@ -64,7 +64,7 @@ public:
     virtual bool tick( void )
     {
 //      std::cerr << "ConstNode '" << getIdentifier() << "'" << std::endl;
-      Array< int, 0 > *out = 0;
+      Array< int > *out = 0;
       CPPUNIT_ASSERT( 0 != getOutput( 0 )->getAs( out ) );
       (**out) = m_value;
       return true;
@@ -95,8 +95,8 @@ public:
     {
 //      std::cerr << "AddNode '" << getIdentifier() << "'" << std::endl;
 
-      const Array< int, 0 > *in1 = 0;
-      const Array< int, 0 > *in2 = 0;
+      const Array< int > *in1 = 0;
+      const Array< int > *in2 = 0;
 
       CPPUNIT_ASSERT( getInput( 0 )->isConnected() );
       CPPUNIT_ASSERT( getInput( 1 )->isConnected() );
@@ -104,7 +104,7 @@ public:
       CPPUNIT_ASSERT( 0 != getInput( 0 )->getOutput()->getAs( in1 ) );
       CPPUNIT_ASSERT( 0 != getInput( 1 )->getOutput()->getAs( in2 ) );
 
-      Array< int, 0 > *out = 0;
+      Array< int > *out = 0;
       CPPUNIT_ASSERT( 0 != getOutput( 0 )->getAs( out ) );
 
       (**out) = (**in1) + (**in2);
@@ -169,7 +169,7 @@ public:
     c1->getOutput( "out" )->connect( add->getInput( "in1" ) );
     c2->getOutput( "out" )->connect( add->getInput( "in2" ) );
 
-    const Array< int, 0 > *out = 0;
+    const Array< int > *out = 0;
     CPPUNIT_ASSERT( 0 != add->getOutput( "out" )->getAs( out ) );
 
     // Run "by hand"
@@ -184,8 +184,8 @@ public:
 
     // Create thread pool
     const index_t num_workers = 16;
-    typedef Array< CountPtr< Worker >, 1 > WorkerArray;
-    CountPtr< WorkerArray > workers( new WorkerArray( &gc, num_workers ) );
+    typedef Array< CountPtr< Worker > > WorkerArray;
+    CountPtr< WorkerArray > workers( new WorkerArray( &gc, 1, num_workers ) );
     for( index_t i=0; i<num_workers; ++i ) (*workers)[ i ] = new Worker( &gc, queue );
 
     CPPUNIT_ASSERT_EQUAL( true, c1->set_value( Value( 23 ), 0 ) );

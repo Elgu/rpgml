@@ -78,7 +78,7 @@ public:
   public:
     TypeDescr(
         CountPtr< const TypeDescr > _of
-      , CountPtr< const Array< Value, 1 > > _dims
+      , CountPtr< const Array< Value > > _dims
       , Type _type
       )
     : of( _of ), dims( _dims ), type( _type )
@@ -87,7 +87,7 @@ public:
     virtual ~TypeDescr( void ) {}
 
     const CountPtr< const TypeDescr > of;
-    const CountPtr< const Array< Value, 1 > > dims;
+    const CountPtr< const Array< Value > > dims;
     Type type;
   };
 
@@ -104,7 +104,7 @@ private:
 
   CountPtr< Scope > scope;
   CountPtr< TypeDescr > return_value_type_descr;
-  CountPtr< Array< Value, 1 > > return_value_dims;
+  CountPtr< ValueArray > return_value_dims;
   Value return_value;
   bool return_encountered;
 };

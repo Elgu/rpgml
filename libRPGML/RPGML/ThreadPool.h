@@ -70,7 +70,7 @@ private:
     CountPtr< JobQueue > m_queue;
   };
 
-  typedef Array< CountPtr< Worker >, 1 > WorkersArray;
+  typedef Array< CountPtr< Worker > > WorkersArray;
   CountPtr< WorkersArray > m_workers;
   CountPtr< JobQueue > m_queue;
 

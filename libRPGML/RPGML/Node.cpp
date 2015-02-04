@@ -128,7 +128,12 @@ void Input::connect( Output *output )
 
 bool Input::isConnected( void ) const
 {
-  return m_output.get() != 0;
+  return !m_output.isNull();
+}
+
+bool Input::isReady( void ) const
+{
+  return isConnected() && m_output->isReady();
 }
 
 bool Input::hasChanged( void ) const
@@ -138,7 +143,7 @@ bool Input::hasChanged( void ) const
 
 Output::Output( GarbageCollector *_gc, Node *parent )
 : Port( _gc, parent )
-, m_inputs( new inputs_t( _gc ) )
+, m_inputs( new inputs_t( _gc, 1 ) )
 , m_hasChanged( false )
 {}
 
@@ -188,7 +193,7 @@ void Output::disconnect( void )
 {
   if( m_inputs.isNull() ) return;
 
-  CountPtr< inputs_t > tmp = new inputs_t( m_inputs->getGC() );
+  CountPtr< inputs_t > tmp = new inputs_t( m_inputs->getGC(), 1 );
   std::swap( (*tmp), (*m_inputs) );
 
   for( inputs_t::const_iterator i( tmp->begin() ), end( tmp->end() ); i != end; ++i )
@@ -220,7 +225,7 @@ void Output::connect( Input *input )
   }
 
   CountPtr< Input > *free_pos = 0;
-  for( inputs_t::reverse_iterator i( m_inputs->rbegin() ), end( m_inputs->rend() ); i != end; ++i )
+  for( inputs_t::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     Input *const input_i = (*i).get();
     if( input_i == input )
@@ -258,6 +263,11 @@ bool Output::isConnected( void ) const
   return false;
 }
 
+bool Output::isReady( void ) const
+{
+  return !m_data.isNull();
+}
+
 Output::inputs_iterator Output::inputs_begin( void )
 {
   inputs_iterator ret = m_inputs->begin();
@@ -292,9 +302,9 @@ Node::Node(
   , index_t num_params
   )
 : Frame( _gc, 0 )
-, m_inputs( new inputs_t( _gc ) )
-, m_outputs( new outputs_t( _gc ) )
-, m_params( new params_t( _gc ) )
+, m_inputs( new inputs_t( _gc , 1 ) )
+, m_outputs( new outputs_t( _gc , 1 ) )
+, m_params( new params_t( _gc , 1 ) )
 , m_so( so )
 {
   setIdentifier( identifier );
@@ -496,7 +506,7 @@ CountPtr< const ArrayBase > Node::resolve( const ArrayBase *in_base )
     const Type in_base_type = in_base->getType();
     if( in_base_type.isArray() )
     {
-      const ArrayArrayElements *e = 0;
+      const ArrayArray *e = 0;
       if( in_base->getAs( e ) && !e->empty() )
       {
         in_base = e->elements()->get();
@@ -508,7 +518,7 @@ CountPtr< const ArrayBase > Node::resolve( const ArrayBase *in_base )
     }
     else if( in_base_type.isOutput() )
     {
-      const OutputArrayElements *e = 0;
+      const OutputArray *e = 0;
       if( in_base->getAs( e ) && !e->empty() )
       {
         in_base = e->elements()->get()->getData();
@@ -540,7 +550,7 @@ CountPtr< ArrayBase > Node::resolve( ArrayBase *in_base )
     const Type in_base_type = in_base->getType();
     if( in_base_type.isArray() )
     {
-      ArrayArrayElements *e = 0;
+      ArrayArray *e = 0;
       if( in_base->getAs( e ) && !e->empty() )
       {
         in_base = e->elements()->get();
@@ -552,7 +562,7 @@ CountPtr< ArrayBase > Node::resolve( ArrayBase *in_base )
     }
     else if( in_base_type.isOutput() )
     {
-      OutputArrayElements *e = 0;
+      OutputArray *e = 0;
       if( in_base->getAs( e ) && !e->empty() )
       {
         in_base = e->elements()->get()->getData();
@@ -600,7 +610,7 @@ Node::IncompatibleOutput::IncompatibleOutput( const Input *_input )
     const Output *const output = input->getOutput();
     (*this)
       << " '" << output->getIdentifier() << "." << output->getParent()->getIdentifier() << "'"
-      << " of < " << output->getData()->getTypeName() << ", " << output->getData()->getDims() << " >"
+      << " of < " << output->getData()->getTypeName() << " >[ " << output->getData()->getDims() << " ]"
       ;
   }
 }

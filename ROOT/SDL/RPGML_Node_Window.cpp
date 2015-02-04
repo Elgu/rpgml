@@ -126,14 +126,13 @@ bool Window::tick( CountPtr< JobQueue > main_thread )
     || getInput( INPUT_BLUE  )->hasChanged()
     ;
 
-  GET_INPUT_IF_CONNECTED( INPUT_TITLE , title , String, 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_X     , x     , int   , 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_Y     , y     , int   , 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_WIDTH , width , int   , 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_HEIGHT, height, int   , 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_TITLE , title , String, 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_X     , x     , int   , 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_Y     , y     , int   , 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_WIDTH , width , int   , 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_HEIGHT, height, int   , 0 );
 
-  const ArrayBase *const red_base = getInput( INPUT_RED )->getData();
-  if( !red_base ) throw NotConnected( getInput( INPUT_RED ) );
+  GET_INPUT_BASE( INPUT_RED, red_base );
 
   if( red_base->getDims() != 2 )
   {
@@ -151,7 +150,7 @@ bool Window::tick( CountPtr< JobQueue > main_thread )
   {
     if( m_rgba.isNull() )
     {
-      m_rgba.reset( new Array< uint8_t, 2 >( getGC() ) );
+      m_rgba.reset( new Array< uint8_t >( getGC(), 2 ) );
     }
     m_rgba->resize( size[ 0 ]*4, size[ 1 ] );
     fill_rgba( size[ 0 ], size[ 1 ] );
@@ -343,7 +342,7 @@ void Window::fill_rgba_t( const ArrayBase *chan_base, int chan )
 {
   using namespace Window_impl;
 
-  const ArrayElements< T > *chan_elements = 0;
+  const Array< T > *chan_elements = 0;
   if( !chan_base->getAs( chan_elements ) ) throw GetAsFailed( getInput( INPUT_RED+chan ), chan_elements );
 
   const index_t n = chan_elements->size();
@@ -362,8 +361,7 @@ void Window::fill_rgba( int width, int height )
 
   for( int chan = 0; chan < 3; ++chan )
   {
-    const ArrayBase *const chan_base = getInput( INPUT_RED+chan )->getData();
-    if( !chan_base ) throw NotConnected( getInput( INPUT_RED+chan ) );
+    GET_INPUT_BASE( INPUT_RED+chan, chan_base );
 
     const index_t *const chan_size = chan_base->getSize();
     if( chan_size[ 0 ] != index_t( width ) || chan_size[ 1 ] != index_t( height ) )

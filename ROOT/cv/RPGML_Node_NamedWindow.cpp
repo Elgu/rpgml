@@ -76,15 +76,15 @@ void NamedWindow::set_flags( const Value &value, index_t, int, const index_t* )
 
 bool NamedWindow::tick( void )
 {
-  GET_INPUT_MANDATORY( INPUT_WINNAME, winname, String, 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_X      , x     , int, 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_Y      , y     , int, 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_WIDTH  , width , int, 0 );
-  GET_INPUT_IF_CONNECTED( INPUT_HEIGHT , height, int, 0 );
+  GET_INPUT_AS_DIMS( INPUT_WINNAME, winname, String, 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_X      , x     , int, 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_Y      , y     , int, 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_WIDTH  , width , int, 0 );
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_HEIGHT , height, int, 0 );
 
   if( (**winname) != m_winname )
   {
-    GET_OUTPUT_AS( OUTPUT_OUT, out, String, 0 );
+    GET_OUTPUT_AS( OUTPUT_OUT, out, String );
 
     if( !m_winname.empty() )
     {

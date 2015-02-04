@@ -82,7 +82,7 @@ Value Function_needing::call_impl( const Location *loc, index_t recursion_depth,
         throw ParseException( loc ) << "Found Array '@needed', but is null";
       }
 
-      NodeArray1D *needed_p = 0;
+      NodeArray *needed_p = 0;
       if( !needed_base->getAs( needed_p ) )
       {
         throw ParseException( loc )

@@ -84,11 +84,11 @@ struct impl
   typedef typename Op::Ret Ret;
 
   static
-  bool doit( const ArrayElements< T1 > *in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit( const Array< T1 > *in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
@@ -99,10 +99,10 @@ struct impl
   }
 
   static
-  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit_scalar1( const T1 &in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in2->size();
     for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
     {
@@ -113,10 +113,10 @@ struct impl
   }
 
   static
-  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  bool doit_scalar2( const Array< T1 > *in1, const T2 &in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
     {
@@ -136,11 +136,11 @@ struct impl< String, String, OP >
   typedef typename Op::Ret Ret;
 
   static
-  bool doit( const ArrayElements< T1 > *in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit( const Array< T1 > *in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
@@ -151,10 +151,10 @@ struct impl< String, String, OP >
   }
 
   static
-  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit_scalar1( const T1 &in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in2->size();
     for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
     {
@@ -165,10 +165,10 @@ struct impl< String, String, OP >
   }
 
   static
-  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  bool doit_scalar2( const Array< T1 > *in1, const T2 &in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
     {
@@ -187,11 +187,11 @@ struct impl< T1, String, OP >
   typedef typename Op::Ret Ret;
 
   static
-  bool doit( const ArrayElements< T1 > *in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit( const Array< T1 > *in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
@@ -202,10 +202,10 @@ struct impl< T1, String, OP >
   }
 
   static
-  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit_scalar1( const T1 &in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const String in1_str = toString( in1 );
     const index_t n = in2->size();
     for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
@@ -217,10 +217,10 @@ struct impl< T1, String, OP >
   }
 
   static
-  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  bool doit_scalar2( const Array< T1 > *in1, const T2 &in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
     {
@@ -239,11 +239,11 @@ struct impl< String, T2, OP >
   typedef typename Op::Ret Ret;
 
   static
-  bool doit( const ArrayElements< T1 > *in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit( const Array< T1 > *in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++i2_iter, ++o_iter )
     {
@@ -254,10 +254,10 @@ struct impl< String, T2, OP >
   }
 
   static
-  bool doit_scalar1( const T1 &in1, const ArrayElements< T2 > *in2, ArrayElements< Ret > *out )
+  bool doit_scalar1( const T1 &in1, const Array< T2 > *in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T2 >::const_iterator i2_iter = in2->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T2 >::const_iterator i2_iter = in2->begin();
     const index_t n = in2->size();
     for( index_t i=0; i<n; ++i, ++i2_iter, ++o_iter )
     {
@@ -268,10 +268,10 @@ struct impl< String, T2, OP >
   }
 
   static
-  bool doit_scalar2( const ArrayElements< T1 > *in1, const T2 &in2, ArrayElements< Ret > *out )
+  bool doit_scalar2( const Array< T1 > *in1, const T2 &in2, Array< Ret > *out )
   {
-    typename ArrayElements< Ret >::iterator o_iter = out->begin();
-    typename ArrayElements< T1 >::const_iterator i1_iter = in1->begin();
+    typename Array< Ret >::iterator o_iter = out->begin();
+    typename Array< T1 >::const_iterator i1_iter = in1->begin();
     const String in2_str = toString( in2 );
     const index_t n = in1->size();
     for( index_t i=0; i<n; ++i, ++i1_iter, ++o_iter )
@@ -287,14 +287,14 @@ struct impl< String, T2, OP >
 
 
 template< BOP OP, class T1, class T2 >
-bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base )
+bool BinaryOp::tick3( const Array< T1 > *in1, const ArrayBase *in2_base )
 {
   using namespace BinaryOp_impl;
 
   typedef impl< T1, T2, OP > Impl;
   typedef typename Impl::Ret Out;
 
-  const ArrayElements< T2 > *in2 = 0;
+  const Array< T2 > *in2 = 0;
   if( !in2_base->getAs( in2 ) ) throw GetAsFailed( getInput( INPUT_IN2 ), in2 );
 
   const ArrayBase::Size in1_size = in1->getSize();
@@ -304,7 +304,7 @@ bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base 
   {
     getOutput( OUTPUT_OUT )->initData< Out >( in2_size );
 
-    ArrayElements< Out > *out = 0;
+    Array< Out > *out = 0;
     if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
 
     return Impl::doit_scalar1( *in1->begin(), in2, out );
@@ -314,7 +314,7 @@ bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base 
   {
     getOutput( OUTPUT_OUT )->initData< Out >( in1_size );
 
-    ArrayElements< Out > *out = 0;
+    Array< Out > *out = 0;
     if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
 
     return Impl::doit_scalar2( in1, *in2->begin(), out );
@@ -324,7 +324,7 @@ bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base 
   {
     getOutput( OUTPUT_OUT )->initData< Out >( in1_size );
 
-    ArrayElements< Out > *out = 0;
+    Array< Out > *out = 0;
     if( !getOutput( OUTPUT_OUT )->getAs( out ) ) throw GetAsFailed( getOutput( OUTPUT_OUT ), out );
 
     return Impl::doit( in1, in2, out );
@@ -342,7 +342,7 @@ bool BinaryOp::tick3( const ArrayElements< T1 > *in1, const ArrayBase *in2_base 
 template< BOP OP, class T1 >
 bool BinaryOp::tick2( const ArrayBase *in1_base )
 {
-  const ArrayElements< T1 > *in1 = 0;
+  const Array< T1 > *in1 = 0;
   if( !in1_base->getAs( in1 ) ) throw GetAsFailed( getInput( INPUT_IN1 ), in1 );
 
   const ArrayBase *const in2_base = getInput( INPUT_IN2 )->getData();
@@ -374,7 +374,7 @@ bool BinaryOp::tick2( const ArrayBase *in1_base )
 template< BOP OP, class T1 >
 bool BinaryOp::tick2_int( const ArrayBase *in1_base )
 {
-  const ArrayElements< T1 > *in1 = 0;
+  const Array< T1 > *in1 = 0;
   if( !in1_base->getAs( in1 ) ) throw GetAsFailed( getInput( INPUT_IN1 ), in1 );
 
   const ArrayBase *const in2_base = getInput( INPUT_IN2 )->getData();
@@ -404,7 +404,7 @@ bool BinaryOp::tick2_int( const ArrayBase *in1_base )
 template< BOP OP, class T1 >
 bool BinaryOp::tick2_no_string( const ArrayBase *in1_base )
 {
-  const ArrayElements< T1 > *in1 = 0;
+  const Array< T1 > *in1 = 0;
   if( !in1_base->getAs( in1 ) ) throw GetAsFailed( getInput( INPUT_IN1 ), in1 );
 
   const ArrayBase *const in2_base = getInput( INPUT_IN2 )->getData();

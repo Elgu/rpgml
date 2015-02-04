@@ -35,7 +35,7 @@
   push_back( String::Static( identifier  ), Value( getOutput( OUTPUT_ENUM ) ) ); \
 
 #define DEFINE_OUTPUT_INIT( OUTPUT_ENUM, identifier, type, dims ) \
-  getOutput( OUTPUT_ENUM )->init< type, dims >( String::Static( identifier ) ); \
+  getOutput( OUTPUT_ENUM )->init< type >( String::Static( identifier ), dims ); \
   push_back( String::Static( identifier  ), Value( getOutput( OUTPUT_ENUM ) ) ); \
 
 #define DEFINE_PARAM( PARAM_ENUM, identifier, method ) \
@@ -54,91 +54,110 @@
   setParam( PARAM_ENUM, new NParam( getGC(), this, String::Static( identifier ), &method, index, true ) ); \
   push_back( String::Static( identifier ), Value( getParam( PARAM_ENUM ) ) ); \
 
-#define GET_INPUT_DATA( INPUT_ENUM, var_identifier ) \
-  if( !getInput( INPUT_ENUM )->isConnected() ) throw NotConnected( getInput( INPUT_ENUM ) ); \
-  const ArrayBase *const var_identifier = getInput( INPUT_ENUM )->getData(); \
-  if( !var_identifier ) throw NotReady( getInput( INPUT_ENUM ) ); \
-
-#define GET_INPUT_MANDATORY( INPUT_ENUM, var_identifier, type, dims ) \
-  const Array< type, dims > *var_identifier = 0; \
-  if( !getInput( INPUT_ENUM )->isConnected() ) \
+#define GET_INPUT_BASE( INPUT_ENUM, var_identifier ) \
+  const ArrayBase *var_identifier = 0; \
   { \
-    throw NotConnected( getInput( INPUT_ENUM ) ); \
-  } \
-  if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
-  { \
-    throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( !input->isConnected() ) throw NotConnected( input ); \
+    var_identifier = input->getData(); \
+    if( !var_identifier ) throw NotReady( getInput( INPUT_ENUM ) ); \
   } \
 
-#define GET_INPUT_ELEMENTS( INPUT_ENUM, var_identifier, type ) \
-  const ArrayElements< type > *var_identifier = 0; \
-  if( !getInput( INPUT_ENUM )->isConnected() ) \
+#define GET_INPUT_BASE_IF_CONNECTED( INPUT_ENUM, var_identifier ) \
+  const ArrayBase *var_identifier = 0; \
   { \
-    throw NotConnected( getInput( INPUT_ENUM ) ); \
-  } \
-  if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
-  { \
-    throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
-  } \
-
-#define GET_INPUT_IF_CONNECTED( INPUT_ENUM, var_identifier, type, dims ) \
-  const Array< type, dims > *var_identifier = 0; \
-  if( getInput( INPUT_ENUM )->isConnected() ) \
-  { \
-    if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( input->isConnected() ) \
     { \
-      throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+      var_identifier = input->getData(); \
+      if( !var_identifier ) throw NotReady( getInput( INPUT_ENUM ) ); \
     } \
   } \
 
-#define GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_ENUM, var_identifier, type ) \
-  const ArrayElements< type > *var_identifier = 0; \
-  if( getInput( INPUT_ENUM )->isConnected() ) \
+#define GET_INPUT_AS( INPUT_ENUM, var_identifier, type ) \
+  const Array< type > *var_identifier = 0; \
   { \
-    if( !getInput( INPUT_ENUM )->getOutput()->getAs( var_identifier ) ) \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( !input->getAs( var_identifier ) ) \
     { \
-      throw GetAsFailed( getInput( INPUT_ENUM ), var_identifier ); \
+      throw GetAsFailed( input, var_identifier ); \
     } \
   } \
 
-#define GET_OUTPUT_AS( OUTPUT_ENUM, var_identifier, type, dims ) \
-  Array< type, dims > *var_identifier = 0; \
-  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+#define GET_INPUT_AS_IF_CONNECTED( INPUT_ENUM, var_identifier, type ) \
+  const Array< type > *var_identifier = 0; \
   { \
-    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( input->isConnected() && !input->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( input, var_identifier ); \
+    } \
   } \
 
-#define GET_OUTPUT_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
-  getOutput( OUTPUT_ENUM )->initData< type >( dims, size ); \
-  Array< type, dims > *var_identifier = 0; \
-  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+#define GET_INPUT_AS_DIMS( INPUT_ENUM, var_identifier, type, dims ) \
+  const Array< type > *var_identifier = 0; \
   { \
-    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( !input->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( input, var_identifier ); \
+    } \
+    if( var_identifier->getDims() != dims ) \
+    { \
+      throw IncompatibleOutput( input ); \
+    } \
   } \
 
-#define GET_OUTPUT_ELEMENTS_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
-  getOutput( OUTPUT_ENUM )->initData< type >( dims, size ); \
-  ArrayElements< type > *var_identifier = 0; \
-  if( !getOutput( OUTPUT_ENUM )->getAs( var_identifier ) ) \
+#define GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_ENUM, var_identifier, type, dims ) \
+  const Array< type > *var_identifier = 0; \
   { \
-    throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+    const Input *const input = getInput( INPUT_ENUM ); \
+    if( input->isConnected() && !input->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( input, var_identifier ); \
+    } \
+    if( var_identifier->getDims() != dims ) \
+    { \
+      throw IncompatibleOutput( input ); \
+    } \
   } \
-  if( size ) var_identifier->resize_v( dims, size );\
 
-#define GET_OUTPUT_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type, dims ) \
-  Array< type, dims > *var_identifier = 0; \
+#define GET_OUTPUT_AS( OUTPUT_ENUM, var_identifier, type ) \
+  Array< type > *var_identifier = 0; \
+  { \
+    Output *const output = getOutput( OUTPUT_ENUM ); \
+    if( !output->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( output, var_identifier ); \
+    } \
+  } \
+
+#define GET_OUTPUT_AS_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type ) \
+  Array< type > *var_identifier = 0; \
   { \
     Output *const output = getOutput( OUTPUT_ENUM ); \
     if( output->isConnected() && !output->getAs( var_identifier ) ) \
     { \
-      throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+      throw GetAsFailed( output, var_identifier ); \
     } \
   } \
 
-#define GET_OUTPUT_ELEMENTS_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type ) \
-  ArrayElements< type > *var_identifier = 0; \
+#define GET_OUTPUT_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
+  Array< type > *var_identifier = 0; \
   { \
     Output *const output = getOutput( OUTPUT_ENUM ); \
+    output->initData< type >( dims, size ); \
+    if( !output->getAs( var_identifier ) ) \
+    { \
+      throw GetAsFailed( output, var_identifier ); \
+    } \
+  } \
+
+#define GET_OUTPUT_INIT_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type, dims, size ) \
+  Array< type > *var_identifier = 0; \
+  { \
+    Output *const output = getOutput( OUTPUT_ENUM ); \
+    output->initData< type >( dims, size ); \
     if( output->isConnected() && !output->getAs( var_identifier ) ) \
     { \
       throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
@@ -189,11 +208,20 @@ public:
   void disconnect( void );
   void connect( Output *output );
 
+  bool isReady( void ) const;
   bool isConnected( void ) const;
   bool hasChanged( void ) const;
 
   const Output *getOutput( void ) const;
   const ArrayBase *getData( void ) const;
+
+  template< class DataType >
+  const DataType *getAs( const DataType* &as ) const
+  {
+    const ArrayBase *const data = getData();
+    if( data ) return data->getAs( as );
+    return ( as = 0 );
+  }
 
 private:
   friend class ::utest_Node;
@@ -207,14 +235,15 @@ public:
   Output( GarbageCollector *gc, Node *parent );
   virtual ~Output( void );
 
-  template< class T, int DIMS >
-  void init( const String &identifier, const index_t *size = 0 );
+  template< class Element >
+  void init( const String &identifier, int dims, const index_t *size = 0 );
 
   void disconnect( void );
   void disconnect( Input *input );
 
   void connect( Input *input );
 
+  bool isReady( void ) const;
   bool isConnected( void ) const;
   bool hasChanged( void ) const;
 
@@ -224,24 +253,24 @@ public:
   ArrayBase *getData( void );
   const ArrayBase *getData( void ) const;
 
-  template< class T >
+  template< class Element >
   void initData( int dims, const index_t *size );
 
-  template< class T >
-  void initData( const ArrayBase::Size &size ) { initData< T >( size.getDims(), size.getCoords() ); }
+  template< class Element >
+  void initData( const ArrayBase::Size &size ) { initData< Element >( size.getDims(), size.getCoords() ); }
 
   template< class DataType >
   DataType *getAs( DataType* &as )
   {
     if( !m_data.isNull() ) return m_data->getAs( as );
-    as = 0; return 0;
+    return ( as = 0 );
   }
 
   template< class DataType >
   const DataType *getAs( const DataType* &as ) const
   {
     if( !m_data.isNull() ) return m_data->getAs( as );
-    as = 0; return 0;
+    return ( as = 0 );
   }
 
   void resolve( void );
@@ -249,7 +278,7 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  typedef Array< CountPtr< Input >, 1 > inputs_t;
+  typedef Array< CountPtr< Input > > inputs_t;
 
   typedef inputs_t::iterator inputs_iterator;
   inputs_iterator inputs_begin( void );
@@ -355,22 +384,22 @@ public:
   {
     typedef Exception Base;
   public:
-    template< class T, int DIMS >
-    explicit GetAsFailed( const Port *_port, const Array< T, DIMS > * )
+    template< class Element >
+    explicit GetAsFailed( const Port *_port, const Array< Element > *, int _dims = -1 )
     : port( _port )
+    , dims( _dims )
     {
-      (*this) << "Could not get '" << port->getIdentifier() << "' as 'Array< " << getTypeName< T >() << ", " << DIMS << " >'";
-    }
-
-    template< class T >
-    explicit GetAsFailed( const Port *_port, const ArrayElements< T > * )
-    : port( _port )
-    {
-      (*this) << "Could not get '" << port->getIdentifier() << "' as 'ArrayElements< " << getTypeName< T >() << " >'";
+      (*this)
+        << "Could not get '" << port->getIdentifier() << "'"
+        << " as 'Array< " << getTypeName< Element >() << " >"
+        ;
+      if( dims >= 0 ) (*this) << "[ " << dims << " ]";
+      (*this) << "'";
     }
 
     EXCEPTION_BODY( GetAsFailed )
     CountPtr< const Port > port;
+    int dims;
   };
 
   class InitFailed : public Exception
@@ -486,9 +515,9 @@ protected:
 
 private:
   friend class ::utest_Node;
-  typedef Array< CountPtr< Input  >, 1 > inputs_t;
-  typedef Array< CountPtr< Output >, 1 > outputs_t;
-  typedef Array< CountPtr< Param  >, 1 > params_t;
+  typedef Array< CountPtr< Input  > > inputs_t;
+  typedef Array< CountPtr< Output > > outputs_t;
+  typedef Array< CountPtr< Param  > > params_t;
   CountPtr< inputs_t  > m_inputs;
   CountPtr< outputs_t > m_outputs;
   CountPtr< params_t  > m_params;
@@ -498,8 +527,8 @@ private:
 typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *parent, const SharedObject *so );
 typedef CountPtr< Node > (*create_Node_t)( GarbageCollector *gc, const String &identifier, const SharedObject *so );
 
-template< class T, int DIMS >
-void Output::init( const String &identifier, const index_t *size )
+template< class Element >
+void Output::init( const String &identifier, int dims, const index_t *size )
 {
   setIdentifier( identifier );
 
@@ -507,43 +536,32 @@ void Output::init( const String &identifier, const index_t *size )
 
   if(
        out.isNull()
-    || TypeOf< T >::E == Type::OTHER
-    || out->getType() != TypeOf< T >::E
-    || out->getDims() != DIMS
+    || TypeOf< Element >::E == Type::OTHER
+    || out->getType() != TypeOf< Element >::E
+    || out->getDims() != dims
     )
   {
-    setData( new Array< T, DIMS >( getGC(), DIMS, size ) );
+    setData( new Array< Element >( getGC(), dims, size ) );
   }
   else
   {
-    if( size ) out->resize_v( DIMS, size );
+    if( size ) out->resize_v( dims, size );
   }
 }
 
-template< class T >
+template< class Element >
 void Output::initData( int dims, const index_t *size )
 {
   CountPtr< ArrayBase > out = getData();
 
   if(
        out.isNull()
-    || TypeOf< T >::E == Type::OTHER
-    || out->getType() != TypeOf< T >::E
+    || TypeOf< Element >::E == Type::OTHER
+    || out->getType() != TypeOf< Element >::E
     || out->getDims() != dims
     )
   {
-    switch( dims )
-    {
-      case 0: out.reset( new Array< T, 0 >( getGC(), dims, size ) ); break;
-      case 1: out.reset( new Array< T, 1 >( getGC(), dims, size ) ); break;
-      case 2: out.reset( new Array< T, 2 >( getGC(), dims, size ) ); break;
-      case 3: out.reset( new Array< T, 3 >( getGC(), dims, size ) ); break;
-      case 4: out.reset( new Array< T, 4 >( getGC(), dims, size ) ); break;
-      default:
-        throw Node::InitFailed( this )
-          << ": Number of dimensions greater than 4 not supported."
-          ;
-    }
+    out.reset( new Array< Element >( getGC(), dims, size ) );
     setData( out );
   }
 

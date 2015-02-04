@@ -123,7 +123,7 @@ private:
   std::queue< SDL_Event > m_event_queue;
   CountPtr< Update > m_update;
   CountPtr< PurgeEvents > m_purge;
-  CountPtr< Array< uint8_t, 2 > > m_rgba;
+  CountPtr< Array< uint8_t > > m_rgba;
   std::string m_error;
   Mutex m_event_queue_lock;
   SDL_Window_Guard m_window;

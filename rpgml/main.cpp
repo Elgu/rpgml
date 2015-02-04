@@ -110,7 +110,7 @@ static GarbageCollector gc( 5 );
 static const char *rpgml_file = 0;
 static int         num_threads = -1;
 static std::string searchPath;
-static CountPtr< StringArray1D > rpgml_argv;
+static CountPtr< StringArray > rpgml_argv;
 
 static
 void parse_argv( int argc, char **argv )
@@ -158,7 +158,7 @@ void parse_argv( int argc, char **argv )
     rpgml_file = argv[ optind ];
   }
 
-  rpgml_argv = new StringArray1D( &gc );
+  rpgml_argv = new StringArray( &gc, 1 );
   for( int i = optind; i < argc; ++i )
   {
     rpgml_argv->push_back( from_printable( String::Static( argv[ i ] ) ) );
@@ -260,8 +260,7 @@ int main( int argc, char **argv )
   }
   catch( const RPGML::Exception &e )
   {
-    e.print_backtrace();
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.getBacktrace() << "\n" << e.what() << std::endl;
     return -1;
   }
   catch( const std::exception &e )

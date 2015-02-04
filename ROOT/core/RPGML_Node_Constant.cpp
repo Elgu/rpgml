@@ -60,21 +60,18 @@ bool Constant::tick( void )
 
     switch( m_value.getType().getEnum() )
     {
-      case Type::BOOL  : out.reset( new Array< bool    , 0 >( getGC() ) ); break;
-      case Type::UINT8 : out.reset( new Array< uint8_t , 0 >( getGC() ) ); break;
-      case Type::INT8  : out.reset( new Array< int8_t  , 0 >( getGC() ) ); break;
-      case Type::UINT16: out.reset( new Array< uint16_t, 0 >( getGC() ) ); break;
-      case Type::INT16 : out.reset( new Array< int16_t , 0 >( getGC() ) ); break;
-      case Type::UINT32: out.reset( new Array< uint32_t, 0 >( getGC() ) ); break;
-      case Type::INT32 : out.reset( new Array< int32_t , 0 >( getGC() ) ); break;
-      case Type::UINT64: out.reset( new Array< uint64_t, 0 >( getGC() ) ); break;
-      case Type::INT64 : out.reset( new Array< int64_t , 0 >( getGC() ) ); break;
-      case Type::FLOAT : out.reset( new Array< float   , 0 >( getGC() ) ); break;
-      case Type::DOUBLE: out.reset( new Array< double  , 0 >( getGC() ) ); break;
-      case Type::STRING: out.reset( new Array< String  , 0 >( getGC() ) ); break;
-
-      // TODO: use ConstantArray or something
-      case Type::ARRAY : out.reset( m_value.getArray() ); break;
+      case Type::BOOL  : out.reset( new Array< bool     >( getGC(), 0 ) ); break;
+      case Type::UINT8 : out.reset( new Array< uint8_t  >( getGC(), 0 ) ); break;
+      case Type::INT8  : out.reset( new Array< int8_t   >( getGC(), 0 ) ); break;
+      case Type::UINT16: out.reset( new Array< uint16_t >( getGC(), 0 ) ); break;
+      case Type::INT16 : out.reset( new Array< int16_t  >( getGC(), 0 ) ); break;
+      case Type::UINT32: out.reset( new Array< uint32_t >( getGC(), 0 ) ); break;
+      case Type::INT32 : out.reset( new Array< int32_t  >( getGC(), 0 ) ); break;
+      case Type::UINT64: out.reset( new Array< uint64_t >( getGC(), 0 ) ); break;
+      case Type::INT64 : out.reset( new Array< int64_t  >( getGC(), 0 ) ); break;
+      case Type::FLOAT : out.reset( new Array< float    >( getGC(), 0 ) ); break;
+      case Type::DOUBLE: out.reset( new Array< double   >( getGC(), 0 ) ); break;
+      case Type::STRING: out.reset( new Array< String   >( getGC(), 0 ) ); break;
 
       default:
         throw Exception() << "Parameter 'value' was not set or set to a non-primitive type.";

@@ -107,7 +107,7 @@ Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Sco
     if( what_str == "size" )
     {
       const index_t size_n = index_t( max( in_dims, 4 ) );
-      CountPtr< Array< index_t, 1 > > size_array = new Array< index_t, 1 >( getGC(), size_n );
+      CountPtr< Array< index_t > > size_array = new Array< index_t >( getGC(), 1, size_n );
 
       for( index_t i=0; i<index_t( in_dims ); ++i )
       {
@@ -141,7 +141,7 @@ Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Sco
 
     if( what_str == "size" )
     {
-      return Value( new Array< index_t, 1 >( getGC() ) );
+      return Value( new Array< index_t >( getGC(), 1 ) );
     }
 
     throw Exception()

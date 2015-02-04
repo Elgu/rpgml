@@ -21,7 +21,7 @@ namespace RPGML {
 
 ThreadPool::ThreadPool( GarbageCollector *_gc, index_t num_threads )
 : Base( _gc )
-, m_workers( new WorkersArray( _gc, num_threads ) )
+, m_workers( new WorkersArray( _gc, 1, num_threads ) )
 , m_queue( new JobQueue( _gc ) )
 {
   for( index_t i=0; i<num_threads; ++i )

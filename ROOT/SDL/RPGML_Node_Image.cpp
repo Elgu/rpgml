@@ -66,7 +66,7 @@ bool Image::tick( void )
 {
   if( !hasAnyInputChanged() ) return true;
 
-  GET_INPUT_MANDATORY( INPUT_FILENAME, filename, String, 0 );
+  GET_INPUT_AS_DIMS( INPUT_FILENAME, filename, String, 0 );
 
   SDL_Surface_Guard image( IMG_Load( (**filename) ) );
   if( !image.get() )
@@ -92,11 +92,11 @@ bool Image::tick( void )
       ;
   }
 
-  GET_OUTPUT_AS( OUTPUT_WIDTH , o_width , int, 0 );
-  GET_OUTPUT_AS( OUTPUT_HEIGHT, o_height, int, 0 );
-  GET_OUTPUT_AS( OUTPUT_RED   , red     , uint8_t, 2 );
-  GET_OUTPUT_AS( OUTPUT_GREEN , green   , uint8_t, 2 );
-  GET_OUTPUT_AS( OUTPUT_BLUE  , blue    , uint8_t, 2 );
+  GET_OUTPUT_AS( OUTPUT_WIDTH , o_width , int );
+  GET_OUTPUT_AS( OUTPUT_HEIGHT, o_height, int );
+  GET_OUTPUT_AS( OUTPUT_RED   , red     , uint8_t );
+  GET_OUTPUT_AS( OUTPUT_GREEN , green   , uint8_t );
+  GET_OUTPUT_AS( OUTPUT_BLUE  , blue    , uint8_t );
 
   if( (**o_width) != width )
   {

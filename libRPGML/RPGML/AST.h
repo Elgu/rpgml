@@ -253,8 +253,8 @@ public:
 class ArrayConstantExpression : public Expression
 {
 public:
-  typedef Array< CountPtr< const SequenceExpression >, 1 > SequenceExpressionArray;
-  typedef Array< CountPtr< const ArrayBase          >, 1 > ArrayBaseArray;
+  typedef Array< CountPtr< const SequenceExpression > > SequenceExpressionArray;
+  typedef Array< CountPtr< const ArrayBase          > > ArrayBaseArray;
 
   explicit
   ArrayConstantExpression( const Location *_loc, const ArrayBase *_descr_array, int _dims )

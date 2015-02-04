@@ -206,42 +206,44 @@ size_t JobQueue::EndJob::doit( CountPtr< JobQueue > )
 
 JobQueue::Queue::Queue( GarbageCollector *_gc )
 : Collectable( _gc )
-, m_heap( 0 )
-{}
+, m_heap( new JobArray( _gc, 1 ) )
+{
+  m_heap->reserve( 8 );
+}
 
 JobQueue::Queue::~Queue( void )
 {}
 
 bool JobQueue::Queue::empty( void ) const
 {
-  return m_heap.empty();
+  return m_heap->empty();
 }
 
 void JobQueue::Queue::push( Job *job )
 {
-  m_heap.push_back( job );
-  std::push_heap( m_heap.begin(), m_heap.end(), cmp_priority_less );
+  m_heap->push_back( job );
+  std::push_heap( m_heap->begin(), m_heap->end(), cmp_priority_less );
 }
 
 void JobQueue::Queue::pop( void )
 {
-  std::pop_heap( m_heap.begin(), m_heap.end(), cmp_priority_less );
-  m_heap.pop_back();
+  std::pop_heap( m_heap->begin(), m_heap->end(), cmp_priority_less );
+  m_heap->pop_back();
 }
 
 CountPtr< JobQueue::Job > JobQueue::Queue::top( void ) const
 {
-  return m_heap.front();
+  return m_heap->front();
 }
 
 void JobQueue::Queue::clear( void )
 {
-  m_heap.clear();
+  m_heap->clear();
 }
 
 size_t JobQueue::Queue::size( void ) const
 {
-  return m_heap.size();
+  return m_heap->size();
 }
 
 void JobQueue::Queue::gc_clear( void )
@@ -251,7 +253,7 @@ void JobQueue::Queue::gc_clear( void )
 
 void JobQueue::Queue::gc_getChildren( Children &children ) const
 {
-  m_heap.gc_getChildren( children );
+  children << m_heap;
 }
 
 } // namespace RPGML

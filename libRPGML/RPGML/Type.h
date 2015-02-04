@@ -550,7 +550,10 @@ Type typeOf( const T & ) { return Type( TypeOf< T >::E  ); }
 
 template< class T >
 static inline
-const char *getTypeName( void ) { return Type( TypeOf< T >::E  ).getTypeName(); }
+const char *getTypeName( void )
+{
+  return Type( TypeOf< T >::E  ).getTypeName();
+}
 
 } // namespace RPGML
 

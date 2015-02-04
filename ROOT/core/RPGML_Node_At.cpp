@@ -76,23 +76,23 @@ bool At::tick2( const ArrayBase *in_base, int coord_dims )
       ;
   }
 
-  const ArrayElements< InType > *in = 0;
+  const Array< InType > *in = 0;
   if( !in_base->getAs( in ) ) throw GetAsFailed( getInput( INPUT_IN ), in );
 
-  GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_X, x, CoordType );
-  GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_Y, y, CoordType );
-  GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_Z, z, CoordType );
-  GET_INPUT_ELEMENTS_IF_CONNECTED( INPUT_T, t, CoordType );
+  GET_INPUT_AS_IF_CONNECTED( INPUT_X, x, CoordType );
+  GET_INPUT_AS_IF_CONNECTED( INPUT_Y, y, CoordType );
+  GET_INPUT_AS_IF_CONNECTED( INPUT_Z, z, CoordType );
+  GET_INPUT_AS_IF_CONNECTED( INPUT_T, t, CoordType );
 
   const int in_dims = in->getDims();
 
-  const ArrayElements< CoordType > *const coord[ 4 ] = { x, y, z, t };
+  const Array< CoordType > *const coord[ 4 ] = { x, y, z, t };
   const ArrayBase::Size coord_size = coord[ 0 ]->getSize();
 
-  GET_OUTPUT_ELEMENTS_INIT( OUTPUT_OUT, out, InType, coord_dims, coord_size );
+  GET_OUTPUT_INIT( OUTPUT_OUT, out, InType, coord_dims, coord_size );
 
-  typedef typename ArrayElements< InType >::iterator out_iterator;
-  typedef typename ArrayElements< CoordType >::const_iterator coord_iterator;
+  typedef typename Array< InType >::iterator out_iterator;
+  typedef typename Array< CoordType >::const_iterator coord_iterator;
 
   out_iterator out_iter = out->begin();
   coord_iterator iter[ in_dims ];
@@ -124,7 +124,7 @@ bool At::tick( void )
   if( !hasAnyInputChanged() ) return true;
   setAllOutputChanged();
 
-  GET_INPUT_DATA( INPUT_IN, in_base_tmp );
+  GET_INPUT_BASE( INPUT_IN, in_base_tmp );
 
   const ArrayBase *in_base = resolve( in_base_tmp );
 

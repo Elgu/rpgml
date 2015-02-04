@@ -1,6 +1,6 @@
 /* This file is part of RPGML.
  *
- * Copyright (c) 2014, Gunnar Payer, All rights reserved.
+ * Copyright (c) 2015, Gunnar Payer, All rights reserved.
  *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,496 +19,495 @@
 #define RPGML_Array_h
 
 #include "ArrayBase.h"
-#include "GarbageCollector.h"
-#include "Value.h"
-#include "Iterator.h"
-#include "types.h"
+#include "ArrayData.h"
 #include "Type.h"
 #include "Exception.h"
+#include "GarbageCollector.h"
+#include "iterator_base.h"
 
-#include <ostream>
+#include <cassert>
+#include <vector>
 
 namespace RPGML {
 
-class Value;
-
-template< class _Element, int _Dims >
+template< class _Element >
 class Array;
 
 template< class _Element >
-class ArrayElements;
-
-template< class Element, int Dims >
-CountPtr< Array< Element, Dims > > new_Array( GarbageCollector *gc, const Element *fill_value=0 );
-
-template< class Element >
-CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 );
-
-template< class Element >
-CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value );
-
-template< class _Element >
-class ArrayElements : public ArrayBase
+class Array : public ArrayBase
 {
   typedef ArrayBase Base;
-private:
-  typedef std::vector< _Element > elements_t;
 public:
   typedef _Element Element;
-  typedef typename elements_t::iterator               iterator;
-  typedef typename elements_t::const_iterator         const_iterator;
-  typedef typename elements_t::reverse_iterator       reverse_iterator;
-  typedef typename elements_t::const_reverse_iterator const_reverse_iterator;
-  typedef typename elements_t::reference              reference;
-  typedef typename elements_t::const_reference        const_reference;
-  typedef Base::OutOfRange         OutOfRange;
-  typedef Base::DimensionsMismatch DimensionsMismatch;
 
-  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
-
-  explicit
-  ArrayElements( GarbageCollector *_gc )
-  : Base( _gc )
-  {}
-
-  ArrayElements( const ArrayElements &other )
-  : Base( other )
-  , m_elements( other.m_elements )
-  {}
-
-  virtual ~ArrayElements( void )
-  {}
-
-  virtual ArrayBase &clear( void )
-  {
-    m_elements.clear();
-    return (*this);
-  }
-
-  bool empty( void ) const
-  {
-    return m_elements.empty();
-  }
-
-  virtual index_t size( void ) const
-  {
-    return index_t( m_elements.size() );
-  }
-
-  const Element *elements( void ) const
-  {
-    return &m_elements[ 0 ];
-  }
-
-  Element *elements( void )
-  {
-    return &m_elements[ 0 ];
-  }
-
-  void swap( ArrayElements &other )
-  {
-    m_elements.swap( other.m_elements );
-  }
-
-  void fill( const Element &x )
-  {
-    std::fill( m_elements.begin(), m_elements.end(), x );
-  }
-
-  virtual reference       at_v( int dims, const index_t *x ) = 0;
-  virtual const_reference at_v( int dims, const index_t *x ) const = 0;
-
-  virtual bool isValue( void ) const { return _isValue( (const Element*)0 ); }
-
-  iterator       begin( void )       { return m_elements.begin(); }
-  const_iterator begin( void ) const { return m_elements.begin(); }
-  iterator       end  ( void )       { return m_elements.end  (); }
-  const_iterator end  ( void ) const { return m_elements.end  (); }
-  reverse_iterator       rbegin( void )       { return m_elements.rbegin(); }
-  const_reverse_iterator rbegin( void ) const { return m_elements.rbegin(); }
-  reverse_iterator       rend  ( void )       { return m_elements.rend  (); }
-  const_reverse_iterator rend  ( void ) const { return m_elements.rend  (); }
-
-  Element       &back( void )       { return m_elements.back(); }
-  const Element &back( void ) const { return m_elements.back(); }
-  Element       &front( void )       { return m_elements.front(); }
-  const Element &front( void ) const { return m_elements.front(); }
-
-  virtual void gc_clear( void )
-  {
-    clear();
-  }
-
-  virtual void gc_getChildren( Children &children ) const
-  {
-    if( isCollectable( (Element*)0 ) )
-    {
-      for( size_t i=0; i<m_elements.size(); ++i )
-      {
-        children << m_elements[ i ];
-      }
-    }
-  }
-
-protected:
-  reference elements_at( index_t i )
-  {
-    return m_elements[ i ];
-  }
-
-  const_reference elements_at( index_t i ) const
-  {
-    return m_elements[ i ];
-  }
-
-  void _push_back( const Element &x )
-  {
-    m_elements.push_back( x );
-  }
-
-  void _pop_back( void )
-  {
-    m_elements.pop_back();
-  }
-
-  ArrayElements &_resize( size_t new_size )
-  {
-    m_elements.resize( new_size );
-    return (*this);
-  }
-
-private:
-  static inline bool _isValue( const Value* ) { return true; }
-  template< class T >
-  static inline bool _isValue( const T* ) { return false; }
-
-  elements_t m_elements;
-};
-
-template< class _Element, int _Dims >
-class Array : public ArrayElements< _Element >
-{
-  typedef ArrayElements< _Element > Base;
-public:
-  static const int Dims = _Dims;
-  typedef _Element Element;
-  typedef typename Base::iterator               iterator;
-  typedef typename Base::const_iterator         const_iterator;
-  typedef typename Base::reverse_iterator       reverse_iterator;
-  typedef typename Base::const_reverse_iterator const_reverse_iterator;
-  typedef typename Base::reference              reference;
-  typedef typename Base::const_reference        const_reference;
-  typedef typename Base::ConstValueIterator     ConstValueIterator;
-  typedef typename Base::CoordinatesIterator    CoordinatesIterator;
-  typedef typename Base::Children               Children;
-  typedef typename Base::Coordinates            Coordinates;
-  typedef typename Base::Size                   Size;
-  typedef typename Base::OutOfRange             OutOfRange;
-  typedef typename Base::DimensionsMismatch     DimensionsMismatch;
-
-  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
+  typedef Base::ConstValueIterator     ConstValueIterator;
+  typedef Base::CoordinatesIterator    CoordinatesIterator;
+  typedef Base::Children               Children;
+  typedef Base::Coordinates            Coordinates;
+  typedef Base::Size                   Size;
+  typedef Base::OutOfRange             OutOfRange;
+  typedef Base::DimensionsMismatch     DimensionsMismatch;
+  typedef typename ArrayData< Element >::      pointer       pointer;
+  typedef typename ArrayData< Element >::const_pointer const_pointer;
+  typedef typename ArrayData< Element >::      reference       reference;
+  typedef typename ArrayData< Element >::const_reference const_reference;
+  typedef RPGML::Iterator<       reference >      Iterator;
+  typedef RPGML::Iterator< const_reference > ConstIterator;
+  typedef iterator_base<       Element,       reference,       pointer >       iterator;
+  typedef iterator_base< const Element, const_reference, const_pointer > const_iterator;
 
   explicit
-  Array( GarbageCollector *_gc )
+  Array( GarbageCollector *_gc, int dims )
   : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
   {
-    if( Dims > 0 ) std::fill( m_size, m_size+Dims, index_t( 0 ) );
-    if( Dims > 1 ) std::fill( m_size2, m_size2+(Dims-1), index_t( 0 ) );
-    if( Dims == 0 ) Base::_resize( 1 );
+    _check_dims();
+    std::fill( m_size, m_size+dims, 0 );
+    std::fill( m_size+dims, m_size+4, 1 );
+    if( dims == 0 ) resize_v( 0, 0 );
   }
 
   explicit
-  Array( GarbageCollector *_gc, index_t x, index_t y=1, index_t z=1, index_t t=1 )
+  Array( GarbageCollector *_gc, int dims, index_t sx )
   : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
   {
-    if( Dims == 0 ) Base::_resize( 1 );
-    else resize( x, y, z, t );
+    _check_dims( 1 );
+    std::fill( m_size, m_size+1, 0 );
+    std::fill( m_size+1, m_size+4, 1 );
+    resize( sx );
   }
 
   explicit
-  Array( GarbageCollector *_gc, index_t _dims, const index_t *_size )
+  Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy )
   : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
   {
-    if( Dims == 0 ) Base::_resize( 1 );
-    else if( _size ) resize_v( _dims, _size );
+    _check_dims( 2 );
+    std::fill( m_size, m_size+2, 0 );
+    std::fill( m_size+2, m_size+4, 1 );
+    resize( sx, sy );
   }
 
   explicit
-  Array( GarbageCollector *_gc, const Size &_size )
+  Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy, index_t sz )
   : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
   {
-    if( Dims == 0 ) Base::_resize( 1 );
-    else resize( _size );
+    _check_dims( 3 );
+    std::fill( m_size, m_size+3, 0 );
+    std::fill( m_size+3, m_size+4, 1 );
+    resize( sx, sy, sz );
   }
 
-  Array( const Array &other )
-  : Base( other )
+  explicit
+  Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy, index_t sz, index_t st )
+  : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
   {
-    if( Dims > 0 ) std::copy( other.m_size , other.m_size  +  Dims   , m_size );
-    if( Dims > 1 ) std::copy( other.m_size2, other.m_size2 + (Dims-1), m_size2 );
+    _check_dims( 4 );
+    std::fill( m_size, m_size+4, 0 );
+    resize( sx, sy, sz, st );
+  }
+
+  explicit
+  Array( GarbageCollector *_gc, int dims, const index_t *s )
+  : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( dims )
+  {
+    _check_dims();
+    std::fill( m_size, m_size+dims, 0 );
+    std::fill( m_size+dims, m_size+4, 1 );
+    resize_v( dims, s );
+  }
+
+  explicit
+  Array( GarbageCollector *_gc, const Size &s )
+  : Base( _gc )
+  , m_element0( pointer() )
+  , m_dims( s.getDims() )
+  {
+    _check_dims();
+    const int dims = s.getDims();
+    std::fill( m_size, m_size+dims, 0 );
+    std::fill( m_size+dims, m_size+4, 1 );
+    resize( s );
   }
 
   virtual ~Array( void )
   {}
 
-  virtual Array &clear( void )
+  void swap( RPGML::Array< Element > &other )
   {
-    Base::clear();
-    if( Dims > 0 ) std::fill( m_size , m_size + Dims   , 0 );
-    if( Dims > 1 ) std::fill( m_size2, m_size2+(Dims-1), 0 );
-    return (*this);
-  }
-
-  virtual index_t        getDims( void ) const
-  {
-    return Dims;
-  }
-
-  virtual Type           getType( void ) const
-  {
-    return TypeOf< Element >::E;
-  }
-
-  virtual Size           getSize( void ) const
-  {
-    return Size( Dims, m_size );
-  }
-
-  virtual Array &resize_v( int dims, const index_t *new_size )
-  {
-    if( dims != Dims )
+    const int dims = m_dims;
+    if( dims != other.m_dims )
     {
-      throw ArrayBase::DimensionsMismatch( dims, Dims )
-        << ": Array resize failed"
+      throw Exception()
+        << "Cannot swap an Array with another one with different dimensions"
+        << ", this has " << dims
+        << ", the other has " << other.m_dims
         ;
     }
-    if( Dims > 0 )
+    m_elements_data.swap( other.m_elements_data );
+    std::swap( m_element0, other.m_element0 );
+    for( int d=0; d<dims; ++d )
     {
-      std::copy( new_size, new_size+Dims, m_size );
-      return calc_size2_resize();
+      std::swap( m_size[ d ], other.m_size[ d ] );
+      std::swap( m_stride[ d ], other.m_stride[ d ] );
+    }
+  }
+
+  virtual void gc_clear( void )
+  {
+    m_element0 = pointer();
+    m_elements_data.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    children << m_elements_data;
+  }
+
+  iterator begin( void )
+  {
+    return iterator( getSize(), getStride(), elements() );
+  }
+
+  const_iterator begin( void ) const
+  {
+    return const_iterator( getSize(), getStride(), elements() );
+  }
+
+  iterator end( void )
+  {
+    const int dims = m_dims;
+    if( dims > 0 )
+    {
+      index_t end_pos[ dims ];
+      if( dims > 1 ) std::fill( end_pos, end_pos+(dims-1), 0 );
+      end_pos[ dims-1 ] = m_size[ dims-1 ];
+      return iterator( getSize(), getStride(), elements(), end_pos );
     }
     else
     {
-      return (*this);
+      return iterator( getSize(), getStride(), elements()+1 );
     }
   }
 
-  virtual Array &resize( const Size &s )
+  const_iterator end( void ) const
   {
-    return resize_v( s.getDims(), s.getCoords() );
+    const int dims = m_dims;
+    if( dims > 0 )
+    {
+      index_t end_pos[ dims ];
+      if( dims > 1 ) std::fill( end_pos, end_pos+(dims-1), 0 );
+      end_pos[ dims-1 ] = m_size[ dims-1 ];
+      return const_iterator( getSize(), getStride(), elements(), end_pos );
+    }
+    else
+    {
+      return const_iterator( getSize(), getStride(), elements()+1 );
+    }
   }
 
-  virtual Array &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 )
+  reference front( void )
   {
-    switch( Dims )
-    {
-      case 0: if( x != 1 ) throw Exception() << "If Dims is 0, x must be 1, is " << x; // fallthrough
-      case 1: if( y != 1 ) throw Exception() << "If Dims less than 2, y must be 1, is " << y; // fallthrough
-      case 2: if( z != 1 ) throw Exception() << "If Dims less than 3, z must be 1, is " << z; // fallthrough
-      case 3: if( t != 1 ) throw Exception() << "If Dims less than 4, t must be 1, is " << t; // fallthrough
-      default: if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, resize( x, y, z, t ) must not be used.";
-    }
-    switch( Dims )
-    {
-      case 4: m_size[ 3 ] = t; // fallthrough
-      case 3: m_size[ 2 ] = z; // fallthrough
-      case 2: m_size[ 1 ] = y; // fallthrough
-      case 1: m_size[ 0 ] = x; // fallthrough
-      default: {}
-    }
-    return calc_size2_resize();
+    return *elements();
   }
 
-  virtual CountPtr< ArrayBase > clone( void ) const
+  const_reference front( void ) const
   {
-    return new Array( *this );
+    return *elements();
   }
 
-  bool inRange( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
+  reference back( void )
   {
-    if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, inRange( x, y, z, t ) must not be used.";
-    switch( Dims )
+    const int dims = m_dims;
+    if( dims > 0 )
     {
-      case 4: if( t >= m_size[ 3 ] ) return false; // fallthrough
-      case 3: if( z >= m_size[ 2 ] ) return false; // fallthrough
-      case 2: if( y >= m_size[ 1 ] ) return false; // fallthrough
-      case 1: if( x >= m_size[ 0 ] ) return false; // fallthrough
-      default: return true;
-    }
-    return true;
-  }
-
-  bool inRange_v( int dims, const index_t *x ) const
-  {
-    if( dims != Dims )
-    {
-      throw ArrayBase::DimensionsMismatch( dims, Dims )
-        << "Array range check failed"
-        ;
-    }
-    for( index_t i=0; i<Dims; ++i )
-    {
-      if( x[ i ] >= m_size[ i ] ) return false;
-    }
-    return true;
-  }
-
-  index_t getPos( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
-  {
-  #ifndef NDEBUG
-    switch( Dims )
-    {
-      case 0: if( x != 0 ) throw Exception() << "If Dims is 0, x must be 0."; // fallthrough
-      case 1: if( y != 0 ) throw Exception() << "If Dims less than 2, y must be 0."; // fallthrough
-      case 2: if( z != 0 ) throw Exception() << "If Dims less than 3, z must be 0."; // fallthrough
-      case 3: if( t != 0 ) throw Exception() << "If Dims less than 4, t must be 0."; // fallthrough
-      default: if( Dims >= 4 ) throw Exception() << "If Dims is greater than 4, at( x, y, z, t ) must not be used.";
-    }
-    switch( Dims )
-    {
-      case 4: if( t > m_size[ 3 ] ) throw Exception() << "Coordinate t out of range: max " << m_size[ 3 ] << ", is " << t;
-      case 3: if( z > m_size[ 2 ] ) throw Exception() << "Coordinate z out of range: max " << m_size[ 2 ] << ", is " << z;
-      case 2: if( y > m_size[ 1 ] ) throw Exception() << "Coordinate y out of range: max " << m_size[ 1 ] << ", is " << y;
-      case 1: if( x > m_size[ 0 ] ) throw Exception() << "Coordinate x out of range: max " << m_size[ 0 ] << ", is " << x;
-      default: {}
-    }
-  #endif
-    index_t pos = 0;
-    switch( Dims )
-    {
-      case 4: pos += m_size2[ 2 ] * t ; // fallthrough
-      case 3: pos += m_size2[ 1 ] * z; // fallthrough
-      case 2: pos += m_size2[ 0 ] * y; // fallthrough
-      case 1: pos += x; // fallthrough
-      default: {}
-    }
-
-    return pos;
-  }
-
-  index_t getPos_v( int dims, const index_t *x ) const
-  {
-  #ifndef NDEBUG
-    if( Dims != dims )
-    {
-      throw ArrayBase::DimensionsMismatch( dims, Dims )
-        << ": Getting Array element position failed"
-        ;
-    }
-    for( index_t i=0; i<Dims; ++i )
-    {
-      if( x[ i ] >= m_size[ i ] )
+      index_t pos[ dims ];
+      for( int d=0; d<dims; ++d )
       {
-        throw OutOfRange( getSize(), Coordinates( dims, x ) )
-          << ": Getting Array element position failed"
-          ;
+        pos[ d ] = m_size[ d ]-1;
       }
+      return at_v( dims, pos );
     }
-  #else
-    (void)dims;
-  #endif
-    index_t pos = x[ 0 ];
-    for( index_t i=1; i<Dims; ++i )
+    else
     {
-      pos += m_size2[ i-1 ] * x[ i ];
+      return *elements();
     }
-    return pos;
   }
 
-  reference at( index_t x, index_t y=0, index_t z=0, index_t t=0 )
+  const_reference back( void ) const
   {
-    return Base::elements_at( getPos( x, y, z, t ) );
-  }
-
-  virtual reference at_v( int dims, const index_t *x )
-  {
-    return Base::elements_at( getPos_v( dims, x ) );
-  }
-
-  const_reference at( index_t x, index_t y=0, index_t z=0, index_t t=0 ) const
-  {
-    return Base::elements_at( getPos( x, y, z, t ) );
-  }
-
-  virtual const_reference at_v( int dims, const index_t *x ) const
-  {
-    return Base::elements_at( getPos_v( dims, x ) );
-  }
-
-  reference operator[]( index_t x )
-  {
-    assert( Dims == 1 );
-    return at( x );
-  }
-
-  const_reference operator[]( index_t x ) const
-  {
-    assert( Dims == 1 );
-    return at( x );
-  }
-
-  reference operator*( void )
-  {
-    assert( Dims == 0 );
-    return Base::elements_at( 0 );
-  }
-
-  const_reference operator*( void ) const
-  {
-    assert( Dims == 0 );
-    return Base::elements_at( 0 );
-  }
-
-  void swap( Array &other )
-  {
-    Base::swap( other );
-    for( index_t i=0; i<Dims; ++i )
+    const int dims = m_dims;
+    if( dims > 0 )
     {
-      std::swap( m_size[ i ], other.m_size[ i ] );
+      index_t pos[ dims ];
+      for( int d=0; d<dims; ++d )
+      {
+        pos[ d ] = m_size[ d ]-1;
+      }
+      return at_v( dims, pos );
     }
-    for( index_t i=0; i<Dims-1; ++i )
+    else
     {
-      std::swap( m_size2[ i ], other.m_size2[ i ] );
+      return *elements();
     }
   }
 
-  void push_back( const Element &x )
+  class _ConstValueIterator : public ConstValueIterator
   {
-    if( Dims != 1 ) throw Exception() << "push_back() only makes sense on 1D-Arrays, is " << Dims;
-    ++m_size[ 0 ];
-    Base::_push_back( x );
-  }
-
-  void pop_back( void )
-  {
-    if( Dims != 1 ) throw Exception() << "pop_back() only makes sense on 1D-Arrays, is " << Dims;
-    if( m_size[ 0 ] > 0 )
-    {
-      --m_size[ 0 ];
-      Base::_pop_back();
-    }
-  }
+  public:
+    explicit
+    _ConstValueIterator( const Array *array ) : m_i( array->begin() ), m_end( array->end() ) {}
+    virtual ~_ConstValueIterator( void ) {}
+    virtual bool done( void ) { return ( m_i == m_end ); }
+    virtual void next( void ) { ++m_i; }
+    virtual Value get( void ) { return CreateValue< Element >()( *m_i ); }
+    virtual CountPtr< ConstValueIterator > clone( void ) const { return new _ConstValueIterator( *this ); }
+  private:
+    const_iterator m_i;
+    const_iterator m_end;
+  };
 
   virtual CountPtr< ConstValueIterator > getConstValueIterator( void ) const
   {
     return new _ConstValueIterator( this );
   }
 
+  class _CoordinatesIterator : public CoordinatesIterator
+  {
+  public:
+    explicit
+    _CoordinatesIterator( const Array *array ) : m_i( array->begin() ), m_end( array->end() ) {}
+    virtual ~_CoordinatesIterator( void ) {}
+    virtual bool done( void ) { return ( m_i == m_end ); }
+    virtual void next( void ) { ++m_i; }
+    virtual Coordinates get( void ) { return Coordinates( m_i.getDims(), m_i.getPos() ); }
+    virtual CountPtr< CoordinatesIterator > clone( void ) const { return new _CoordinatesIterator( *this ); }
+  private:
+    const_iterator m_i;
+    const_iterator m_end;
+  };
+
   virtual CountPtr< CoordinatesIterator > getCoordinatesIterator( void ) const
   {
     return new _CoordinatesIterator( this );
   }
 
-  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const
+  class _Iterator : public Iterator
   {
-    if( inRange( x, y, z, t ) )
+  public:
+    explicit
+    _Iterator( Array *array ) : m_i( array->begin() ), m_end( array->end() ) {}
+    virtual ~_Iterator( void ) {}
+    virtual bool done( void ) { return ( m_i == m_end ); }
+    virtual void next( void ) { ++m_i; }
+    virtual reference get( void ) { return (*m_i); }
+    virtual CountPtr< Iterator > clone( void ) const { return new _Iterator( *this ); }
+  private:
+    iterator m_i;
+    iterator m_end;
+  };
+
+  class _ConstIterator : public ConstIterator
+  {
+  public:
+    explicit
+    _ConstIterator( const Array *array ) : m_i( array->begin() ), m_end( array->end() ) {}
+    virtual ~_ConstIterator( void ) {}
+    virtual bool done( void ) { return ( m_i == m_end ); }
+    virtual void next( void ) { ++m_i; }
+    virtual const_reference get( void ) { return (*m_i); }
+    virtual CountPtr< ConstIterator > clone( void ) const { return new _ConstIterator( *this ); }
+  private:
+    const_iterator m_i;
+    const_iterator m_end;
+  };
+
+  virtual CountPtr< Iterator > getIterator( void )
+  {
+    return new _Iterator( this );
+  }
+
+  virtual CountPtr< ConstIterator > getIterator( void ) const
+  {
+    return new _ConstIterator( this );
+  }
+
+  virtual CountPtr< ConstIterator > getConstIterator( void ) const
+  {
+    return new _ConstIterator( this );
+  }
+
+  virtual const std::type_info &getTypeInfo( void ) const { return typeid( *this ); }
+
+  virtual ArrayBase &clear( void )
+  {
+    m_element0 = pointer();
+    m_elements_data.reset();
+    std::fill( m_size, m_size+m_dims, 0 );
+    std::fill( m_stride, m_stride+m_dims, 0 );
+    return (*this);
+  }
+
+  bool empty( void ) const
+  {
+    if( m_element0 == pointer() ) return true;
+    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
     {
-      return CreateValue< Element >()( at( x, y, z, t ) );
+      if( 0 == m_size[ d ] ) return true;
+    }
+    return false;
+  }
+
+  virtual index_t        getDims( void ) const
+  {
+    return m_dims;
+  }
+
+  virtual Type           getType( void ) const
+  {
+    return Type( TypeOf< Element >::E );
+  }
+
+  virtual Size getSize( void ) const
+  {
+    return Size( m_dims, m_size );
+  }
+
+  virtual index_t size( void ) const
+  {
+    index_t ret = 1;
+    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
+    {
+      ret *= m_size[ d ];
+    }
+    return ret;
+  }
+
+  index_t capacity( void ) const
+  {
+    if( !m_elements_data.isNull() )
+    {
+      return m_elements_data->capacity();
     }
     else
     {
-      const index_t xyzt[ 4 ] = { x, y, z, t };
-      throw OutOfRange( getSize(), Coordinates( Dims, xyzt ) );
+      return 0;
+    }
+  }
+
+  void push_back( const Element &x )
+  {
+    if( m_dims != 1 ) throw Exception() << "push_back() only makes sense on 1D-Arrays, is " << m_dims;
+    const index_t curr_size = m_size[ 0 ];
+    if( capacity() < curr_size+1 )
+    {
+      reserve( std::max( curr_size+1, curr_size*2 ) );
+    }
+    ++m_size[ 0 ];
+    at( curr_size ) = x;
+  }
+
+  void pop_back( void )
+  {
+    if( m_dims != 1 ) throw Exception() << "pop_back() only makes sense on 1D-Arrays, is " << m_dims;
+    if( m_size[ 0 ] > 0 )
+    {
+      --m_size[ 0 ];
+    }
+  }
+
+  bool isDense( void ) const
+  {
+    if( m_element0 == pointer() ) return true;
+    stride_t dense_stride = 1;
+    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
+    {
+      if( 0 == m_size[ d ] ) return true;
+      if( m_stride[ d ] != dense_stride ) return false;
+      dense_stride *= m_size[ d ];
+    }
+    return true;
+  }
+
+  const stride_t *getStride( void ) const
+  {
+    return m_stride;
+  }
+
+  const_pointer elements( void ) const
+  {
+    return m_element0;
+  }
+
+  pointer elements( void )
+  {
+    return m_element0;
+  }
+
+  ArrayBase &resize( index_t sx=1, index_t sy=1, index_t sz=1, index_t st=1 )
+  {
+    assert( m_dims >= 0 );
+    assert( m_dims <= 4 );
+    const int dims = m_dims;
+    const index_t s[ 4 ] = { sx, sy, sz, st };
+    for( int d=dims; d<4; ++d )
+    {
+      if( s[ d ] != 1 ) throw Exception()
+        << "If dims is less than " << d << " (is " << m_dims << ")"
+        << ", s" << ("xyzt"[ d ]) << " must be 1 (is " << s[ d ] << ")"
+        ;
+    }
+    return resize_v( dims, s );
+  }
+
+  virtual ArrayBase &resize_v( int dims, const index_t *s )
+  {
+    if( dims != m_dims )
+    {
+      throw Exception()
+        << "Dimensions specified at resize() (" << dims << ")"
+        << " must match dimensions specified at construction (" << m_dims << ")"
+        ;
+    }
+
+    reserve_v( dims, s );
+    std::copy( s, s+dims, m_size );
+    return (*this);
+  }
+
+  virtual ArrayBase &resize( const Size &s )
+  {
+    return resize_v( s.getDims(), s.getCoords() );
+  }
+
+  virtual CountPtr< ArrayBase > clone( void ) const
+  {
+    CountPtr< Array > ret = new Array( getGC(), getSize() );
+    std::copy( begin(), end(), ret->begin() );
+    return ret;
+  }
+
+  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const
+  {
+    const int dims = m_dims;
+    const index_t xyzt[ 4 ] = { x, y, z, t };
+    if( inRange_v( dims, xyzt ) )
+    {
+      return CreateValue< Element >()( at_v( dims, xyzt ) );
+    }
+    else
+    {
+      throw OutOfRange( getSize(), Coordinates( dims, xyzt ) );
     }
   }
 
@@ -531,14 +530,15 @@ public:
 
   virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 )
   {
-    if( inRange( x, y, z, t ) )
+    const int dims = m_dims;
+    const index_t xyzt[ 4 ] = { x, y, z, t };
+    if( inRange_v( dims, xyzt ) )
     {
-      at( x, y, z, t ) = value.get< Element >();
+      at_v( dims, xyzt ) = value.get< Element >();
     }
     else
     {
-      const index_t xyzt[ 4 ] = { x, y, z, t };
-      throw OutOfRange( getSize(), Coordinates( Dims, xyzt ) );
+      throw OutOfRange( getSize(), Coordinates( dims, xyzt ) );
     }
   }
 
@@ -559,182 +559,644 @@ public:
     setValue_v( value, x.getDims(), x );
   }
 
+  void fill( const Element &e )
+  {
+    std::fill( begin(), end(), e );
+  }
+
   virtual void fillValue( const Value &value )
   {
-    Base::fill( value.get< Element >() );
+    fill( value.get< Element >() );
   }
 
-  typedef RPGML::Iterator< Element& > Iterator;
-  typedef RPGML::Iterator< const Element& > ConstIterator;
-  CountPtr< Iterator      > getIterator( void ) { return new _Iterator( this ); }
-  CountPtr< ConstIterator > getIterator( void ) const { return new _ConstIterator( this ); }
-  CountPtr< ConstIterator > getConstIterator( void ) const { return getIterator(); }
-
-private:
-  reference _elements_at( index_t i )
+  virtual bool isValue( void ) const
   {
-    return Base::elements_at( i );
+    return _isValue( (const Element*)0 );
   }
 
-  const_reference _elements_at( index_t i ) const
+  stride_t position( index_t x ) const
   {
-    return Base::elements_at( i );
+  #ifndef NDEBUG
+    if( m_dims != 1 ) throw DimensionsMismatch( 1, m_dims );
+  #endif
+    return position_v( 1, &x );
   }
 
-  class _Iterator;
-  class _ConstIterator;
-  friend class _Children;
-  friend class _Iterator;
-  friend class _ConstIterator;
-
-  class _ConstIterator : public ConstIterator
+  stride_t position( index_t x, index_t y ) const
   {
-  public:
-    _ConstIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_ConstIterator( void ) {}
+  #ifndef NDEBUG
+    if( m_dims != 2 ) throw DimensionsMismatch( 1, m_dims );
+  #endif
+    const index_t X[ 2 ] = { x, y };
+    return position_v( 2, X );
+  }
 
-    virtual bool done( void ) { return ( m_i >= m_array->size() ); }
-    virtual void next( void ) { ++m_i; }
-    virtual const Element &get( void ) { return m_array->_elements_at( m_i ); }
-    virtual CountPtr< ConstIterator > clone( void ) const { return new _ConstIterator( *this ); }
-
-  private:
-    CountPtr< const Array > m_array;
-    index_t m_i;
-  };
-
-  class _Iterator : public Iterator
+  stride_t position( index_t x, index_t y, index_t z ) const
   {
-  public:
-    _Iterator( Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_Iterator( void ) {}
+  #ifndef NDEBUG
+    if( m_dims != 3 ) throw DimensionsMismatch( 1, m_dims );
+  #endif
+    const index_t X[ 3 ] = { x, y, z };
+    return position_v( 3, X );
+  }
 
-    virtual bool done( void ) { return ( m_i >= m_array->size() ); }
-    virtual void next( void ) { ++m_i; }
-    virtual Element &get( void ) { return m_array->_elements_at( m_i ); }
-    virtual CountPtr< Iterator > clone( void ) const { return new _Iterator( *this ); }
-
-  private:
-    CountPtr< Array > m_array;
-    index_t m_i;
-  };
-
-  class _ConstValueIterator : public ConstValueIterator
+  stride_t position( index_t x, index_t y, index_t z, index_t t ) const
   {
-  public:
-    explicit
-    _ConstValueIterator( const Array *array, index_t i=0 ) : m_array( array ), m_i( i ) {}
-    virtual ~_ConstValueIterator( void ) {}
+  #ifndef NDEBUG
+    if( m_dims != 4 ) throw DimensionsMismatch( 1, m_dims );
+  #endif
+    const index_t X[ 4 ] = { x, y, z, t };
+    return position_v( 4, X );
+  }
 
-    virtual bool done( void ) { return ( m_i >= m_array->size() ); }
-    virtual void next( void ) { ++m_i; }
-    virtual Value get( void ) { return CreateValue< Element >()( m_array->_elements_at( m_i ) ); }
-    virtual CountPtr< ConstValueIterator > clone( void ) const { return new _ConstValueIterator( *this ); }
-
-  private:
-    CountPtr< const Array > m_array;
-    index_t m_i;
-  };
-
-  class _CoordinatesIterator : public CoordinatesIterator
+  stride_t position_v( int dims, const index_t *x ) const
   {
-  public:
-    explicit
-    _CoordinatesIterator( const Array *array )
-    : m_array( array )
-    , m_size( array->getSize() )
-    , m_coord( array->getDims()+1, index_t( 0 ) )
+  #ifndef NDEBUG
+    if( m_dims != dims ) throw DimensionsMismatch( dims, m_dims );
+  #endif
+    // Note: Use dims instead of m_dims here, so inlining will work
+    if( dims > 0 )
     {
-      // so done() will return true
-      const int dims = m_size.getDims();
-      if( array->empty() ) m_coord[ dims ] = 1;
-    }
-    virtual ~_CoordinatesIterator( void ) {}
-
-    virtual bool done( void )
-    {
-      const int dims = m_size.getDims();
-      return ( m_coord[ dims ] > 0 );
-    }
-
-    virtual void next( void )
-    {
-      const int dims = m_size.getDims();
-      for( int d = 0; d < dims; ++d )
+      stride_t pos = 0;
+//      for( int d = dims-1; d >= 0; --d )
+      for( int d = 0; d < dims; ++d ) // faster
       {
-        ++m_coord[ d ];
-        if( m_coord[ d ] < m_size[ d ] )
+#ifndef NDEBUG
+        if( x[ d ] >= m_size[ d ] )
         {
-          return;
+          throw OutOfRange( getSize(), Coordinates( dims, x ) );
         }
-        else
-        {
-          m_coord[ d ] = 0;
-        }
+#endif
+        pos += stride_t( x[ d ] ) * m_stride[ d ];
       }
-      ++m_coord[ dims ];
-    }
-
-    virtual Coordinates get( void ) { return Coordinates( m_size.getDims(), &m_coord[ 0 ] ); }
-    virtual CountPtr< CoordinatesIterator > clone( void ) const { return new _CoordinatesIterator( *this ); }
-
-  private:
-    CountPtr< const Array > m_array;
-    const Size m_size;
-    std::vector< index_t > m_coord;
-  };
-
-  Array &calc_size2_resize( void )
-  {
-    if( Dims > 1 )
-    {
-      m_size2[ 0 ] = m_size[ 0 ];
-      for( index_t dim = 1; dim < Dims-1; ++dim )
-      {
-        m_size2[ dim ] = m_size2[ dim-1 ] * m_size[ dim ];
-      }
-      Base::_resize( m_size2[ Dims-2 ] * m_size[ Dims-1 ] );
+      return pos;
     }
     else
     {
-      Base::_resize( m_size[ Dims-1 ] );
+      return 0;
     }
+  }
+
+  reference at( index_t x )
+  {
+    return m_element0[ position( x ) ];
+  }
+
+  reference at( index_t x, index_t y )
+  {
+    return m_element0[ position( x, y ) ];
+  }
+
+  reference at( index_t x, index_t y, index_t z )
+  {
+    return m_element0[ position( x, y, z ) ];
+  }
+
+  reference at( index_t x, index_t y, index_t z, index_t t )
+  {
+    return m_element0[ position( x, y, z, t ) ];
+  }
+
+  const_reference at( index_t x ) const
+  {
+    return m_element0[ position( x ) ];
+  }
+
+  const_reference at( index_t x, index_t y ) const
+  {
+    return m_element0[ position( x, y ) ];
+  }
+
+  const_reference at( index_t x, index_t y, index_t z ) const
+  {
+    return m_element0[ position( x, y, z ) ];
+  }
+
+  const_reference at( index_t x, index_t y, index_t z, index_t t ) const
+  {
+    return m_element0[ position( x, y, z, t ) ];
+  }
+
+  reference at_v( int dims, const index_t *x )
+  {
+    return m_element0[ position_v( dims, x ) ];
+  }
+
+  const_reference at_v( int dims, const index_t *x ) const
+  {
+    return m_element0[ position_v( dims, x ) ];
+  }
+
+  const_reference operator[]( index_t x ) const
+  {
+    return at( x );
+  }
+
+  reference operator[]( index_t x )
+  {
+    return at( x );
+  }
+
+  const_reference operator*( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims != 0 ) throw DimensionsMismatch( 0, m_dims );
+  #endif
+    return *m_element0;
+  }
+
+  reference operator*( void )
+  {
+  #ifndef NDEBUG
+    if( m_dims != 0 ) throw DimensionsMismatch( 0, m_dims );
+  #endif
+    return *m_element0;
+  }
+
+  const_pointer operator->( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims != 0 ) throw DimensionsMismatch( 0, m_dims );
+  #endif
+    return m_element0;
+  }
+
+  pointer operator->( void )
+  {
+  #ifndef NDEBUG
+    if( m_dims != 0 ) throw DimensionsMismatch( 0, m_dims );
+  #endif
+    return m_element0;
+  }
+
+  bool inRange_v( int dims, const index_t *x ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims != dims ) throw DimensionsMismatch( dims, m_dims );
+  #endif
+    for( int d=0; d<dims; ++d )
+    {
+      if( x[ d ] > m_size[ d ] )
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s ) const
+  {
+    CountPtr< Array > ret = new Array( (*this) );
+    ret->setROI( dims, x, s );
+    return ret;
+  }
+
+  CountPtr< Array > getROI( int dims, const index_t *x, const index_t *s )
+  {
+    CountPtr< Array > ret = new Array( (*this) );
+    ret->setROI( dims, x, s );
+    return ret;
+  }
+
+  CountPtr< const Array > getROI( const Coordinates &x, const Size &s ) const
+  {
+    CountPtr< Array > ret = new Array( (*this) );
+    ret->setROI( x, s );
+    return ret;
+  }
+
+  CountPtr< Array > getROI( const Coordinates &x, const Size &s )
+  {
+    CountPtr< Array > ret = new Array( (*this) );
+    ret->setROI( x, s );
+    return ret;
+  }
+
+  CountPtr< Array > getROI( index_t x, index_t w ) const
+  {
+    if( 1 != m_dims )
+    {
+      throw Exception()
+        << "Dimensions must be 2 for getROI( x, w ), is " << m_dims
+        ;
+    }
+    CountPtr< Array > ret = new Array( (*this) );
+    ret->setROI( 1, &x, &w );
+    return ret;
+  }
+
+  CountPtr< Array > getROI( index_t x, index_t y, index_t sx, index_t sy ) const
+  {
+    if( 2 != m_dims )
+    {
+      throw Exception()
+        << "Dimensions must be 2 for getROI( x, y, sx, sy ), is " << m_dims
+        ;
+    }
+    CountPtr< Array > ret = new Array( (*this) );
+    const index_t X[ 2 ] = { x, y };
+    const index_t S[ 2 ] = { sx, sy };
+    ret->setROI( 2, X, S );
+    return ret;
+  }
+
+  CountPtr< Array > getROI( index_t x, index_t y, index_t z, index_t sx, index_t sy, index_t sz ) const
+  {
+    if( 3 != m_dims )
+    {
+      throw Exception()
+        << "Dimensions must be 3 for getROI( x, y, z, sx, sy, sz ), is " << m_dims
+        ;
+    }
+    CountPtr< Array > ret = new Array( (*this) );
+    const index_t X[ 3 ] = { x, y, z };
+    const index_t S[ 3 ] = { sx, sy, sz };
+    ret->setROI( 3, X, S );
+    return ret;
+  }
+
+  CountPtr< Array > getROI(
+      index_t x, index_t y, index_t z, index_t t
+    , index_t sx, index_t sy, index_t sz, index_t st
+    ) const
+  {
+    if( 4 != m_dims )
+    {
+      throw Exception()
+        << "Dimensions must be 4 for getROI( x, y, z, t, sx, sy, sz, st ), is " << m_dims
+        ;
+    }
+    CountPtr< Array > ret = new Array( (*this) );
+    const index_t X[ 4 ] = { x, y, z, t };
+    const index_t S[ 4 ] = { sx, sy, sz, st };
+    ret->setROI( 4, X, S );
+    return ret;
+  }
+
+  Array &setROI( int dims, const index_t *x, const index_t *s )
+  {
+    if( dims != m_dims )
+    {
+      throw Exception()
+        << "Dimensions specified for ROI (" << dims << ")"
+        << " must match dimensions specified at construction (" << m_dims << ")"
+        ;
+    }
+
+    for( int d=0; d<dims; ++d )
+    {
+      if( x[ d ] + s[ d ] > m_size[ d ] )
+      {
+        throw Exception() << "ROI is out of range";
+      }
+    }
+
+    m_element0 += position_v( dims, x );
+    std::copy( s, s + dims, m_size );
+
     return (*this);
   }
 
-  index_t m_size[ Dims ];
-  index_t m_size2[ ( Dims > 0 ? Dims-1 : 0 ) ];
+  Array &setROI( const Coordinates &x, const Size &s )
+  {
+    if( x.getDims() != s.getDims() )
+    {
+      throw Exception()
+        << "ROI position x and size s have different dimensions"
+        << ": x is " << x
+        << ", s is " << s
+        ;
+    }
+    return setROI( x.getDims(), x.getCoords(), s.getCoords() );
+  }
+
+  Array &mirror( int d ) { return setMirrored( d ); }
+
+  Array &setMirrored( int d )
+  {
+    if( d < 0 || d >= m_dims )
+    {
+      throw Exception()
+        << "Dimension d out of range in setMirrored(),"
+        << " must be at least 0 and less than " << m_dims << ", is " << d
+        ;
+    }
+
+    m_element0 += stride_t( m_size[ d ]-1 ) * m_stride[ d ];
+    m_stride[ d ] = -m_stride[ d ];
+
+    return (*this);
+  }
+
+  Array &sparse( int d, stride_t nth, index_t offset=0 ) { return setSparse( d, nth, offset ); }
+
+  Array &setSparse( int d, stride_t nth, index_t offset=0 )
+  {
+    if( d < 0 || d >= m_dims )
+    {
+      throw Exception()
+        << "Dimension d out of range in setSparse(),"
+        << " must be at least 0 and less than " << m_dims << ", is " << d
+        ;
+    }
+
+    if( nth < 1 )
+    {
+      throw Exception() << "Argument 'nth' must be greater than 0 in sparse(), is " << nth;
+    }
+
+    if( offset > 0 )
+    {
+      if( offset >= index_t( nth ) )
+      {
+        throw Exception() << "Argument 'offset' must be less than 'nth' (" << nth << "), is " << offset;
+      }
+      m_element0 += stride_t( offset ) * m_stride[ d ];
+    }
+
+    m_size[ d ] /= nth;
+    m_stride[ d ] *= nth;
+
+    return (*this);
+  }
+
+  Array &rotate( int times90deg, int d1=0, int d2=1 ) { return setRotated( times90deg, d1, d2 ); }
+
+  //! Rotates in screen-coordinates (d1=0("x"), d2=1("y")) clock-wise, cartesian anti-clockwise
+  Array &setRotated( int times90deg, int d1=0, int d2=1 )
+  {
+    const int dims = m_dims;
+    if( d1 < 0 || d1 >= dims )
+    {
+      throw Exception()
+        << "Dimension d1 out of range in setRotated(),"
+        << " must be at least 0 and less than " << dims << ", is " << d1
+        ;
+    }
+    if( d2 < 0 || d2 >= dims )
+    {
+      throw Exception()
+        << "Dimension d2 out of range in setRotated(),"
+        << " must be at least 0 and less than " << dims << ", is " << d2
+        ;
+    }
+    if( d1 == d2 )
+    {
+      throw Exception()
+        << "Dimensions d1 and d2 must be different in setRotated(), are " << d1
+        ;
+    }
+
+    times90deg %= 4;
+    if( times90deg < 0 ) times90deg += 4;
+
+    switch( times90deg )
+    {
+      case 0: return (*this);
+
+      case 1:
+        // Move start corner from "top-left" to "top-right"
+        m_element0 += stride_t( m_size[ d1 ]-1 ) * m_stride[ d1 ];
+        // Swap strides, negate one
+        std::swap( m_stride[ d1 ], m_stride[ d2 ] );
+        m_stride[ d2 ] = -m_stride[ d2 ];
+        // Swap sizes
+        std::swap( m_size[ d1 ], m_size[ d2 ] );
+        break;
+
+      case 2:
+        // Move start corner from "top-left" to "bottom-right"
+        m_element0 += stride_t( m_size[ d1 ]-1 ) * m_stride[ d1 ];
+        m_element0 += stride_t( m_size[ d2 ]-1 ) * m_stride[ d2 ];
+        // Both axes point into opposite directions
+        m_stride[ d1 ] = -m_stride[ d1 ];
+        m_stride[ d2 ] = -m_stride[ d2 ];
+        // Sizes stay the same
+        break;
+
+      case 3:
+        // Move start corner from "top-left" to "bottom-left"
+        m_element0 += stride_t( m_size[ d2 ]-1 ) * m_stride[ d2 ];
+        // Swap strides, negate one
+        std::swap( m_stride[ d1 ], m_stride[ d2 ] );
+        m_stride[ d1 ] = -m_stride[ d1 ];
+        // Swap sizes
+        std::swap( m_size[ d1 ], m_size[ d2 ] );
+        break;
+
+      default:
+        throw Exception() << "Internal: Should never be reached";
+    }
+
+    return (*this);
+  }
+
+  ArrayBase &reserve( index_t sx=1, index_t sy=1, index_t sz=1, index_t st=1 )
+  {
+    assert( m_dims >= 0 );
+    assert( m_dims <= 4 );
+    const int dims = m_dims;
+    switch( dims )
+    {
+      case 0: if( sx != 1 ) throw Exception() << "If dims is less than 1 (is " << m_dims << "), sx must be 1 (is " << sx << ")"; // fallthrough
+      case 1: if( sy != 1 ) throw Exception() << "If dims is less than 2 (is " << m_dims << "), sy must be 1 (is " << sy << ")"; // fallthrough
+      case 2: if( sz != 1 ) throw Exception() << "If dims is less than 3 (is " << m_dims << "), sz must be 1 (is " << sz << ")"; // fallthrough
+      case 3: if( st != 1 ) throw Exception() << "If dims is less than 4 (is " << m_dims << "), st must be 1 (is " << st << ")"; // fallthrough
+      case 4: {}
+    }
+    const index_t s[ 4 ] = { sx, sy, sz, st };
+    return reserve_v( dims, s );
+  }
+
+  ArrayBase &reserve_v( int dims, const index_t *_res )
+  {
+    if( dims != m_dims )
+    {
+      throw Exception()
+        << "Dimensions specified at reserve_v() (" << dims << ")"
+        << " must match dimensions specified at construction (" << m_dims << ")"
+        ;
+    }
+
+    // Array cannot shrink with reserve()
+    bool grown = false;
+    index_t res[ dims ];
+    for( int d=0; d<dims; ++d )
+    {
+      if( _res[ d ] > m_size[ d ] )
+      {
+        grown = true;
+        res[ d ] = _res[ d ];
+      }
+      else
+      {
+        res[ d ] = m_size[ d ];
+      }
+    }
+
+    // Nothing to do
+    if( dims > 0 && !grown ) return (*this);
+
+    // Check, whether old data will suffice
+    while( m_element0 ) // not a while
+    {
+      if( 0 == dims ) return (*this);
+
+      // Get current start position in data
+      index_t data_offset[ dims ];
+      if( !m_elements_data->getCoords( m_element0, dims, data_offset ) ) break;
+
+      const index_t *const data_size = m_elements_data->getSize();
+
+      bool in_range = true;
+      for( int d=0; d<dims; ++d )
+      {
+        // The array might be rotated or only access every nth element,
+        // so search for the corresponding dimension in the data
+        const stride_t stride_d = m_stride[ d ];
+        const stride_t stride_d_abs = std::abs( stride_d );
+
+        int data_d = -1;
+        stride_t step_d = 0;
+        stride_t data_stride_dd = 1;
+        for( int dd=0; dd<dims; ++dd )
+        {
+          const stride_t next_data_stride_dd = data_stride_dd * data_size[ dd ];
+          // If the stride is larger, the step cannot be in that direction
+          if( stride_d_abs < next_data_stride_dd )
+          {
+            step_d = stride_d / data_stride_dd; // Assuming step is only along one dimension (not skewed)
+            data_d = dd;
+            break;
+          }
+          data_stride_dd = next_data_stride_dd;
+        }
+
+        if( -1 == data_d )
+        {
+          in_range = false;
+          break;
+        }
+
+        /*
+        std::cerr << std::endl;
+        std::cerr
+          << "d = " << d
+          << ", data_d = " << data_d
+          << ", step_d = " << step_d
+          << ", data_size[ data_d ] = " << data_size[ data_d ]
+          << ", data_offset[ data_d ] = " << data_offset[ data_d ]
+          << ", res[ d ] = " << res[ d ]
+          << std::endl
+          ;
+          */
+
+        const stride_t last_d = stride_t( data_offset[ data_d ] ) + stride_t( res[ d ] - 1 ) * step_d;
+        if(
+            last_d >= stride_t( data_size[ data_d ] )
+         || last_d < 0
+         )
+        {
+          in_range = false;
+          break;
+        }
+      }
+
+      if( !in_range ) break;
+
+      // already reserved enough and m_stride is already for this array
+      return (*this);
+    }
+
+    // Information for copying the old data
+    CountPtr< ArrayData< Element > > old_data;
+    stride_t old_stride[ dims ];
+    index_t common_size[ dims ];
+    index_t common_end [ dims ];
+    const pointer old_elements = m_element0;
+    if( old_elements != pointer() )
+    {
+      old_data.swap( m_elements_data );
+      std::copy( m_stride, m_stride + dims, old_stride );
+      for( int d = 0; d < dims; ++d )
+      {
+        common_size[ d ] = std::min( res[ d ], m_size[ d ] );
+      }
+      if( dims > 0 )
+      {
+        std::fill( common_end, common_end + (dims-1), 0 );
+        common_end[ dims-1 ] = common_size[ dims-1 ];
+      }
+    }
+
+    // Calculate new stride, reserved region will be dense
+    stride_t stride_d = 1;
+    for( int d = 0; d < dims; ++d )
+    {
+      m_stride[ d ] = stride_d;
+      stride_d *= res[ d ];
+    }
+    std::fill( m_stride + dims, m_stride + 4, stride_t( 0 ) );
+
+    // Allocate new data
+    m_elements_data = new ArrayData< Element >( getGC(), dims, res );
+    m_element0 = m_elements_data->first();
+
+    // Copy old data
+    if( old_elements != pointer() )
+    {
+      const Size common( dims, common_size );
+      const_iterator o = const_iterator( common, old_stride, old_elements );
+      iterator       n = iterator      ( common, m_stride  , m_element0   );
+      iterator       n_end = iterator  ( common, m_stride  , m_element0   , common_end );
+
+      for( ; n != n_end; ++n, ++o )
+      {
+        (*n) = (*o);
+      }
+    }
+
+    return (*this);
+  }
+
+private:
+  void _check_dims( void )
+  {
+    if( m_dims < 0 || m_dims > 4 )
+    {
+      throw Exception() << "Dimensions must be positive and at most 4, is " << m_dims;
+    }
+  }
+
+  void _check_dims( int expected )
+  {
+    if( m_dims != expected )
+    {
+      throw Exception() << "Expected dimensions to be " << expected << ", is " << m_dims;
+    }
+  }
+
+  static inline bool _isValue( const Value* ) { return true; }
+  template< class T >
+  static inline bool _isValue( const T* ) { return false; }
+
+  CountPtr< ArrayData< Element > > m_elements_data;
+  pointer m_element0;
+  index_t m_size[ 4 ];
+  stride_t m_stride[ 4 ];
+  const int m_dims;
 };
 
-template< class Element, int Dims >
-CountPtr< Array< Element, Dims > > new_Array( GarbageCollector *gc, const Element *fill_value=0 )
+template< class Element >
+CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 )
 {
-  CountPtr< Array< Element, Dims > > ret = new Array< Element, Dims >( gc );
-
+  CountPtr< Array< Element > > ret = new Array< Element >( gc, dims );
   if( fill_value ) ret->fill( *fill_value );
-
   return ret;
 }
 
 template< class Element >
-CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 )
-{
-  switch( dims )
-  {
-    case 0: return new_Array< Element, 0 >( gc, fill_value );
-    case 1: return new_Array< Element, 1 >( gc, fill_value );
-    case 2: return new_Array< Element, 2 >( gc, fill_value );
-    case 3: return new_Array< Element, 3 >( gc, fill_value );
-    case 4: return new_Array< Element, 4 >( gc, fill_value );
-    default:
-      throw ArrayBase::Exception()
-        << "Only dimensions for 0 to 4 supported for now, tried " << dims
-        ;
-  }
-}
-
-template< class Element >
-CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value )
+CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value )
 {
   const Type element_type( TypeOf< Element >::E );
   if( element_type.isOther() )
@@ -751,170 +1213,42 @@ CountPtr< ArrayElements< Element > > new_Array( GarbageCollector *gc, int dims, 
   return new_Array< Element >( gc, dims );
 }
 
-typedef ArrayElements< bool                       >     BoolArrayElements;
-typedef ArrayElements< uint8_t                    >    UInt8ArrayElements;
-typedef ArrayElements< int8_t                     >     Int8ArrayElements;
-typedef ArrayElements< uint16_t                   >   UInt16ArrayElements;
-typedef ArrayElements< int16_t                    >    Int16ArrayElements;
-typedef ArrayElements< uint32_t                   >   UInt32ArrayElements;
-typedef ArrayElements< int32_t                    >    Int32ArrayElements;
-typedef ArrayElements< uint64_t                   >   UInt64ArrayElements;
-typedef ArrayElements< int64_t                    >    Int64ArrayElements;
-typedef ArrayElements< float                      >    FloatArrayElements;
-typedef ArrayElements< double                     >   DoubleArrayElements;
-typedef ArrayElements< String                     >   StringArrayElements;
-typedef ArrayElements< CountPtr< Frame          > >    FrameArrayElements;
-typedef ArrayElements< CountPtr< Function       > > FunctionArrayElements;
-typedef ArrayElements< CountPtr< Node           > >     NodeArrayElements;
-typedef ArrayElements< CountPtr< Output         > >   OutputArrayElements;
-typedef ArrayElements< CountPtr< Input          > >    InputArrayElements;
-typedef ArrayElements< CountPtr< Param          > >    ParamArrayElements;
-typedef ArrayElements< CountPtr< const Sequence > > SequenceArrayElements;
-typedef ArrayElements< CountPtr< ArrayBase      > >    ArrayArrayElements;
-typedef ArrayElements< int                        >      IntArrayElements;
+typedef Array< bool                       >     BoolArray;
+typedef Array< uint8_t                    >    UInt8Array;
+typedef Array< int8_t                     >     Int8Array;
+typedef Array< uint16_t                   >   UInt16Array;
+typedef Array< int16_t                    >    Int16Array;
+typedef Array< uint32_t                   >   UInt32Array;
+typedef Array< int32_t                    >    Int32Array;
+typedef Array< uint64_t                   >   UInt64Array;
+typedef Array< int64_t                    >    Int64Array;
+typedef Array< float                      >    FloatArray;
+typedef Array< double                     >   DoubleArray;
+typedef Array< String                     >   StringArray;
+typedef Array< CountPtr< Frame          > >    FrameArray;
+typedef Array< CountPtr< Function       > > FunctionArray;
+typedef Array< CountPtr< Node           > >     NodeArray;
+typedef Array< CountPtr< Output         > >   OutputArray;
+typedef Array< CountPtr< Input          > >    InputArray;
+typedef Array< CountPtr< Param          > >    ParamArray;
+typedef Array< CountPtr< const Sequence > > SequenceArray;
+typedef Array< CountPtr< ArrayBase      > >    ArrayArray;
+typedef Array< int                        >      IntArray;
 
-typedef Array< bool                      , 0 >     BoolArray0D;
-typedef Array< uint8_t                   , 0 >    UInt8Array0D;
-typedef Array< int8_t                    , 0 >     Int8Array0D;
-typedef Array< uint16_t                  , 0 >   UInt16Array0D;
-typedef Array< int16_t                   , 0 >    Int16Array0D;
-typedef Array< uint32_t                  , 0 >   UInt32Array0D;
-typedef Array< int32_t                   , 0 >    Int32Array0D;
-typedef Array< uint64_t                  , 0 >   UInt64Array0D;
-typedef Array< int64_t                   , 0 >    Int64Array0D;
-typedef Array< float                     , 0 >    FloatArray0D;
-typedef Array< double                    , 0 >   DoubleArray0D;
-typedef Array< String                    , 0 >   StringArray0D;
-typedef Array< CountPtr< Frame          >, 0 >    FrameArray0D;
-typedef Array< CountPtr< Function       >, 0 > FunctionArray0D;
-typedef Array< CountPtr< Node           >, 0 >     NodeArray0D;
-typedef Array< CountPtr< Output         >, 0 >   OutputArray0D;
-typedef Array< CountPtr< Input          >, 0 >    InputArray0D;
-typedef Array< CountPtr< Param          >, 0 >    ParamArray0D;
-typedef Array< CountPtr< const Sequence >, 0 > SequenceArray0D;
-typedef Array< CountPtr< ArrayBase      >, 0 >    ArrayArray0D;
-typedef Array< int                       , 0 >      IntArray0D;
-
-typedef Array< bool                      , 1 >     BoolArray1D;
-typedef Array< uint8_t                   , 1 >    UInt8Array1D;
-typedef Array< int8_t                    , 1 >     Int8Array1D;
-typedef Array< uint16_t                  , 1 >   UInt16Array1D;
-typedef Array< int16_t                   , 1 >    Int16Array1D;
-typedef Array< uint32_t                  , 1 >   UInt32Array1D;
-typedef Array< int32_t                   , 1 >    Int32Array1D;
-typedef Array< uint64_t                  , 1 >   UInt64Array1D;
-typedef Array< int64_t                   , 1 >    Int64Array1D;
-typedef Array< float                     , 1 >    FloatArray1D;
-typedef Array< double                    , 1 >   DoubleArray1D;
-typedef Array< String                    , 1 >   StringArray1D;
-typedef Array< CountPtr< Frame          >, 1 >    FrameArray1D;
-typedef Array< CountPtr< Function       >, 1 > FunctionArray1D;
-typedef Array< CountPtr< Node           >, 1 >     NodeArray1D;
-typedef Array< CountPtr< Output         >, 1 >   OutputArray1D;
-typedef Array< CountPtr< Input          >, 1 >    InputArray1D;
-typedef Array< CountPtr< Param          >, 1 >    ParamArray1D;
-typedef Array< CountPtr< const Sequence >, 1 > SequenceArray1D;
-typedef Array< CountPtr< ArrayBase      >, 1 >    ArrayArray1D;
-typedef Array< int                       , 1 >      IntArray1D;
-
-typedef Array< bool                      , 2 >     BoolArray2D;
-typedef Array< uint8_t                   , 2 >    UInt8Array2D;
-typedef Array< int8_t                    , 2 >     Int8Array2D;
-typedef Array< uint16_t                  , 2 >   UInt16Array2D;
-typedef Array< int16_t                   , 2 >    Int16Array2D;
-typedef Array< uint32_t                  , 2 >   UInt32Array2D;
-typedef Array< int32_t                   , 2 >    Int32Array2D;
-typedef Array< uint64_t                  , 2 >   UInt64Array2D;
-typedef Array< int64_t                   , 2 >    Int64Array2D;
-typedef Array< float                     , 2 >    FloatArray2D;
-typedef Array< double                    , 2 >   DoubleArray2D;
-typedef Array< String                    , 2 >   StringArray2D;
-typedef Array< CountPtr< Frame          >, 2 >    FrameArray2D;
-typedef Array< CountPtr< Function       >, 2 > FunctionArray2D;
-typedef Array< CountPtr< Node           >, 2 >     NodeArray2D;
-typedef Array< CountPtr< Output         >, 2 >   OutputArray2D;
-typedef Array< CountPtr< Input          >, 2 >    InputArray2D;
-typedef Array< CountPtr< Param          >, 2 >    ParamArray2D;
-typedef Array< CountPtr< const Sequence >, 2 > SequenceArray2D;
-typedef Array< CountPtr< ArrayBase      >, 2 >    ArrayArray2D;
-typedef Array< int                       , 2 >      IntArray2D;
-
-typedef Array< bool                      , 3 >     BoolArray3D;
-typedef Array< uint8_t                   , 3 >    UInt8Array3D;
-typedef Array< int8_t                    , 3 >     Int8Array3D;
-typedef Array< uint16_t                  , 3 >   UInt16Array3D;
-typedef Array< int16_t                   , 3 >    Int16Array3D;
-typedef Array< uint32_t                  , 3 >   UInt32Array3D;
-typedef Array< int32_t                   , 3 >    Int32Array3D;
-typedef Array< uint64_t                  , 3 >   UInt64Array3D;
-typedef Array< int64_t                   , 3 >    Int64Array3D;
-typedef Array< float                     , 3 >    FloatArray3D;
-typedef Array< double                    , 3 >   DoubleArray3D;
-typedef Array< String                    , 3 >   StringArray3D;
-typedef Array< CountPtr< Frame          >, 3 >    FrameArray3D;
-typedef Array< CountPtr< Function       >, 3 > FunctionArray3D;
-typedef Array< CountPtr< Node           >, 3 >     NodeArray3D;
-typedef Array< CountPtr< Output         >, 3 >   OutputArray3D;
-typedef Array< CountPtr< Input          >, 3 >    InputArray3D;
-typedef Array< CountPtr< Param          >, 3 >    ParamArray3D;
-typedef Array< CountPtr< const Sequence >, 3 > SequenceArray3D;
-typedef Array< CountPtr< ArrayBase      >, 3 >    ArrayArray3D;
-typedef Array< int                       , 3 >      IntArray3D;
-
-typedef Array< bool                      , 4 >     BoolArray4D;
-typedef Array< uint8_t                   , 4 >    UInt8Array4D;
-typedef Array< int8_t                    , 4 >     Int8Array4D;
-typedef Array< uint16_t                  , 4 >   UInt16Array4D;
-typedef Array< int16_t                   , 4 >    Int16Array4D;
-typedef Array< uint32_t                  , 4 >   UInt32Array4D;
-typedef Array< int32_t                   , 4 >    Int32Array4D;
-typedef Array< uint64_t                  , 4 >   UInt64Array4D;
-typedef Array< int64_t                   , 4 >    Int64Array4D;
-typedef Array< float                     , 4 >    FloatArray4D;
-typedef Array< double                    , 4 >   DoubleArray4D;
-typedef Array< String                    , 4 >   StringArray4D;
-typedef Array< CountPtr< Frame          >, 4 >    FrameArray4D;
-typedef Array< CountPtr< Function       >, 4 > FunctionArray4D;
-typedef Array< CountPtr< Node           >, 4 >     NodeArray4D;
-typedef Array< CountPtr< Output         >, 4 >   OutputArray4D;
-typedef Array< CountPtr< Input          >, 4 >    InputArray4D;
-typedef Array< CountPtr< Param          >, 4 >    ParamArray4D;
-typedef Array< CountPtr< const Sequence >, 4 > SequenceArray4D;
-typedef Array< CountPtr< ArrayBase      >, 4 >    ArrayArray4D;
-typedef Array< int                       , 4 >      IntArray4D;
-
-template< class Element, int Dims >
-struct MakeSigned< Array< Element, Dims > >
+template< class Element >
+struct MakeSigned< Array< Element > >
 {
   typedef typename MakeSigned< Element >::T SignedElement;
-  typedef Array< SignedElement, Dims > T;
+  typedef Array< SignedElement > T;
   static const Type::Enum E = Type::OTHER;
   static const bool B = true;
 };
 
 template< class Element >
-struct MakeSigned< ArrayElements< Element > >
+struct MakeSigned< CountPtr< Array< Element > > >
 {
   typedef typename MakeSigned< Element >::T SignedElement;
-  typedef ArrayElements< SignedElement > T;
-  static const Type::Enum E = Type::OTHER;
-  static const bool B = true;
-};
-
-template< class Element, int Dims >
-struct MakeSigned< CountPtr< Array< Element, Dims > > >
-{
-  typedef typename MakeSigned< Element >::T SignedElement;
-  typedef CountPtr< Array< SignedElement, Dims > > T;
-  static const Type::Enum E = Type::ARRAY;
-  static const bool B = true;
-};
-
-template< class Element >
-struct MakeSigned< CountPtr< ArrayElements< Element > > >
-{
-  typedef typename MakeSigned< Element >::T SignedElement;
-  typedef CountPtr< ArrayElements< SignedElement > > T;
+  typedef CountPtr< Array< SignedElement > > T;
   static const Type::Enum E = Type::ARRAY;
   static const bool B = true;
 };
@@ -923,15 +1257,14 @@ struct MakeSigned< CountPtr< ArrayElements< Element > > >
 
 namespace std {
 
-template< class Element, RPGML::index_t Dims >
+template< class Element >
 inline
-void swap( RPGML::Array< Element, Dims > &x1, RPGML::Array< Element, Dims > &x2 )
+void swap( RPGML::Array< Element > &x1, RPGML::Array< Element > &x2 )
 {
   x1.swap( x2 );
 }
 
 } // namespace std
-
 
 #endif
 

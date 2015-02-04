@@ -39,8 +39,7 @@ class Input   ;
 class Param   ;
 class Sequence;
 class Collectable;
-template< class Elements > class ArrayElements;
-template< class Elements, int Dims > class Array;
+template< class Elements > class Array;
 
 #if 1
 #define Value_assert assert
@@ -374,12 +373,7 @@ template<> struct CreateValue< CountPtr< Param          > >{ Value operator()( c
 template<> struct CreateValue< CountPtr< const Sequence > >{ Value operator()( const CountPtr< const Sequence > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< ArrayBase      > >{ Value operator()( const CountPtr< ArrayBase      > &x ) const { return Value( x ); } };
 
-typedef ArrayElements< Value > ValueArrayElements;
-typedef Array< Value, 0 > ValueArray0D;
-typedef Array< Value, 1 > ValueArray1D;
-typedef Array< Value, 2 > ValueArray2D;
-typedef Array< Value, 3 > ValueArray3D;
-typedef Array< Value, 4 > ValueArray4D;
+typedef Array< Value > ValueArray;
 
 static inline
 Collectable::Children &operator<<( Collectable::Children &children, const Value &e )

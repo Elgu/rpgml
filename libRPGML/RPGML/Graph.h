@@ -90,7 +90,7 @@ public:
 private:
   friend class Error;
   class GraphNode;
-  typedef Array< CountPtr< GraphNode >, 1 > GN_Array_t;
+  typedef Array< CountPtr< GraphNode > > GraphNodeArray;
 
   class GraphNode : public JobQueue::Job
   {
@@ -106,14 +106,14 @@ private:
     virtual void gc_clear( void );
     virtual void gc_getChildren( Children &children ) const;
 
-    int compare( const GraphNode &other ) const;
-    bool equivalent( const GraphNode &other ) const;
+    int compare( const GraphNode *other ) const;
+    bool equivalent( const GraphNode *other ) const;
 
     static
-    bool compare_less( const GN_Array_t::Element &x1, const GN_Array_t::Element &x2 );
+    bool compare_less( const GraphNodeArray::Element &x1, const GraphNodeArray::Element &x2 );
 
-    GN_Array_t predecessors;
-    GN_Array_t successors;
+    CountPtr< GraphNodeArray > predecessors;
+    CountPtr< GraphNodeArray > successors;
     CountPtr< Graph > graph;
     CountPtr< Node > node;
     CountPtr< JobQueue > main_thread;
@@ -141,7 +141,7 @@ private:
   typedef std::list< std::string > errors_t;
   errors_t m_errors;
   std::string m_exit_request;
-  GN_Array_t m_nodes;
+  CountPtr< GraphNodeArray > m_nodes;
   typedef std::map< const Node*, index_t > Node_to_index_t;
   Node_to_index_t m_Node_to_index;
   CountPtr< EndNode > m_end_node;

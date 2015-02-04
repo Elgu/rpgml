@@ -15,6 +15,7 @@ vpath %.cpp ../RPGML/
 vpath %.cc ../RPGML/
 
 OBJECTS=\
+	utest_Array.o\
 	utest_main.o\
 	Backtrace.o\
 	StringUnifier.o\
@@ -42,7 +43,6 @@ OBJECTS=\
 	ParseException.o\
 	WaitLock.o\
 	rpgml.tab.o\
-	utest_Array.o\
 #	utest_Exception.o\
 	utest_Type.o\
 	utest_String.o\

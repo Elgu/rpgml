@@ -172,33 +172,20 @@ public:
 
     in->connect( out );
 
-    CountPtr< Array< int, 1 > > data( new Array< int, 1 >( &gc ) );
+    CountPtr< Array< int > > data( new Array< int >( &gc ) );
     CPPUNIT_ASSERT_NO_THROW( out->setData( data ) );
     CPPUNIT_ASSERT_EQUAL( static_cast<       ArrayBase* >( data.get() ), out->getData() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const ArrayBase* >( data.get() ), in->getData() );
 
-    typedef Array< int, 1 > Array_int;
-    typedef Array< float, 1 > Array_float;
-
-    Array_int       *int_p = 0;
-    const Array_int *int_p_const = 0;
+    IntArray       *int_p = 0;
+    const IntArray *int_p_const = 0;
     CPPUNIT_ASSERT_EQUAL( data.get(), out->getAs( int_p ) );
-    CPPUNIT_ASSERT_EQUAL( static_cast< const Array_int* >( data.get() ), in->getOutput()->getAs( int_p_const ) );
+    CPPUNIT_ASSERT_EQUAL( static_cast< const IntArray* >( data.get() ), in->getOutput()->getAs( int_p_const ) );
 
-    Array_float       *float_p = 0;
-    const Array_float *float_p_const = 0;
-    CPPUNIT_ASSERT_EQUAL( static_cast<       Array_float* >( 0 ), out->getAs( float_p ) );
-    CPPUNIT_ASSERT_EQUAL( static_cast< const Array_float* >( 0 ), in->getOutput()->getAs( float_p_const ) );
-
-    ArrayElements< int >       *int_e = 0;
-    const ArrayElements< int > *int_e_const = 0;
-    CPPUNIT_ASSERT_EQUAL( static_cast<       ArrayElements< int >* >( data.get() ), out->getAs( int_e ) );
-    CPPUNIT_ASSERT_EQUAL( static_cast< const ArrayElements< int >* >( data.get() ), in->getOutput()->getAs( int_e_const ) );
-
-    ArrayElements< float >       *float_e = 0;
-    const ArrayElements< float > *float_e_const = 0;
-    CPPUNIT_ASSERT_EQUAL( static_cast<       ArrayElements< float >* >( 0 ), out->getAs( float_e ) );
-    CPPUNIT_ASSERT_EQUAL( static_cast< const ArrayElements< float >* >( 0 ), in->getOutput()->getAs( float_e_const ) );
+    FloatArray       *float_p = 0;
+    const FloatArray *float_p_const = 0;
+    CPPUNIT_ASSERT_EQUAL( static_cast<       FloatArray* >( 0 ), out->getAs( float_p ) );
+    CPPUNIT_ASSERT_EQUAL( static_cast< const FloatArray* >( 0 ), in->getOutput()->getAs( float_p_const ) );
 
     ArrayBase       *base = 0;
     const ArrayBase *base_const = 0;

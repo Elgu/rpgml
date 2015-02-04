@@ -47,8 +47,7 @@ private:
   static
   CountPtr< Args > genDeclArgs( void );
 
-  typedef Array< CountPtr< Node >, 1 > NodeArray1D;
-  CountPtr< NodeArray1D > m_needed;
+  CountPtr< NodeArray > m_needed;
 };
 
 } // namespace RPGML

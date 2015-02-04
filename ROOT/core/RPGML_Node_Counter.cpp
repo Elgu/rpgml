@@ -75,7 +75,7 @@ void Counter::set_step( const Value &value, index_t, int, const index_t* )
 
 bool Counter::tick( void )
 {
-  GET_OUTPUT_AS( OUTPUT_OUT, out, int, 0 );
+  GET_OUTPUT_AS( OUTPUT_OUT, out, int );
   (**out) = m_start + m_count * m_step;
   getOutput( OUTPUT_OUT )->setChanged();
   ++m_count;

@@ -25,6 +25,8 @@ namespace RPGML {
   typedef uint32_t index_t;
   static const index_t unknown = index_t(-1);
 
+  typedef int32_t stride_t;
+
   template< bool B > struct StaticAssert { /* false */ };
   template<> struct StaticAssert< true >{ static const bool B = true; };
 

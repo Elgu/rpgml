@@ -13,16 +13,16 @@ namespace RPGML {
 namespace cv {
 
 template< class Element >
-CountPtr< Array< Element, 2 > > createArray_t( GarbageCollector *gc, const ::cv::Mat &mat )
+CountPtr< Array< Element > > createArray_t( GarbageCollector *gc, const ::cv::Mat &mat )
 {
   if( mat.depth() != ::cv::DataDepth< Element >::value )
   {
     throw Exception() << "RPGML.cv.createArray( Mat ): Element type does not match the Mat type";
   }
 
-  typedef Array< Element, 2 > ArrayType;
+  typedef Array< Element > ArrayType;
 
-  CountPtr< ArrayType > ret = new ArrayType( gc, mat.cols, mat.rows );
+  CountPtr< ArrayType > ret = new ArrayType( gc, 2, mat.cols, mat.rows );
 
   ::cv::MatConstIterator_< Element >       m     = mat.begin< Element >();
   ::cv::MatConstIterator_< Element > const m_end = mat.end  < Element >();
@@ -63,12 +63,8 @@ CountPtr< ArrayBase > createArray( GarbageCollector *gc, const ::cv::Mat &mat )
   }
 }
 
-
-
-
-
 template< class Element >
-CountPtr< ArrayArray1D > createArrays_t( GarbageCollector *gc, const ::cv::Mat &mat )
+CountPtr< ArrayArray > createArrays_t( GarbageCollector *gc, const ::cv::Mat &mat )
 {
   if( mat.depth() != ::cv::DataDepth< Element >::value )
   {
@@ -79,20 +75,20 @@ CountPtr< ArrayArray1D > createArrays_t( GarbageCollector *gc, const ::cv::Mat &
     throw Exception() << "RPGML.cv.createArray_t( Mat ) expects Mat to have at least one channel";
   }
 
-  typedef Array< Element, 2 > ArrayType;
-  typedef Array< CountPtr< ArrayType >, 1 > ArrayArrayType;
+  typedef Array< Element > ArrayType;
+  typedef Array< CountPtr< ArrayType > > ArrayArrayType;
 
   const int channels = mat.channels();
   const int cols     = mat.cols;
   const int rows     = mat.rows;
 
-  CountPtr< ArrayArrayType > ret_aa = new ArrayArrayType( gc, channels );
+  CountPtr< ArrayArrayType > ret_aa = new ArrayArrayType( gc, 2, channels );
 
   typename ArrayType::iterator a    [ channels ];
   typename ArrayType::iterator a_end[ channels ];
   for( int c=0; c<channels; ++c )
   {
-    ret_aa->at( c ) = new ArrayType( gc, cols, rows );
+    ret_aa->at( c ) = new ArrayType( gc, 2, cols, rows );
     a    [ c ] = ret_aa->at( c )->begin();
     a_end[ c ] = ret_aa->at( c )->end();
   }
@@ -114,7 +110,7 @@ CountPtr< ArrayArray1D > createArrays_t( GarbageCollector *gc, const ::cv::Mat &
     }
   }
 
-  CountPtr< ArrayArray1D > ret = new ArrayArray1D( gc, channels );
+  CountPtr< ArrayArray > ret = new ArrayArray( gc, 1, channels );
   for( int c=0; c<channels; ++c )
   {
     ret->at( c ) = ret_aa->at( c );
@@ -123,7 +119,7 @@ CountPtr< ArrayArray1D > createArrays_t( GarbageCollector *gc, const ::cv::Mat &
   return ret;
 }
 
-CountPtr< ArrayArray1D > createArrays( GarbageCollector *gc, const ::cv::Mat &mat )
+CountPtr< ArrayArray > createArrays( GarbageCollector *gc, const ::cv::Mat &mat )
 {
   switch( mat.depth() )
   {
