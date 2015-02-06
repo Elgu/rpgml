@@ -17,11 +17,11 @@
 
 .%.cpp.dep: %.cpp %.o.CXXFLAGS
 	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
+	@g++ -M -MG -MT $(<:.cpp=.o) -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
 
 .%.cc.dep: %.cc %.o.CXXFLAGS
 	@echo Generating dependencies for $<
-	@g++ -M -MM -MG -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
+	@g++ -M -MG -MT $(<:.cc=.o) -MF $@ $(CXXFLAGS) $(shell cat $(shell echo $@ | sed -e "s/\/\./\//g" -e "s/^\.//g" -e "s/\.cpp\.dep//g" ).o.CXXFLAGS) $<
 
 %.o: %.cpp %.o.CXXFLAGS
 	g++ -c -o $@ $(CXXFLAGS) $(shell cat $(basename $@).o.CXXFLAGS) $<
