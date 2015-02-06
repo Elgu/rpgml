@@ -1,70 +1,70 @@
 for i = 1, 5, 3
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i = 0 to 3
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i = 0 to 4 step 2
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i = 6 to 3 step -1
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i = 6 to 3 step -3
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i in [ 6, 3, 9 ]
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i in []
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i in [ 23, 0.75, "foo", Frame{ int i=43; } ]
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i in Frame{}
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 
 for i in Frame{ double d = 2.125; float f = 1.5; string s = "s"; }
 {
-  print( i );
-  print( " " );
+  PRINT( i );
+  PRINT( " " );
 }
-print( "\n" );
+PRINT( "\n" );
 

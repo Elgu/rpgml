@@ -42,11 +42,13 @@ private:
   enum Inputs
   {
     INPUT_IN,
+    INPUT_PREV,
     NUM_INPUTS
   };
 
   enum Outputs
   {
+    OUTPUT_NEXT,
     NUM_OUTPUTS
   };
 

@@ -15,62 +15,65 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-#include "RPGML_Function_print.h"
+#include "RPGML_Function_PRINT.h"
+
+// RPGML_CXXFLAGS=
+// RPGML_LDFLAGS=
 
 #include <RPGML/String.h>
-#include <RPGML/ParserEnums.h>
 #include <RPGML/Scope.h>
 #include <RPGML/Node.h>
 #include <RPGML/ParseException.h>
 
-#include <iostream>
+using namespace std;
 
 namespace RPGML {
 
-Function_print::Function_print( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
+
+Function_PRINT::Function_PRINT( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
 : Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
-Function_print::~Function_print( void )
+Function_PRINT::~Function_PRINT( void )
 {}
 
-const char *Function_print::getName( void ) const
+const char *Function_PRINT::getName( void ) const
 {
-  return "print";
+  return "PRINT";
 }
 
-Value Function_print::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
+void Function_PRINT::gc_clear( void )
+{
+  Base::gc_clear();
+}
+
+void Function_PRINT::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+}
+
+Value Function_PRINT::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
 {
   if( recursion_depth > MAX_RECURSION_DEPTH )
   {
     throw ParseException( loc ) << "Maximum recursion depth reached";
   }
 
-  if( n_args != 1 ) throw Exception() << "Function 'print' requires 1 argument, specified " << n_args;
+  if( n_args != NUM_ARGS ) throw ParseException( loc ) << "Function PRINT requires " << NUM_ARGS << " arguments.";
   const Value &in = args[ ARG_IN ];
 
-  CountPtr< Node > node( scope->createNode( loc, recursion_depth+1, String::Static( ".core.Print" ) ) );
-
-  scope->toOutput( loc, recursion_depth+1, in )->connect( node->getInput( "in" ) );
-
-  scope->call( loc, recursion_depth+1, String::Static( ".needing" ), Value( node.get() ) );
-
-  if( !m_prev.isNull() )
-  {
-    m_prev->connect( node->getInput( "prev" ) );
-  }
-  m_prev = node->getOutput( "next" );
-
+  std::cout << in;
   return Value( true );
 }
 
-CountPtr< Function::Args > Function_print::genDeclArgs( void )
+CountPtr< Function::Args > Function_PRINT::genDeclArgs( void )
 {
   CountPtr< Args > args = new Args( NUM_ARGS );
   args->at( ARG_IN ) = Arg( String::Static( "in" ) );
   return args;
 }
 
+ //
 } // namespace RPGML
 
-RPGML_CREATE_FUNCTION( print,  )
+RPGML_CREATE_FUNCTION( PRINT,  )

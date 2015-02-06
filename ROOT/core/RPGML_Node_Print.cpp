@@ -26,6 +26,8 @@ Print::Print( GarbageCollector *_gc, const String &identifier, const RPGML::Shar
 : Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
 {
   DEFINE_INPUT( INPUT_IN, "in" );
+  DEFINE_INPUT( INPUT_PREV, "prev" );
+  DEFINE_OUTPUT( OUTPUT_NEXT, "next" );
 }
 
 Print::~Print( void )

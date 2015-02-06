@@ -31,7 +31,7 @@ namespace RPGML {
 ADDITIONAL_NAMESPACES_BEGIN
 
 Function_TEMPLATE::Function_TEMPLATE( GarbageCollector *_gc, Frame *parent, const SharedObject *so )
-: Function( _gc, parent, genDeclArgs(), so )
+: Function( _gc, new Location( __FILE__ ), parent, genDeclArgs(), so )
 {}
 
 Function_TEMPLATE::~Function_TEMPLATE( void )

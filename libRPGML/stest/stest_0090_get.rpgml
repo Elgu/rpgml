@@ -1,13 +1,13 @@
 
-Function print_if( condition, text )
+Function PRINT_IF( condition, text )
 {
   if( condition )
   {
-    return print( text + "\n" );
+    return PRINT( text + "\n" );
   }
   else
   {
-    return print( text + " FAILED\n" );
+    return PRINT( text + " FAILED\n" );
   }
 }
 
@@ -31,73 +31,73 @@ Input    in    = node.in;
 Param    param = node.op;
 Sequence seq   = Sequence();
 
-print_if( ( .core.get( "type",  b    ) == "bool"     ), "bool"     );
-print_if( ( .core.get( "type", ui8   ) == "uint8"    ), "uint8"    );
-print_if( ( .core.get( "type",  i8   ) == "int8"     ), "int8"     );
-print_if( ( .core.get( "type", ui16  ) == "uint16"   ), "uint16"   );
-print_if( ( .core.get( "type",  i16  ) == "int16"    ), "int16"    );
-print_if( ( .core.get( "type", ui32  ) == "uint32"   ), "uint32"   );
-print_if( ( .core.get( "type",  i32  ) == "int32"    ), "int32"    );
-print_if( ( .core.get( "type", ui64  ) == "uint64"   ), "uint64"   );
-print_if( ( .core.get( "type",  i64  ) == "int64"    ), "int64"    );
-print_if( ( .core.get( "type",  f    ) == "float"    ), "float"    );
-print_if( ( .core.get( "type",  d    ) == "double"   ), "double"   );
-print_if( ( .core.get( "type", str   ) == "string"   ), "string"   );
-print_if( ( .core.get( "type", frame ) == "Frame"    ), "Frame"    );
-print_if( ( .core.get( "type", func  ) == "Function" ), "Function" );
-print_if( ( .core.get( "type", node  ) == "Node"     ), "Node"     );
-print_if( ( .core.get( "type", in    ) == "Input"    ), "Input"    );
-print_if( ( .core.get( "type", param ) == "Param"    ), "Param"    );
-print_if( ( .core.get( "type", seq   ) == "Sequence" ), "Sequence" );
+PRINT_IF( ( .core.get( "type",  b    ) == "bool"     ), "bool"     );
+PRINT_IF( ( .core.get( "type", ui8   ) == "uint8"    ), "uint8"    );
+PRINT_IF( ( .core.get( "type",  i8   ) == "int8"     ), "int8"     );
+PRINT_IF( ( .core.get( "type", ui16  ) == "uint16"   ), "uint16"   );
+PRINT_IF( ( .core.get( "type",  i16  ) == "int16"    ), "int16"    );
+PRINT_IF( ( .core.get( "type", ui32  ) == "uint32"   ), "uint32"   );
+PRINT_IF( ( .core.get( "type",  i32  ) == "int32"    ), "int32"    );
+PRINT_IF( ( .core.get( "type", ui64  ) == "uint64"   ), "uint64"   );
+PRINT_IF( ( .core.get( "type",  i64  ) == "int64"    ), "int64"    );
+PRINT_IF( ( .core.get( "type",  f    ) == "float"    ), "float"    );
+PRINT_IF( ( .core.get( "type",  d    ) == "double"   ), "double"   );
+PRINT_IF( ( .core.get( "type", str   ) == "string"   ), "string"   );
+PRINT_IF( ( .core.get( "type", frame ) == "Frame"    ), "Frame"    );
+PRINT_IF( ( .core.get( "type", func  ) == "Function" ), "Function" );
+PRINT_IF( ( .core.get( "type", node  ) == "Node"     ), "Node"     );
+PRINT_IF( ( .core.get( "type", in    ) == "Input"    ), "Input"    );
+PRINT_IF( ( .core.get( "type", param ) == "Param"    ), "Param"    );
+PRINT_IF( ( .core.get( "type", seq   ) == "Sequence" ), "Sequence" );
 
-print_if( ( .core.get( "type", Sequence()   ) == "Sequence" ), "Sequence()" );
-print_if( ( .core.get( "type", Sequence( 1, 2 ) ) == "Sequence" ), "Sequence( 1, 2 )" );
-print_if( ( .core.get( "type", Sequence( 1 to 2 ) ) == "Sequence" ), "Sequence( 1 to 2 )" );
+PRINT_IF( ( .core.get( "type", Sequence()   ) == "Sequence" ), "Sequence()" );
+PRINT_IF( ( .core.get( "type", Sequence( 1, 2 ) ) == "Sequence" ), "Sequence( 1, 2 )" );
+PRINT_IF( ( .core.get( "type", Sequence( 1 to 2 ) ) == "Sequence" ), "Sequence( 1 to 2 )" );
 
 #Output
 
 #Array
 {
-  print_if( ( .core.get( "type"      , [] ) == "Array" ), "[] type" );
-  print_if( ( .core.get( "array_type", [] ) == "other" ), "[] array_type" );
-  print_if( ( .core.get( "dims"      , [] ) == 1       ), "[] dims" );
-  print_if( ( .core.get( "size"      , [] )[ 0 ] == 0  ), "[] size 0" );
+  PRINT_IF( ( .core.get( "type"      , [] ) == "Array" ), "[] type" );
+  PRINT_IF( ( .core.get( "array_type", [] ) == "other" ), "[] array_type" );
+  PRINT_IF( ( .core.get( "dims"      , [] ) == 1       ), "[] dims" );
+  PRINT_IF( ( .core.get( "size"      , [] )[ 0 ] == 0  ), "[] size 0" );
 }
 
 {
   int[] a = [ 1, 2 ];
-  print_if( ( .core.get( "type"      , a ) == "Array" ), "int[] type" );
-  print_if( ( .core.get( "array_type", a ) == "int32" ), "int[] array_type" );
-  print_if( ( .core.get( "dims"      , a ) == 1       ), "int[] dims" );
-  print_if( ( .core.get( "size"      , a )[ 0 ] == 2  ), "int[] size 0" );
+  PRINT_IF( ( .core.get( "type"      , a ) == "Array" ), "int[] type" );
+  PRINT_IF( ( .core.get( "array_type", a ) == "int32" ), "int[] array_type" );
+  PRINT_IF( ( .core.get( "dims"      , a ) == 1       ), "int[] dims" );
+  PRINT_IF( ( .core.get( "size"      , a )[ 0 ] == 2  ), "int[] size 0" );
 }
 
 {
   float[,] a = [ 1.0, 2.0 ; 3.0, 4.0 ; 5.0, 6.0 ];
-  print_if( ( .core.get( "type"      , a ) == "Array" ), "float[,] type" );
-  print_if( ( .core.get( "array_type", a ) == "float" ), "float[,] array_type" );
-  print_if( ( .core.get( "dims"      , a ) == 2       ), "float[,] dims" );
-  print_if( ( .core.get( "size"      , a )[ 0 ] == 2  ), "float[,] size 0" );
-  print_if( ( .core.get( "size"      , a )[ 1 ] == 3  ), "float[,] size 1" );
+  PRINT_IF( ( .core.get( "type"      , a ) == "Array" ), "float[,] type" );
+  PRINT_IF( ( .core.get( "array_type", a ) == "float" ), "float[,] array_type" );
+  PRINT_IF( ( .core.get( "dims"      , a ) == 2       ), "float[,] dims" );
+  PRINT_IF( ( .core.get( "size"      , a )[ 0 ] == 2  ), "float[,] size 0" );
+  PRINT_IF( ( .core.get( "size"      , a )[ 1 ] == 3  ), "float[,] size 1" );
 }
 
 {
   float[][] a = [ [ 1.0, 2.0 ], [ 3.0, 4.0 ], [ 5.0, 6.0 ] ];
-  print_if( ( .core.get( "type"      , a ) == "Array" ), "float[][] type" );
-  print_if( ( .core.get( "array_type", a ) == "Array" ), "float[][] array_type" );
-  print_if( ( .core.get( "dims"      , a ) == 1       ), "float[][] dims" );
-  print_if( ( .core.get( "size"      , a )[ 0 ] == 3  ), "float[][] size 0" );
+  PRINT_IF( ( .core.get( "type"      , a ) == "Array" ), "float[][] type" );
+  PRINT_IF( ( .core.get( "array_type", a ) == "Array" ), "float[][] array_type" );
+  PRINT_IF( ( .core.get( "dims"      , a ) == 1       ), "float[][] dims" );
+  PRINT_IF( ( .core.get( "size"      , a )[ 0 ] == 3  ), "float[][] size 0" );
 }
 
 {
   Output[][] a = [ [ 1.0, 2.0 ], [ 3.0, 4.0 ], [ 5.0, 6.0 ] ];
-  print_if( ( .core.get( "type"      , a ) == "Array"  ), "Output[][] type" );
-  print_if( ( .core.get( "array_type", a ) == "Array" ), "Output[][] a array_type" );
-  print_if( ( .core.get( "type"      , a[ 0 ] ) == "Array" ), "Output[][] a[ 0 ] type" );
-  print_if( ( .core.get( "array_type", a[ 0 ] ) == "Output" ), "Output[][] a[ 0 ] array_type" );
-  print_if( ( .core.get( "type"      , a[ 0 ][ 0 ] ) == "Output" ), "Output[][] a[ 0 ][ 0 ] type" );
-  print_if( ( .core.get( "dims"      , a ) == 1       ), "Output[][] dims" );
-  print_if( ( .core.get( "size"      , a )[ 0 ] == 3  ), "Output[][] size 0" );
+  PRINT_IF( ( .core.get( "type"      , a ) == "Array"  ), "Output[][] type" );
+  PRINT_IF( ( .core.get( "array_type", a ) == "Array" ), "Output[][] a array_type" );
+  PRINT_IF( ( .core.get( "type"      , a[ 0 ] ) == "Array" ), "Output[][] a[ 0 ] type" );
+  PRINT_IF( ( .core.get( "array_type", a[ 0 ] ) == "Output" ), "Output[][] a[ 0 ] array_type" );
+  PRINT_IF( ( .core.get( "type"      , a[ 0 ][ 0 ] ) == "Output" ), "Output[][] a[ 0 ][ 0 ] type" );
+  PRINT_IF( ( .core.get( "dims"      , a ) == 1       ), "Output[][] dims" );
+  PRINT_IF( ( .core.get( "size"      , a )[ 0 ] == 3  ), "Output[][] size 0" );
 }
 
 

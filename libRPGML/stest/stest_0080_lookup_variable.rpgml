@@ -1,7 +1,7 @@
 
 int i = 23;
-print( i );
-print( "\n" );
+PRINT( i );
+PRINT( "\n" );
 
 Function f()
 {
@@ -10,26 +10,26 @@ Function f()
 
 {
   int i = 42;
-  print( i );
-  print( "\n" );
-  print( .i );
-  print( "\n" );
+  PRINT( i );
+  PRINT( "\n" );
+  PRINT( .i );
+  PRINT( "\n" );
 
-  print( f() );
-  print( "\n" );
+  PRINT( f() );
+  PRINT( "\n" );
 }
 
-print( test_dir.s );
-print( "\n" );
+PRINT( test_dir.s );
+PRINT( "\n" );
 
 {
   Frame test_dir = Frame{ string s = "foo"; };
 
-  print( test_dir.s );
-  print( "\n" );
+  PRINT( test_dir.s );
+  PRINT( "\n" );
 
-  print( .test_dir.s );
-  print( "\n" );
+  PRINT( .test_dir.s );
+  PRINT( "\n" );
 }
 
 

@@ -15,35 +15,40 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-#ifndef RPGML_Function_print_h
-#define RPGML_Function_print_h
+#ifndef RPGML_Function_PRINT_h
+#define RPGML_Function_PRINT_h
 
 #include <RPGML/Function.h>
 
 namespace RPGML {
 
-class Function_print : public Function
+
+class Function_PRINT : public Function
 {
+  typedef Function Base;
 public:
-  Function_print( GarbageCollector *gc, Frame *parent, const SharedObject *so=0 );
-  virtual ~Function_print( void );
+  EXCEPTION_BASE( Exception );
+
+  Function_PRINT( GarbageCollector *gc, Frame *parent, const SharedObject *so=0 );
+  virtual ~Function_PRINT( void );
 
   virtual Value call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
   virtual const char *getName( void ) const;
 
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children ) const;
 private:
-  enum Arguments
+  enum ArgNr
   {
-    ARG_IN,
+    ARG_IN ,
     NUM_ARGS
   };
 
   static
   CountPtr< Args > genDeclArgs( void );
-
-  CountPtr< Output > m_prev;
 };
 
+ // 
 } // namespace RPGML
 
 #endif
