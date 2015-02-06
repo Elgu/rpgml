@@ -1,5 +1,5 @@
 
 Function getArrayType( x )
 {
-  return .core.get( x, "type" );
+  return .core.get( "array_type", x );
 }
