@@ -1,0 +1,59 @@
+#!/usr/bin/env rpgml
+
+Output i = counter();
+
+.core.Exit e();
+needing( e );
+( i >= 3 ) -> e.condition;
+
+{
+  int[ 7, 4 ] b =
+  [
+     0,  1,  2,  3,  4,  5,  6;
+    10, 11, 12, 13, 14, 15, 16;
+    20, 21, 22, 23, 24, 25, 26;
+    30, 31, 32, 33, 34, 35, 36
+  ];
+
+
+  ROI roi();
+  b -> roi.in;
+  i -> roi.x;
+  i/2 -> roi.y;
+  1+i -> roi.sx;
+  2 -> roi.sy;
+
+  print( getSize( roi.out ) );
+  print( " " );
+  print( roi.out[ 0, 0 ] );
+  print( " " );
+  print( roi.out[ 1+i-1, 2-1 ] );
+  print( "\n" );
+}
+
+{
+  bool[ 7, 4 ] b =
+  [
+    true , false, true , true , false, true , false;
+    false, false, true , true , false, true , true ;
+    true , false, true , true , false, false, false;
+    false, true , false, false, true , false, true
+  ];
+
+
+  ROI roi();
+  b -> roi.in;
+  i -> roi.x;
+  i/2 -> roi.y;
+  1+i -> roi.sx;
+  2 -> roi.sy;
+
+  print( getSize( roi.out ) );
+  print( " " );
+  print( roi.out[ 0, 0 ] );
+  print( " " );
+  print( roi.out[ 1+i-1, 2-1 ] );
+  print( "\n" );
+}
+
+
