@@ -287,7 +287,7 @@ bool Window::update_texture( void )
     m_texture.set(
       SDL_CreateTexture(
           m_renderer
-        , SDL_PIXELFORMAT_RGBA8888
+        , SDL_PIXELFORMAT_ARGB8888
         , SDL_TEXTUREACCESS_STREAMING
         , width, height
         )
@@ -310,7 +310,7 @@ bool Window::update_texture( void )
   update_rect.w = width;
   update_rect.h = height;
 
-  if( 0 != SDL_UpdateTexture( m_texture, &update_rect, m_rgba->elements(), width*4 ) )
+  if( 0 != SDL_UpdateTexture( m_texture, &update_rect, m_rgba->elements(), m_rgba->getStride()[ 1 ] ) )
   {
     m_error += "Could not update texture: ";
     m_error += SDL_GetError();
@@ -347,11 +347,11 @@ void Window::fill_rgba_t( const ArrayBase *chan_base, int chan )
 
   const index_t n = chan_elements->size();
   uint8_t *const rgba_p = m_rgba->elements();
-  const T *const c     = chan_elements->elements();
+  typename Array< T >::const_iterator c = chan_elements->begin();
 
-  for( index_t i=0; i<n; ++i )
+  for( index_t i=0; i<n; ++i, ++c )
   {
-    rgba_p[ 4*i + chan ] = saturate( c[ i ] );
+    rgba_p[ 4*i + (2-chan) ] = saturate( *c );
   }
 }
 
