@@ -16,7 +16,7 @@ SUBDIRS=\
 	$(MAKE) -C $< clean
 
 .%.undepend: %
-	$(MAKE) -C $< undepened
+	$(MAKE) -C $< undepend
 
 all: $(foreach subdir, $(SUBDIRS), .$(subdir).all )
 
