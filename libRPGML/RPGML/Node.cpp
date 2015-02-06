@@ -623,6 +623,61 @@ Node::InitFailed::InitFailed( const Output *_output )
     ;
 }
 
+bool     Node::getBool  ( int input_index ) const { return getScalar< bool     >( input_index ); }
+uint8_t  Node::getUInt8 ( int input_index ) const { return getScalar< uint8_t  >( input_index ); }
+int8_t   Node::getInt8  ( int input_index ) const { return getScalar< int8_t   >( input_index ); }
+uint16_t Node::getUInt16( int input_index ) const { return getScalar< uint16_t >( input_index ); }
+int16_t  Node::getInt16 ( int input_index ) const { return getScalar< int16_t  >( input_index ); }
+uint32_t Node::getUInt32( int input_index ) const { return getScalar< uint32_t >( input_index ); }
+int32_t  Node::getInt32 ( int input_index ) const { return getScalar< int32_t  >( input_index ); }
+uint64_t Node::getUInt64( int input_index ) const { return getScalar< uint64_t >( input_index ); }
+int64_t  Node::getInt64 ( int input_index ) const { return getScalar< int64_t  >( input_index ); }
+float    Node::getFloat ( int input_index ) const { return getScalar< float    >( input_index ); }
+double   Node::getDouble( int input_index ) const { return getScalar< double   >( input_index ); }
+String   Node::getString( int input_index ) const { return getScalar< String   >( input_index ); }
+
+template< class Scalar, class From >
+Scalar Node::getScalarFrom( int input_index ) const
+{
+  GET_INPUT_AS_DIMS( input_index, in, From, 0 );
+  const Value ret( (**in) );
+  try
+  {
+    return ret.save_cast( TypeOf< Scalar >::E ).get< Scalar >();
+  }
+  catch( const Value::CastFailed &e )
+  {
+    throw IncompatibleOutput( getInput( input_index ) )
+      << e.what()
+      ;
+  }
+}
+
+template< class Scalar >
+Scalar Node::getScalar( int input_index ) const
+{
+  GET_INPUT_BASE( input_index, base );
+
+  switch( base->getType().getEnum() )
+  {
+    case Type::BOOL  : return getScalarFrom< Scalar, bool     >( input_index );
+    case Type::UINT8 : return getScalarFrom< Scalar, uint8_t  >( input_index );
+    case Type::INT8  : return getScalarFrom< Scalar, int8_t   >( input_index );
+    case Type::UINT16: return getScalarFrom< Scalar, uint16_t >( input_index );
+    case Type::INT16 : return getScalarFrom< Scalar, int16_t  >( input_index );
+    case Type::UINT32: return getScalarFrom< Scalar, uint32_t >( input_index );
+    case Type::INT32 : return getScalarFrom< Scalar, int32_t  >( input_index );
+    case Type::UINT64: return getScalarFrom< Scalar, uint64_t >( input_index );
+    case Type::INT64 : return getScalarFrom< Scalar, int64_t  >( input_index );
+    case Type::FLOAT : return getScalarFrom< Scalar, float    >( input_index );
+    case Type::DOUBLE: return getScalarFrom< Scalar, double   >( input_index );
+    case Type::STRING: return getScalarFrom< Scalar, String   >( input_index );
+    default:
+      throw IncompatibleOutput( getInput( input_index ) );
+  }
+}
+
+
 Param::Param( GarbageCollector *_gc , const String &identifier )
 : Collectable( _gc )
 , m_identifier( identifier )

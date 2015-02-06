@@ -156,7 +156,7 @@ public:
   virtual void setValue_v( const Value &value, int dims, const index_t *x ) = 0;
   virtual void setValue( const Value &value, const Coordinates &x ) = 0;
   virtual void fillValue( const Value &value ) = 0;
-  virtual bool isValue( void ) const = 0;
+  virtual bool isValueArray( void ) const = 0;
 
   const char *getTypeName( void ) const
   {

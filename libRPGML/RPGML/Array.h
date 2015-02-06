@@ -57,7 +57,7 @@ public:
   typedef iterator_base< const Element, const_reference, const_pointer > const_iterator;
 
   explicit
-  Array( GarbageCollector *_gc, int dims )
+  Array( GarbageCollector *_gc, int dims, const index_t *s=0 )
   : Base( _gc )
   , m_element0( pointer() )
   , m_dims( dims )
@@ -66,6 +66,7 @@ public:
     std::fill( m_size, m_size+dims, 0 );
     std::fill( m_size+dims, m_size+4, 1 );
     if( dims == 0 ) resize_v( 0, 0 );
+    else if( s ) resize_v( dims, s );
   }
 
   explicit
@@ -113,18 +114,6 @@ public:
     _check_dims( 4 );
     std::fill( m_size, m_size+4, 0 );
     resize( sx, sy, sz, st );
-  }
-
-  explicit
-  Array( GarbageCollector *_gc, int dims, const index_t *s )
-  : Base( _gc )
-  , m_element0( pointer() )
-  , m_dims( dims )
-  {
-    _check_dims();
-    std::fill( m_size, m_size+dims, 0 );
-    std::fill( m_size+dims, m_size+4, 1 );
-    resize_v( dims, s );
   }
 
   explicit
@@ -569,7 +558,7 @@ public:
     fill( value.get< Element >() );
   }
 
-  virtual bool isValue( void ) const
+  virtual bool isValueArray( void ) const
   {
     return _isValue( (const Element*)0 );
   }

@@ -112,13 +112,16 @@
   const Array< type > *var_identifier = 0; \
   { \
     const Input *const input = getInput( INPUT_ENUM ); \
-    if( input->isConnected() && !input->getAs( var_identifier ) ) \
+    if( input->isConnected() ) \
     { \
-      throw GetAsFailed( input, var_identifier ); \
-    } \
-    if( var_identifier->getDims() != dims ) \
-    { \
-      throw IncompatibleOutput( input ); \
+      if( !input->getAs( var_identifier ) ) \
+      { \
+        throw GetAsFailed( input, var_identifier ); \
+      } \
+      if( var_identifier->getDims() != dims ) \
+      { \
+        throw IncompatibleOutput( input ); \
+      } \
     } \
   } \
 
@@ -513,7 +516,26 @@ protected:
     bool m_is_array;
   };
 
+  bool     getBool  ( int input_index ) const;
+  uint8_t  getUInt8 ( int input_index ) const;
+  int8_t   getInt8  ( int input_index ) const;
+  uint16_t getUInt16( int input_index ) const;
+  int16_t  getInt16 ( int input_index ) const;
+  uint32_t getUInt32( int input_index ) const;
+  int32_t  getInt32 ( int input_index ) const;
+  uint64_t getUInt64( int input_index ) const;
+  int64_t  getInt64 ( int input_index ) const;
+  float    getFloat ( int input_index ) const;
+  double   getDouble( int input_index ) const;
+  String   getString( int input_index ) const;
+
 private:
+  template< class Scalar, class From >
+  Scalar getScalarFrom( int input_index ) const;
+
+  template< class Scalar >
+  Scalar getScalar( int input_index ) const;
+
   friend class ::utest_Node;
   typedef Array< CountPtr< Input  > > inputs_t;
   typedef Array< CountPtr< Output > > outputs_t;

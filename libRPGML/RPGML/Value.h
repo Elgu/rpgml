@@ -41,14 +41,15 @@ class Sequence;
 class Collectable;
 template< class Elements > class Array;
 
-#if 1
+#if 0
 #define Value_assert assert
 #else
-static inline
-void Value_assert( bool b )
-{
-  if( !b ) throw Exception() << "Assertion failed";
-}
+#define Value_assert( B ) \
+do \
+{ \
+  if( !(B) ) throw Exception() << "Assertion '" #B "'failed"; \
+} \
+while( false )
 #endif
 
 class Value
@@ -238,26 +239,26 @@ public:
 
   int             getInt     ( void ) const { return getInt32(); }
 
-  operator bool            ( void ) const { return getBool     (); }
-  operator uint8_t         ( void ) const { return getUInt8    (); }
-  operator int8_t          ( void ) const { return getInt8     (); }
-  operator uint16_t        ( void ) const { return getUInt16   (); }
-  operator int16_t         ( void ) const { return getInt16    (); }
-  operator uint32_t        ( void ) const { return getUInt32   (); }
-  operator int32_t         ( void ) const { return getInt32    (); }
-  operator uint64_t        ( void ) const { return getUInt64   (); }
-  operator int64_t         ( void ) const { return getInt64    (); }
-  operator float           ( void ) const { return getFloat    (); }
-  operator double          ( void ) const { return getDouble   (); }
-  operator String          ( void ) const { return getString  (); }
-  operator ArrayBase      *( void ) const { return getArray   (); }
-  operator Frame          *( void ) const { return getFrame   (); }
-  operator Function       *( void ) const { return getFunction(); }
-  operator Node           *( void ) const { return getNode    (); }
-  operator Output         *( void ) const { return getOutput  (); }
-  operator Input          *( void ) const { return getInput   (); }
-  operator Param          *( void ) const { return getParam   (); }
-  operator Sequence const *( void ) const { return getSequence(); }
+  operator bool            ( void ) const;
+  operator uint8_t         ( void ) const;
+  operator int8_t          ( void ) const;
+  operator uint16_t        ( void ) const;
+  operator int16_t         ( void ) const;
+  operator uint32_t        ( void ) const;
+  operator int32_t         ( void ) const;
+  operator uint64_t        ( void ) const;
+  operator int64_t         ( void ) const;
+  operator float           ( void ) const;
+  operator double          ( void ) const;
+  operator String          ( void ) const;
+  operator ArrayBase      *( void ) const;
+  operator Frame          *( void ) const;
+  operator Function       *( void ) const;
+  operator Node           *( void ) const;
+  operator Output         *( void ) const;
+  operator Input          *( void ) const;
+  operator Param          *( void ) const;
+  operator Sequence const *( void ) const;
 
   operator CountPtr< ArrayBase      >( void ) const;
   operator CountPtr< Frame          >( void ) const;

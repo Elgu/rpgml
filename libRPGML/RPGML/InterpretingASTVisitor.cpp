@@ -697,6 +697,34 @@ void InterpretingASTVisitor::visit( const AST::DimensionsExpression         *nod
   swap( return_value_dims, dims );
 }
 
+void InterpretingASTVisitor::visit( const AST::CastExpression         *node )
+{
+  node->arg->invite( this );
+  Value arg; arg.swap( return_value );
+
+  if( node->to.isPrimitive() )
+  {
+    Value cast_args[ 2 ];
+    cast_args[ 0 ] = Value( String::Static( node->to.getTypeName() ) );
+    cast_args[ 1 ].swap( arg );
+
+    return_value = scope->call( node->loc, getRD()+1, String::Static( ".core.cast" ), 2, cast_args );
+    return;
+  }
+  else if( node->to.isOutput() )
+  {
+    CallLoc guard( this, node->arg->loc );
+    return_value.set( toOutput( arg ) );
+    return;
+  }
+  else
+  {
+    throw ParseException( node->loc )
+      << "Unsupported type '" << node->to << "' for cast"
+      ;
+  }
+}
+
 void InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
   CountPtr< Frame > body = ( node->own_frame ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );

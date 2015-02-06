@@ -82,7 +82,7 @@ Value Function_mathOp1::call_impl( const Location *loc, index_t recursion_depth,
   try
   {
     const MOP1 op = getMOP1( op_v.getString() );
-    return mathOp1( op, in_v );
+    return Value( mathOp1( op, in_v ) );
   }
   catch( const RPGML::Exception &e )
   {

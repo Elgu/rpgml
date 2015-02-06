@@ -185,6 +185,26 @@ void Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) x = getIn
 void Value::get( CountPtr< Param     > &x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
 
+Value::operator bool            ( void ) const { return save_cast( Type::Bool  () ).get< bool     >(); }
+Value::operator uint8_t         ( void ) const { return save_cast( Type::UInt8 () ).get< uint8_t  >(); }
+Value::operator int8_t          ( void ) const { return save_cast( Type::Int8  () ).get< int8_t   >(); }
+Value::operator uint16_t        ( void ) const { return save_cast( Type::UInt16() ).get< uint16_t >(); }
+Value::operator int16_t         ( void ) const { return save_cast( Type::Int16 () ).get< int16_t  >(); }
+Value::operator uint32_t        ( void ) const { return save_cast( Type::UInt32() ).get< uint32_t >(); }
+Value::operator int32_t         ( void ) const { return save_cast( Type::Int32 () ).get< int32_t  >(); }
+Value::operator uint64_t        ( void ) const { return save_cast( Type::UInt64() ).get< uint64_t >(); }
+Value::operator int64_t         ( void ) const { return save_cast( Type::Int64 () ).get< int64_t  >(); }
+Value::operator float           ( void ) const { return save_cast( Type::Float () ).get< float    >(); }
+Value::operator double          ( void ) const { return save_cast( Type::Double() ).get< double   >(); }
+Value::operator String          ( void ) const { return save_cast( Type::String() ).get< String   >(); }
+Value::operator ArrayBase      *( void ) const { return getArray   (); }
+Value::operator Frame          *( void ) const { return getFrame   (); }
+Value::operator Function       *( void ) const { return getFunction(); }
+Value::operator Node           *( void ) const { return getNode    (); }
+Value::operator Output         *( void ) const { return getOutput  (); }
+Value::operator Input          *( void ) const { return getInput   (); }
+Value::operator Param          *( void ) const { return getParam   (); }
+Value::operator Sequence const *( void ) const { return getSequence(); }
 Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
 Value::operator CountPtr< Frame          >( void ) const { return getFrame   (); }
 Value::operator CountPtr< Function       >( void ) const { return getFunction(); }

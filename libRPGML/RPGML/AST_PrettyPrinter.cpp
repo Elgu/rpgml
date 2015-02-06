@@ -299,6 +299,13 @@ void PrettyPrinter::visit( const DimensionsExpression         *node )
   }
 }
 
+void PrettyPrinter::visit( const CastExpression         *node )
+{
+  (*o) << node->to << "( ";
+  node->arg->invite( this );
+  (*o) << " )";
+}
+
 void PrettyPrinter::visit( const CompoundStatement            *node )
 {
   // indent() must have been called, if neccessary

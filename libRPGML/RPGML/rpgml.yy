@@ -330,6 +330,10 @@ postfix_expression
     {
       ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
     } 
+  | primitive_type_expression '(' expression ')'
+    {
+      ($$) = new CastExpression( RPGML_LOC(@$), ($1), ($3) );
+    } 
 //  | postfix_expression INC_OP
 //  | postfix_expression DEC_OP
   | primary_expression { ($$) = ($1); }

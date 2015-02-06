@@ -48,28 +48,30 @@ template< class Op, class Element > struct MapOp< const Array< Element >*, Op >;
 template< class Op, class Element > struct MapOp< CountPtr< Array< Element > >, Op >;
 template< class Op, class Element > struct MapOp< CountPtr< const Array< Element > >, Op >;
 
-template< class Op >
-struct MapOp< Value, Op >
+template< class _Op >
+struct MapOp< Value, _Op >
 {
   typedef Value T;
+  typedef typename _Op:: template Other< T >::Op Op;
+//  typedef typename Op::Ret Ret;
   typedef Value Ret;
 
   Ret operator()( const T &x ) const
   {
     switch( x.getType().getEnum() )
     {
-      case Type::BOOL  : return Value( MapOp< bool    , Op >()( x.getBool  () ) );
-      case Type::UINT8 : return Value( MapOp< uint8_t , Op >()( x.getUInt8 () ) );
-      case Type::INT8  : return Value( MapOp< int8_t  , Op >()( x.getInt8  () ) );
-      case Type::UINT16: return Value( MapOp< uint16_t, Op >()( x.getUInt16() ) );
-      case Type::INT16 : return Value( MapOp< int16_t , Op >()( x.getInt16 () ) );
-      case Type::UINT32: return Value( MapOp< uint32_t, Op >()( x.getUInt32() ) );
-      case Type::INT32 : return Value( MapOp< int32_t , Op >()( x.getInt32 () ) );
-      case Type::UINT64: return Value( MapOp< uint64_t, Op >()( x.getUInt64() ) );
-      case Type::INT64 : return Value( MapOp< int64_t , Op >()( x.getInt64 () ) );
-      case Type::FLOAT : return Value( MapOp< float   , Op >()( x.getFloat () ) );
-      case Type::DOUBLE: return Value( MapOp< double  , Op >()( x.getDouble() ) );
-      case Type::ARRAY : return Value( MapOp< const ArrayBase*, Op >()( x.getArray() ) );
+      case Type::BOOL  : return Ret( MapOp< bool    , Op >()( x.getBool  () ) );
+      case Type::UINT8 : return Ret( MapOp< uint8_t , Op >()( x.getUInt8 () ) );
+      case Type::INT8  : return Ret( MapOp< int8_t  , Op >()( x.getInt8  () ) );
+      case Type::UINT16: return Ret( MapOp< uint16_t, Op >()( x.getUInt16() ) );
+      case Type::INT16 : return Ret( MapOp< int16_t , Op >()( x.getInt16 () ) );
+      case Type::UINT32: return Ret( MapOp< uint32_t, Op >()( x.getUInt32() ) );
+      case Type::INT32 : return Ret( MapOp< int32_t , Op >()( x.getInt32 () ) );
+      case Type::UINT64: return Ret( MapOp< uint64_t, Op >()( x.getUInt64() ) );
+      case Type::INT64 : return Ret( MapOp< int64_t , Op >()( x.getInt64 () ) );
+      case Type::FLOAT : return Ret( MapOp< float   , Op >()( x.getFloat () ) );
+      case Type::DOUBLE: return Ret( MapOp< double  , Op >()( x.getDouble() ) );
+      case Type::ARRAY : return Ret( MapOp< const ArrayBase*, Op >()( x.getArray() ) );
       default:
         throw Exception() << "Unsupported Type";
     }
@@ -84,24 +86,24 @@ struct MapOp< const ArrayBase*, Op >
 
   Ret operator()( const T &x ) const
   {
-    if( x->isValue() )
+    if( x->isValueArray() )
     {
       return MapOp< CountPtr< Array< Value > >, Op >()( x );
     }
     switch( x->getType().getEnum() )
     {
-      case Type::BOOL  : return Value( MapOp< CountPtr< Array< bool     > >, Op >()( x ) );
-      case Type::UINT8 : return Value( MapOp< CountPtr< Array< uint8_t  > >, Op >()( x ) );
-      case Type::INT8  : return Value( MapOp< CountPtr< Array< int8_t   > >, Op >()( x ) );
-      case Type::UINT16: return Value( MapOp< CountPtr< Array< uint16_t > >, Op >()( x ) );
-      case Type::INT16 : return Value( MapOp< CountPtr< Array< int16_t  > >, Op >()( x ) );
-      case Type::UINT32: return Value( MapOp< CountPtr< Array< uint32_t > >, Op >()( x ) );
-      case Type::INT32 : return Value( MapOp< CountPtr< Array< int32_t  > >, Op >()( x ) );
-      case Type::UINT64: return Value( MapOp< CountPtr< Array< uint64_t > >, Op >()( x ) );
-      case Type::INT64 : return Value( MapOp< CountPtr< Array< int64_t  > >, Op >()( x ) );
-      case Type::FLOAT : return Value( MapOp< CountPtr< Array< float    > >, Op >()( x ) );
-      case Type::DOUBLE: return Value( MapOp< CountPtr< Array< double   > >, Op >()( x ) );
-      case Type::ARRAY : return Value( MapOp< CountPtr< Array< CountPtr< ArrayBase > > >, Op >()( x ) );
+      case Type::BOOL  : return Ret( MapOp< CountPtr< Array< bool     > >, Op >()( x ) );
+      case Type::UINT8 : return Ret( MapOp< CountPtr< Array< uint8_t  > >, Op >()( x ) );
+      case Type::INT8  : return Ret( MapOp< CountPtr< Array< int8_t   > >, Op >()( x ) );
+      case Type::UINT16: return Ret( MapOp< CountPtr< Array< uint16_t > >, Op >()( x ) );
+      case Type::INT16 : return Ret( MapOp< CountPtr< Array< int16_t  > >, Op >()( x ) );
+      case Type::UINT32: return Ret( MapOp< CountPtr< Array< uint32_t > >, Op >()( x ) );
+      case Type::INT32 : return Ret( MapOp< CountPtr< Array< int32_t  > >, Op >()( x ) );
+      case Type::UINT64: return Ret( MapOp< CountPtr< Array< uint64_t > >, Op >()( x ) );
+      case Type::INT64 : return Ret( MapOp< CountPtr< Array< int64_t  > >, Op >()( x ) );
+      case Type::FLOAT : return Ret( MapOp< CountPtr< Array< float    > >, Op >()( x ) );
+      case Type::DOUBLE: return Ret( MapOp< CountPtr< Array< double   > >, Op >()( x ) );
+      case Type::ARRAY : return Ret( MapOp< CountPtr< Array< CountPtr< ArrayBase > > >, Op >()( x ) );
       default:
         throw Exception() << "Unsupported Array Type";
     }
@@ -136,21 +138,24 @@ template< class _Op >
 struct MapOp< const Array< Value >*, _Op >
 {
   typedef const ArrayBase *T;
-  typedef CountPtr< Array< Value > > Ret;
   typedef typename _Op:: template Other< Value >::Op Op;
+  typedef typename Op::Ret array_type;
+  typedef CountPtr< Array< array_type > > Ret;
 
   Ret operator()( const T &x ) const
   {
+    std::cerr << "array_type = '" << typeid( array_type ).name() << "'" << std::endl;
+
     const ValueArray *e = 0;
     if( !x->getAs( e ) ) throw Exception() << "x is not a Value Array";
 
     const ArrayBase::Size size = x->getSize();
-    CountPtr< ValueArray > ret( new ValueArray( x->getGC(), size.getDims() ) );
+    CountPtr< Array< array_type > > ret( new Array< array_type >( x->getGC(), size.getDims() ) );
     ret->resize( size );
 
     ValueArray::const_iterator e_iter = e->begin();
     ValueArray::const_iterator e_end  = e->end();
-    ValueArray::iterator ret_iter = ret->begin();
+    typename Array< array_type >::iterator ret_iter = ret->begin();
     for( ; e_iter != e_end; ++e_iter, ++ret_iter )
     {
       (*ret_iter ) = MapOp< Value, Op >()( (*e_iter) );
@@ -164,8 +169,10 @@ template< class _Op >
 struct MapOp< CountPtr< Array< Value > >, _Op >
 {
   typedef const ArrayBase *T;
-  typedef CountPtr< Array< Value > > Ret;
   typedef typename _Op:: template Other< Value >::Op Op;
+//  typedef typename Op::Ret array_type;
+//  typedef CountPtr< Array< array_type > > Ret;
+  typedef CountPtr< ArrayBase > Ret;
 
   Ret operator()( const T &x ) const
   {
@@ -177,8 +184,9 @@ template< class _Op >
 struct MapOp< CountPtr< const Array< Value > >, _Op >
 {
   typedef const ArrayBase *T;
-  typedef CountPtr< Array< Value > > Ret;
   typedef typename _Op:: template Other< Value >::Op Op;
+  typedef typename Op::Ret array_type;
+  typedef CountPtr< Array< array_type > > Ret;
 
   Ret operator()( const T &x ) const
   {

@@ -53,6 +53,7 @@ public:
   virtual void visit( const IfThenElseExpression         *node );
   virtual void visit( const TypeExpression               *node );
   virtual void visit( const DimensionsExpression         *node );
+  virtual void visit( const CastExpression               *node );
 
   virtual void visit( const CompoundStatement            *node );
   virtual void visit( const FunctionDefinitionStatement  *node );

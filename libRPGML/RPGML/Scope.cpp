@@ -380,7 +380,7 @@ CountPtr< Output > Scope::toOutput(
 
       return array_node->getOutput( "out" );
     }
-    else if( array_type.isOutput() || array_base->isValue() )
+    else if( array_type.isOutput() || array_base->isValueArray() )
     {
       CountPtr< Node > array_node = createNode( loc, recursion_depth+1, String::Static( ".core.OutputArray" ) );
 

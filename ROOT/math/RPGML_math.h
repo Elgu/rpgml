@@ -238,25 +238,25 @@ Ret mathOp1( MOP1 op, const T &x )
 {
   switch( op )
   {
-    case MOP1_MINUS  : return MapOp< T, MathOp1_op< T, MOP1_MINUS   > >()( x );
-    case MOP1_PLUS   : return MapOp< T, MathOp1_op< T, MOP1_PLUS    > >()( x );
-    case MOP1_LOG_NOT: return MapOp< T, MathOp1_op< T, MOP1_LOG_NOT > >()( x );
-    case MOP1_BIT_NOT: return MapOp< T, MathOp1_op< T, MOP1_BIT_NOT > >()( x );
-    case MOP1_SIN    : return MapOp< T, MathOp1_op< T, MOP1_SIN     > >()( x );
-    case MOP1_COS    : return MapOp< T, MathOp1_op< T, MOP1_COS     > >()( x );
-    case MOP1_TAN    : return MapOp< T, MathOp1_op< T, MOP1_TAN     > >()( x );
-    case MOP1_ASIN   : return MapOp< T, MathOp1_op< T, MOP1_ASIN    > >()( x );
-    case MOP1_ACOS   : return MapOp< T, MathOp1_op< T, MOP1_ACOS    > >()( x );
-    case MOP1_ATAN   : return MapOp< T, MathOp1_op< T, MOP1_ATAN    > >()( x );
-    case MOP1_EXP    : return MapOp< T, MathOp1_op< T, MOP1_EXP     > >()( x );
-    case MOP1_EXP10  : return MapOp< T, MathOp1_op< T, MOP1_EXP10   > >()( x );
-    case MOP1_EXP2   : return MapOp< T, MathOp1_op< T, MOP1_EXP2    > >()( x );
-    case MOP1_EXPM1  : return MapOp< T, MathOp1_op< T, MOP1_EXPM1   > >()( x );
-    case MOP1_SQRT   : return MapOp< T, MathOp1_op< T, MOP1_SQRT    > >()( x );
-    case MOP1_LOG    : return MapOp< T, MathOp1_op< T, MOP1_LOG     > >()( x );
-    case MOP1_LOG10  : return MapOp< T, MathOp1_op< T, MOP1_LOG10   > >()( x );
-    case MOP1_LOG2   : return MapOp< T, MathOp1_op< T, MOP1_LOG2    > >()( x );
-    case MOP1_LOG1P  : return MapOp< T, MathOp1_op< T, MOP1_LOG1P   > >()( x );
+    case MOP1_MINUS  : return Ret( MapOp< T, MathOp1_op< T, MOP1_MINUS   > >()( x ) );
+    case MOP1_PLUS   : return Ret( MapOp< T, MathOp1_op< T, MOP1_PLUS    > >()( x ) );
+    case MOP1_LOG_NOT: return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG_NOT > >()( x ) );
+    case MOP1_BIT_NOT: return Ret( MapOp< T, MathOp1_op< T, MOP1_BIT_NOT > >()( x ) );
+    case MOP1_SIN    : return Ret( MapOp< T, MathOp1_op< T, MOP1_SIN     > >()( x ) );
+    case MOP1_COS    : return Ret( MapOp< T, MathOp1_op< T, MOP1_COS     > >()( x ) );
+    case MOP1_TAN    : return Ret( MapOp< T, MathOp1_op< T, MOP1_TAN     > >()( x ) );
+    case MOP1_ASIN   : return Ret( MapOp< T, MathOp1_op< T, MOP1_ASIN    > >()( x ) );
+    case MOP1_ACOS   : return Ret( MapOp< T, MathOp1_op< T, MOP1_ACOS    > >()( x ) );
+    case MOP1_ATAN   : return Ret( MapOp< T, MathOp1_op< T, MOP1_ATAN    > >()( x ) );
+    case MOP1_EXP    : return Ret( MapOp< T, MathOp1_op< T, MOP1_EXP     > >()( x ) );
+    case MOP1_EXP10  : return Ret( MapOp< T, MathOp1_op< T, MOP1_EXP10   > >()( x ) );
+    case MOP1_EXP2   : return Ret( MapOp< T, MathOp1_op< T, MOP1_EXP2    > >()( x ) );
+    case MOP1_EXPM1  : return Ret( MapOp< T, MathOp1_op< T, MOP1_EXPM1   > >()( x ) );
+    case MOP1_SQRT   : return Ret( MapOp< T, MathOp1_op< T, MOP1_SQRT    > >()( x ) );
+    case MOP1_LOG    : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG     > >()( x ) );
+    case MOP1_LOG10  : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG10   > >()( x ) );
+    case MOP1_LOG2   : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG2    > >()( x ) );
+    case MOP1_LOG1P  : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG1P   > >()( x ) );
     default:
       throw Exception() << "Undefined op";
   }

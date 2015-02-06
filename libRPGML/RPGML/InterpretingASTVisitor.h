@@ -54,6 +54,7 @@ public:
   virtual void visit( const AST::IfThenElseExpression         *node );
   virtual void visit( const AST::TypeExpression               *node );
   virtual void visit( const AST::DimensionsExpression         *node );
+  virtual void visit( const AST::CastExpression               *node );
 
   virtual void visit( const AST::CompoundStatement            *node );
   virtual void visit( const AST::FunctionDefinitionStatement  *node );

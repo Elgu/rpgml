@@ -54,6 +54,7 @@ class IfThenElseExpression;
 class TypeExpression;
 class DimensionsExpression;
 typedef DimensionsExpression CoordinatesExpression;
+class CastExpression;
 
 class CompoundStatement;
 class AssignmentStatementBase;
@@ -126,6 +127,7 @@ public:
   virtual void visit( const IfThenElseExpression         *node ) = 0;
   virtual void visit( const TypeExpression               *node ) = 0;
   virtual void visit( const DimensionsExpression         *node ) = 0;
+  virtual void visit( const CastExpression               *node ) = 0;
 
   virtual void visit( const CompoundStatement            *node ) = 0;
   virtual void visit( const FunctionDefinitionStatement  *node ) = 0;
@@ -574,6 +576,22 @@ public:
   }
 
   std::vector< CountPtr< const Expression > > dims;
+};
+
+class CastExpression : public Expression
+{
+public:
+  CastExpression( const Location *_loc, Type _to, const Expression *_arg )
+  : Expression( _loc )
+  , arg( _arg )
+  , to( _to )
+  {}
+  virtual ~CastExpression( void ) {}
+
+  virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
+
+  CountPtr< const Expression > arg;
+  Type to;
 };
 
 //// Statements ////
