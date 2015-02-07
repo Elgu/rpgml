@@ -1,0 +1,10 @@
+#
+
+Function exit( condition = true )
+{
+  .core.Exit e();
+  .needing( e );
+  condition -> e.condition;
+  return e;
+}
+
