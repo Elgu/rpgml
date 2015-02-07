@@ -136,6 +136,7 @@ namespace RPGML
 %token  <type_enum>    METHOD       "Method";
 %token  <type_enum>    OUTPUT       "Output";
 %token  <type_enum>    INPUT        "Input";
+%token  <type_enum>    INOUT        "InOut";
 %token  <type_enum>    NODE         "Node";
 %token  <type_enum>    PARAM        "Param";
 %token  <type_enum>    SEQUENCE     "Sequence";
@@ -331,6 +332,10 @@ postfix_expression
       ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
     } 
   | primitive_type_expression '(' expression ')'
+    {
+      ($$) = new CastExpression( RPGML_LOC(@$), ($1), ($3) );
+    } 
+  | OUTPUT '(' expression ')'
     {
       ($$) = new CastExpression( RPGML_LOC(@$), ($1), ($3) );
     } 
@@ -568,6 +573,7 @@ basic_type_expression
   | FUNCTION
   | OUTPUT
   | INPUT
+  | INOUT
   | PARAM
   | SEQUENCE
 //  | ARRAY
@@ -788,6 +794,10 @@ variable_creation_statement
   : type_expression identifier '=' expression semicolon
     {
       ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
+    }
+  | type_expression identifier semicolon
+    {
+      ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2) );
     }
   | callable_expression identifier '(' ')' semicolon
     {

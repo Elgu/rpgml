@@ -317,6 +317,10 @@ CountPtr< Output > Scope::toOutput(
   {
     return x.getOutput();
   }
+  else if( x.isInOut() )
+  {
+    return x.getInOut()->getOutput();
+  }
   else if( x.isNil() )
   {
     // Not connected

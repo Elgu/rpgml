@@ -643,7 +643,8 @@ Scalar Node::getScalarFrom( int input_index ) const
   const Value ret( (**in) );
   try
   {
-    return ret.save_cast( TypeOf< Scalar >::E ).get< Scalar >();
+    const Value tmp = ret.save_cast( TypeOf< Scalar >::E );
+    return tmp.get< Scalar >();
   }
   catch( const Value::CastFailed &e )
   {
@@ -677,6 +678,76 @@ Scalar Node::getScalar( int input_index ) const
   }
 }
 
+Identity::Identity( GarbageCollector *_gc, const String &identifier )
+: Node( _gc, identifier, 0, 1, 1 )
+{
+  DEFINE_INPUT( 0, "in" );
+  DEFINE_OUTPUT( 0, "out" );
+}
+
+Identity::~Identity( void )
+{}
+
+const char *Identity::getName( void ) const
+{
+  return "Identity";
+}
+
+bool Identity::tick( CountPtr< JobQueue > )
+{
+  GET_INPUT_BASE( 0, in_base );
+  getOutput( 0 )->setData( const_cast< ArrayBase* >( in_base ) );
+  return true;
+}
+
+InOut::InOut( GarbageCollector *_gc, const String &identifier )
+: Collectable( _gc )
+, m_id( new Identity( _gc, identifier ) )
+{}
+
+InOut::~InOut( void )
+{}
+
+void InOut::gc_clear( void )
+{
+  m_id.reset();
+}
+
+void InOut::gc_getChildren( Children &children ) const
+{
+  children << m_id;
+}
+
+const String &InOut::getIdentifier( void ) const
+{
+  return m_id->getIdentifier();
+}
+
+Input *InOut::getInput( void ) const
+{
+  return m_id->getInput( 0 );
+}
+
+Output *InOut::getOutput( void ) const
+{
+  return m_id->getOutput( 0 );
+}
+
+void InOut::disconnect( void )
+{
+  getInput()->disconnect();
+  getOutput()->disconnect();
+}
+
+void InOut::connect( Output *output )
+{
+  output->connect( getInput() );
+}
+
+void InOut::connect( Input *input )
+{
+  getOutput()->connect( input );
+}
 
 Param::Param( GarbageCollector *_gc , const String &identifier )
 : Collectable( _gc )

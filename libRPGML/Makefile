@@ -36,6 +36,7 @@ libRPGML_SOURCE=\
 	ThreadPool.cpp\
 	ParseException.cpp\
 	WaitLock.cpp\
+	Type.cpp\
 
 libRPGML_OBJECTS=$(patsubst %.cc,%.o,$(patsubst %.cpp,%.o,$(libRPGML_SOURCE)))
 

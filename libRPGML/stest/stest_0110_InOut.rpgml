@@ -1,0 +1,26 @@
+#!/usr/bin/env rpgml
+
+Function Foo()
+{
+  InOut in1; Output( 23 ) -> in1;
+  InOut in2; Output( 42 ) -> in2;
+
+  Output out = in1 + in2;
+
+  return this;
+}
+
+{
+  Foo foo();
+  print( foo.out + "\n" );
+}
+
+{
+  Foo foo();
+  1 -> foo.in1;
+  2 -> foo.in2;
+  print( foo.out + "\n" );
+}
+
+exit();
+

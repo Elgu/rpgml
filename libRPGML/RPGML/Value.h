@@ -36,6 +36,7 @@ class Function;
 class Node    ;
 class Output  ;
 class Input   ;
+class InOut   ;
 class Param   ;
 class Sequence;
 class Collectable;
@@ -137,6 +138,7 @@ public:
   explicit Value ( Node           *_node );
   explicit Value ( Output         *_out  );
   explicit Value ( Input          *_in   );
+  explicit Value ( InOut          *_inout );
   explicit Value ( Param          *_param );
   explicit Value ( Sequence const *_seq  );
 
@@ -169,6 +171,7 @@ public:
   Value &set( Node           *_node );
   Value &set( Output         *_out  );
   Value &set( Input          *_in   );
+  Value &set( InOut          *_inout );
   Value &set( Param          *_param );
   Value &set( Sequence const *_seq  );
   Value &set( const Value &v );
@@ -206,8 +209,9 @@ public:
   bool isFrame   ( void ) const { return is( Type::FRAME    ); }
   bool isFunction( void ) const { return is( Type::FUNCTION ); }
   bool isNode    ( void ) const { return is( Type::NODE     ); }
-  bool isOutput  ( void ) const { return is( Type::OUTPUT   ); }
-  bool isInput   ( void ) const { return is( Type::INPUT    ); }
+  bool isOutput  ( void ) const { return is( Type::OUTPUT   ) || is( Type::INOUT ); }
+  bool isInput   ( void ) const { return is( Type::INPUT    ) || is( Type::INOUT ); }
+  bool isInOut   ( void ) const { return is( Type::INOUT    ); }
   bool isParam   ( void ) const { return is( Type::PARAM    ); }
   bool isSequence( void ) const { return is( Type::SEQUENCE ); }
 
@@ -232,8 +236,9 @@ public:
   Frame          *getFrame   ( void ) const { Value_assert( isFrame   () ); return frame; }
   Function       *getFunction( void ) const { Value_assert( isFunction() ); return func; }
   Node           *getNode    ( void ) const { Value_assert( isNode    () ); return node; }
-  Output         *getOutput  ( void ) const { Value_assert( isOutput  () ); return out ; }
-  Input          *getInput   ( void ) const { Value_assert( isInput   () ); return in  ; }
+  Output         *getOutput  ( void ) const;
+  Input          *getInput   ( void ) const;
+  InOut          *getInOut   ( void ) const { Value_assert( isInOut   () ); return inout  ; }
   Param          *getParam   ( void ) const { Value_assert( isParam   () ); return param  ; }
   Sequence const *getSequence( void ) const { Value_assert( isSequence() ); return seq ; }
 
@@ -257,6 +262,7 @@ public:
   operator Node           *( void ) const;
   operator Output         *( void ) const;
   operator Input          *( void ) const;
+  operator InOut          *( void ) const;
   operator Param          *( void ) const;
   operator Sequence const *( void ) const;
 
@@ -266,6 +272,7 @@ public:
   operator CountPtr< Node           >( void ) const;
   operator CountPtr< Output         >( void ) const;
   operator CountPtr< Input          >( void ) const;
+  operator CountPtr< InOut          >( void ) const;
   operator CountPtr< Param          >( void ) const;
   operator CountPtr< Sequence const >( void ) const;
 
@@ -288,6 +295,7 @@ public:
   void get( Node           *&x ) const;
   void get( Output         *&x ) const;
   void get( Input          *&x ) const;
+  void get( InOut          *&x ) const;
   void get( Param          *&x ) const;
   void get( Sequence const *&x ) const;
   void get( CountPtr< ArrayBase > &x ) const;
@@ -296,6 +304,7 @@ public:
   void get( CountPtr< Node      > &x ) const;
   void get( CountPtr< Output    > &x ) const;
   void get( CountPtr< Input     > &x ) const;
+  void get( CountPtr< InOut     > &x ) const;
   void get( CountPtr< Param     > &x ) const;
   void get( CountPtr< const Sequence > &x ) const;
   void get( Value &x ) const { x = (*this); }
@@ -342,6 +351,7 @@ private:
     Node             *node ;
     Output           *out  ;
     Input            *in   ;
+    InOut            *inout;
     Param            *param;
     Sequence const   *seq  ;
     ArrayBase        *arr  ;
@@ -370,6 +380,7 @@ template<> struct CreateValue< CountPtr< Function       > >{ Value operator()( c
 template<> struct CreateValue< CountPtr< Node           > >{ Value operator()( const CountPtr< Node           > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< Output         > >{ Value operator()( const CountPtr< Output         > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< Input          > >{ Value operator()( const CountPtr< Input          > &x ) const { return Value( x ); } };
+template<> struct CreateValue< CountPtr< InOut          > >{ Value operator()( const CountPtr< InOut          > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< Param          > >{ Value operator()( const CountPtr< Param          > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< const Sequence > >{ Value operator()( const CountPtr< const Sequence > &x ) const { return Value( x ); } };
 template<> struct CreateValue< CountPtr< ArrayBase      > >{ Value operator()( const CountPtr< ArrayBase      > &x ) const { return Value( x ); } };

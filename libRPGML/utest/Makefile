@@ -15,8 +15,8 @@ vpath %.cpp ../RPGML/
 vpath %.cc ../RPGML/
 
 OBJECTS=\
-	utest_Array.o\
 	utest_main.o\
+	Type.o\
 	Backtrace.o\
 	StringUnifier.o\
 	GarbageCollector.o\
@@ -43,7 +43,8 @@ OBJECTS=\
 	ParseException.o\
 	WaitLock.o\
 	rpgml.tab.o\
-#	utest_Exception.o\
+	utest_Array.o\
+	utest_Exception.o\
 	utest_Type.o\
 	utest_String.o\
 	utest_GarbageCollector.o\

@@ -30,6 +30,7 @@ class Function;
 class Node;
 class Output;
 class Input;
+class InOut;
 class Param;
 class Sequence;
 class ArrayBase;
@@ -59,6 +60,7 @@ public:
     , NODE     // CountPtr< Node           >
     , OUTPUT   // CountPtr< Output         >
     , INPUT    // CountPtr< Input          >
+    , INOUT    // CountPtr< InOut          >
     , PARAM    // CountPtr< Param          >
     , SEQUENCE // CountPtr< const Sequence >
     , ARRAY    // CountPtr< ArrayBase      >
@@ -70,76 +72,10 @@ public:
   Type( Enum e=NIL ) : m_e( e ) {}
   Type &operator=( Enum e ) { m_e = e; return (*this); }
 
-  const char *getTypeName( void ) const
-  {
-    static
-    const char *const names[] =
-    {
-        "nil"
-      , "bool"
-      , "uint8"
-      , "int8"
-      , "uint16"
-      , "int16"
-      , "uint32"
-      , "int32"
-      , "uint64"
-      , "int64"
-      , "float"
-      , "double"
-      , "string"
-      , "Frame"
-      , "Function"
-      , "Node"
-      , "Output"
-      , "Input"
-      , "Param"
-      , "Sequence"
-      , "Array"
-      , "other"
-    };
-
-    return names[ m_e ];
-  }
+  const char *getTypeName( void ) const;
 
   static
-  Enum getTypeEnum( const char *typeName )
-  {
-    switch( typeName[ 0 ] )
-    {
-      case 'A': return ARRAY;
-      case 'F':
-        if( typeName[ 1 ] == 'r' ) return FRAME;
-        if( typeName[ 1 ] == 'u' ) return FUNCTION;
-        return OTHER;
-      case 'I': return INPUT;
-      case 'N': return NODE;
-      case 'O': return OUTPUT;
-      case 'P': return PARAM;
-      case 'S': return SEQUENCE;
-      case 'b': return BOOL;
-      case 'd': return DOUBLE;
-      case 'f': return FLOAT;
-      case 'i':
-        if( typeName[ 3 ] == '8' ) return INT8;
-        if( typeName[ 3 ] == '1' ) return INT16;
-        if( typeName[ 3 ] == '3' ) return INT32;
-        if( typeName[ 3 ] == '6' ) return INT64;
-        if( typeName[ 3 ] == '\0' ) return INT;
-        return OTHER;
-      case 'n': return NIL;
-      case 'o': return OTHER;
-      case 's': return STRING;
-      case 'u':
-        if( typeName[ 4 ] == '8' ) return UINT8;
-        if( typeName[ 4 ] == '1' ) return UINT16;
-        if( typeName[ 4 ] == '3' ) return UINT32;
-        if( typeName[ 4 ] == '6' ) return UINT64;
-        return OTHER;
-      default:
-        return OTHER;
-    }
-  }
+  Enum getTypeEnum( const char *typeName );
 
   explicit
   Type( const char *typeName )
@@ -261,6 +197,7 @@ public:
   static Type Node     ( void ) { return Type( Type::NODE     ); }
   static Type Output   ( void ) { return Type( Type::OUTPUT   ); }
   static Type Input    ( void ) { return Type( Type::INPUT    ); }
+  static Type InOut    ( void ) { return Type( Type::INOUT    ); }
   static Type Param    ( void ) { return Type( Type::PARAM    ); }
   static Type Sequence ( void ) { return Type( Type::SEQUENCE ); }
   static Type Array    ( void ) { return Type( Type::ARRAY    ); }
@@ -285,6 +222,7 @@ public:
   explicit Type( const RPGML::Node        & ) : m_e( Type::NODE     ) {}
   explicit Type( const RPGML::Output      & ) : m_e( Type::OUTPUT   ) {}
   explicit Type( const RPGML::Input       & ) : m_e( Type::INPUT    ) {}
+  explicit Type( const RPGML::InOut       & ) : m_e( Type::INOUT    ) {}
   explicit Type( const RPGML::Param       & ) : m_e( Type::PARAM    ) {}
   explicit Type( const RPGML::Sequence    & ) : m_e( Type::SEQUENCE ) {}
   explicit Type( const RPGML::ArrayBase   & ) : m_e( Type::ARRAY    ) {}
@@ -307,6 +245,7 @@ public:
   bool isNode    ( void ) const { return ( m_e == Type::NODE     ); }
   bool isOutput  ( void ) const { return ( m_e == Type::OUTPUT   ); }
   bool isInput   ( void ) const { return ( m_e == Type::INPUT    ); }
+  bool isInOut   ( void ) const { return ( m_e == Type::INOUT    ); }
   bool isParam   ( void ) const { return ( m_e == Type::PARAM    ); }
   bool isSequence( void ) const { return ( m_e == Type::SEQUENCE ); }
   bool isArray   ( void ) const { return ( m_e == Type::ARRAY    ); }
@@ -337,6 +276,7 @@ public:
       , NIL      // NODE
       , NIL      // OUTPUT
       , NIL      // INPUT
+      , NIL      // INOUT
       , NIL      // PARAM
       , NIL      // SEQUENCE
       , NIL      // ARRAY
@@ -354,32 +294,7 @@ public:
   }
 
   static
-  Type Ret( Type left, Type right )
-  {
-    if( left.isScalar() && right.isScalar() )
-    {
-      if( left.hasSign() || right.hasSign() )
-      {
-        return WithSign( std::max( left, right ) );
-      }
-      else
-      {
-        return std::max( left, right );
-      }
-    }
-    else if( left.isString() && right.isPrimitive() )
-    {
-      return String();
-    }
-    else if( left.isPrimitive() && right.isString() )
-    {
-      return String();
-    }
-    else
-    {
-      return Nil();
-    }
-  }
+  Type Ret( Type left, Type right );
 
 private:
   Enum m_e;
@@ -404,6 +319,7 @@ template<> struct TypeOf< CountPtr< Function  > > { static const Type::Enum E = 
 template<> struct TypeOf< CountPtr< Node      > > { static const Type::Enum E = Type::NODE    ; };
 template<> struct TypeOf< CountPtr< Output    > > { static const Type::Enum E = Type::OUTPUT  ; };
 template<> struct TypeOf< CountPtr< Input     > > { static const Type::Enum E = Type::INPUT   ; };
+template<> struct TypeOf< CountPtr< InOut     > > { static const Type::Enum E = Type::INOUT   ; };
 template<> struct TypeOf< CountPtr< Param     > > { static const Type::Enum E = Type::PARAM   ; };
 template<> struct TypeOf< CountPtr< const Sequence  > > { static const Type::Enum E = Type::SEQUENCE; };
 template<> struct TypeOf< CountPtr< ArrayBase > > { static const Type::Enum E = Type::ARRAY   ; };
@@ -427,6 +343,7 @@ template<> struct EnumType< Type::FUNCTION >{ typedef CountPtr< Function  > T; }
 template<> struct EnumType< Type::NODE     >{ typedef CountPtr< Node      > T; };
 template<> struct EnumType< Type::OUTPUT   >{ typedef CountPtr< Output    > T; };
 template<> struct EnumType< Type::INPUT    >{ typedef CountPtr< Input     > T; };
+template<> struct EnumType< Type::INOUT    >{ typedef CountPtr< InOut     > T; };
 template<> struct EnumType< Type::PARAM    >{ typedef CountPtr< Param     > T; };
 template<> struct EnumType< Type::SEQUENCE >{ typedef CountPtr< const Sequence  > T; };
 template<> struct EnumType< Type::ARRAY    >{ typedef CountPtr< ArrayBase > T; };

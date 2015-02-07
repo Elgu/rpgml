@@ -9,6 +9,7 @@ core
 /libRPGML/utest/utest_main
 /rpgml/rpgml
 /rpgml/prettyprinter
+/rpgml/performance_Array
 .parser_files
 /libRPGML/RPGML/location.hh
 /libRPGML/RPGML/position.hh

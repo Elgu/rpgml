@@ -479,8 +479,12 @@ void PrettyPrinter::visit( const VariableCreationStatement    *node )
 {
   // indent() must have been called, if neccessary
   node->type->invite( this );
-  (*o) << " " << node->identifier << " = ";
-  node->value->invite( this );
+  (*o) << " " << node->identifier;
+  if( !node->value.isNull() )
+  {
+    (*o) << " = ";
+    node->value->invite( this );
+  }
   (*o) << ";";
 }
 

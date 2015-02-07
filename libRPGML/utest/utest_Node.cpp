@@ -172,7 +172,7 @@ public:
 
     in->connect( out );
 
-    CountPtr< Array< int > > data( new Array< int >( &gc ) );
+    CountPtr< Array< int > > data( new Array< int >( &gc, 1 ) );
     CPPUNIT_ASSERT_NO_THROW( out->setData( data ) );
     CPPUNIT_ASSERT_EQUAL( static_cast<       ArrayBase* >( data.get() ), out->getData() );
     CPPUNIT_ASSERT_EQUAL( static_cast< const ArrayBase* >( data.get() ), in->getData() );

@@ -88,6 +88,7 @@ Value::Value( const Value &other )
     case Type::NODE    : if( node  ) node ->ref(); break;
     case Type::OUTPUT  : if( out   ) out  ->ref(); break;
     case Type::INPUT   : if( in    ) in   ->ref(); break;
+    case Type::INOUT   : if( inout ) inout->ref(); break;
     case Type::PARAM   : if( param ) param->ref(); break;
     case Type::SEQUENCE: if( seq   ) seq  ->ref(); break;
     case Type::OTHER   : break;
@@ -115,6 +116,7 @@ Value::Value( Function          *_func  ) : m_type( Type::FUNCTION ) { func  = _
 Value::Value( Node              *_node  ) : m_type( Type::NODE     ) { node  = _node ; if( node  ) node ->ref(); }
 Value::Value( Output            *_out   ) : m_type( Type::OUTPUT   ) { out   = _out  ; if( out   ) out  ->ref(); }
 Value::Value( Input             *_in    ) : m_type( Type::INPUT    ) { in    = _in   ; if( in    ) in   ->ref(); }
+Value::Value( InOut             *_inout ) : m_type( Type::INOUT    ) { inout = _inout; if( inout ) inout->ref(); }
 Value::Value( Param             *_param ) : m_type( Type::PARAM    ) { param = _param; if( param ) param->ref(); }
 Value::Value( Sequence    const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; if( seq   ) seq  ->ref(); }
 
@@ -147,6 +149,7 @@ Value &Value::set( Function          *_func ) { return (*this) = Value( _func );
 Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
 Value &Value::set( Output            *_out  ) { return (*this) = Value( _out  ); }
 Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   ); }
+Value &Value::set( InOut             *_inout) { return (*this) = Value( _inout); }
 Value &Value::set( Param             *_param) { return (*this) = Value( _param); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
 Value &Value::set( const Value       &v     ) { return (*this) = v;              }
@@ -155,6 +158,9 @@ Value &Value::set( const void *vp )
 {
   return (*this) = Value( vp );
 }
+
+Output *Value::getOutput  ( void ) const { Value_assert( isOutput  () ); return ( is( Type::OUTPUT ) ? out : inout->getOutput() ); }
+Input  *Value::getInput   ( void ) const { Value_assert( isInput   () ); return ( is( Type::INPUT  ) ? in  : inout->getInput()  ); }
 
 void Value::get( bool            &x ) const { if( isBool  () ) x = getBool  (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( uint8_t         &x ) const { if( isUInt8 () ) x = getUInt8 (); else throw GetFailed( m_type, typeOf( x ) ); }
@@ -174,6 +180,7 @@ void Value::get( Function       *&x ) const { if( isFunction() ) x = getFunction
 void Value::get( Node           *&x ) const { if( isNode    () ) x = getNode    (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Output         *&x ) const { if( isOutput  () ) x = getOutput  (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Input          *&x ) const { if( isInput   () ) x = getInput   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( InOut          *&x ) const { if( isInOut   () ) x = getInOut   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Param          *&x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Sequence const *&x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
@@ -182,6 +189,7 @@ void Value::get( CountPtr< Function  > &x ) const { if( isFunction() ) x = getFu
 void Value::get( CountPtr< Node      > &x ) const { if( isNode    () ) x = getNode    (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Output    > &x ) const { if( isOutput  () ) x = getOutput  (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) x = getInput   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< InOut     > &x ) const { if( isInOut   () ) x = getInOut   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Param     > &x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
 
@@ -203,6 +211,7 @@ Value::operator Function       *( void ) const { return getFunction(); }
 Value::operator Node           *( void ) const { return getNode    (); }
 Value::operator Output         *( void ) const { return getOutput  (); }
 Value::operator Input          *( void ) const { return getInput   (); }
+Value::operator InOut          *( void ) const { return save_cast( Type::InOut() ).get< InOut* >(); }
 Value::operator Param          *( void ) const { return getParam   (); }
 Value::operator Sequence const *( void ) const { return getSequence(); }
 Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
@@ -211,6 +220,7 @@ Value::operator CountPtr< Function       >( void ) const { return getFunction();
 Value::operator CountPtr< Node           >( void ) const { return getNode    (); }
 Value::operator CountPtr< Output         >( void ) const { return getOutput  (); }
 Value::operator CountPtr< Input          >( void ) const { return getInput   (); }
+Value::operator CountPtr< InOut          >( void ) const { return getInOut   (); }
 Value::operator CountPtr< Param          >( void ) const { return getParam   (); }
 Value::operator CountPtr< Sequence const >( void ) const { return getSequence(); }
 
@@ -244,6 +254,7 @@ void Value::clear( void )
     case Type::NODE    : if( node  && !node ->unref() ) delete node ; break;
     case Type::OUTPUT  : if( out   && !out  ->unref() ) delete out  ; break;
     case Type::INPUT   : if( in    && !in   ->unref() ) delete in   ; break;
+    case Type::INOUT   : if( inout && !inout->unref() ) delete inout; break;
     case Type::PARAM   : if( param && !param->unref() ) delete param; break;
     case Type::SEQUENCE: if( seq   && !seq  ->unref() ) delete seq  ; break;
     case Type::OTHER   : break;
@@ -267,6 +278,7 @@ bool Value::isCollectable( void ) const
     | ( _1 << Type::NODE     )
     | ( _1 << Type::OUTPUT   )
     | ( _1 << Type::INPUT    )
+    | ( _1 << Type::INOUT    )
     | ( _1 << Type::PARAM    )
     | ( _1 << Type::SEQUENCE )
     | ( _1 << Type::ARRAY    )
@@ -557,22 +569,34 @@ Value Value::to( Type type ) const
 Value Value::save_cast( Type type ) const
 {
   const Value &x = (*this);
+  const Type xType = x.getType();
 
-  if( x.getType() == type ) return x;
+  if( xType == type ) return x;
   if( type.isNil() ) return x;
 
-  if( x.getType().isInteger() )
+  if( xType.isInteger() )
   {
     if( type.isScalar() )
     {
       return x.to( type );
     }
   }
-  else if( x.getType().isFloatingPoint() )
+  else if( xType.isFloatingPoint() )
   {
     if( type.isFloatingPoint() )
     {
       return x.to( type );
+    }
+  }
+  else if( xType.isInOut() )
+  {
+    if( type.isInput() )
+    {
+      return Value( x.getInOut()->getInput() );
+    }
+    else if( type.isOutput() )
+    {
+      return Value( x.getInOut()->getOutput() );
     }
   }
 
@@ -1314,6 +1338,7 @@ int Value::compare_exactly( const Value &other ) const
     case Type::NODE    : return cmp( node , other.node  );
     case Type::OUTPUT  : return cmp( out  , other.out   );
     case Type::INPUT   : return cmp( in   , other.in    );
+    case Type::INOUT   : return cmp( inout, other.inout );
     case Type::PARAM   : return cmp( param, other.param );
     case Type::SEQUENCE: return cmp( seq  , other.seq   );
     case Type::ARRAY   : return cmp( arr  , other.arr   );
@@ -1463,6 +1488,15 @@ std::ostream &Value::print( std::ostream &o ) const
       }
       break;
 
+    case Type::INOUT   :
+      {
+        const InOut *const io = getInOut();
+        o
+          << "InOut( '" << io->getIdentifier() << "' )"
+          ;
+      }
+      break;
+
     case Type::PARAM   :
       {
         const Param *const pm = getParam();
@@ -1504,6 +1538,7 @@ CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, cons
     case Type::NODE    : return new_Array< CountPtr< Node           > >( gc, dims, fill_value );
     case Type::OUTPUT  : return new_Array< CountPtr< Output         > >( gc, dims, fill_value );
     case Type::INPUT   : return new_Array< CountPtr< Input          > >( gc, dims, fill_value );
+    case Type::INOUT   : return new_Array< CountPtr< InOut          > >( gc, dims, fill_value );
     case Type::PARAM   : return new_Array< CountPtr< Param          > >( gc, dims, fill_value );
     case Type::SEQUENCE: return new_Array< CountPtr< Sequence const > >( gc, dims, fill_value );
     case Type::ARRAY   : return new_Array< CountPtr< ArrayBase      > >( gc, dims, fill_value );

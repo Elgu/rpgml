@@ -861,7 +861,7 @@ public:
 class VariableCreationStatement : public Statement
 {
 public:
-  VariableCreationStatement( const Location *_loc, const TypeExpression *_type, const String &_identifier, const Expression *_value )
+  VariableCreationStatement( const Location *_loc, const TypeExpression *_type, const String &_identifier, const Expression *_value = 0 )
   : Statement( _loc )
   , identifier( _identifier )
   , value( _value )

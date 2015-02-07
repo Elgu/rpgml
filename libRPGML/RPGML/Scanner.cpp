@@ -186,6 +186,7 @@ const Keyword keywords[] =
   { "Method"  , _Parser::token::METHOD  , Type::FUNCTION },
   { "Output"  , _Parser::token::OUTPUT  , Type::OUTPUT   },
   { "Input"   , _Parser::token::INPUT   , Type::INPUT    },
+  { "InOut"   , _Parser::token::INOUT   , Type::INOUT    },
   { "Node"    , _Parser::token::NODE    , Type::NODE     },
   { "Param"   , _Parser::token::PARAM   , Type::PARAM    },
   { "Sequence", _Parser::token::SEQUENCE, Type::SEQUENCE },

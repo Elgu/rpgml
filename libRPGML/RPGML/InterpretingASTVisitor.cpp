@@ -878,13 +878,20 @@ void InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
     CallLoc guard( this, node->input->loc );
     node->input->invite( this );
     Value input_v; input_v.swap( return_value );
-    if( !input_v.isInput() )
+    if( input_v.isInput() )
+    {
+      input = input_v.getInput();
+    }
+    else if( input_v.isInOut() )
+    {
+      input = input_v.getInOut()->getInput();
+    }
+    else
     {
       throw CallLocException( getCallLoc() )
         << "Right of '->' is not an Input, is " << input_v.getTypeName()
         ;
     }
-    input = input_v.getInput();
   }
 
   // output might be null, but that is ok
@@ -1136,11 +1143,40 @@ void InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   swap( expected_type, return_value_type_descr );
 
   // Evaluate initializer value expression
-  node->value->invite( this );
-  Value value; value.swap( return_value );
+  Value value;
 
-  CallLoc guard( this, node->loc );
-  value = save_cast( value, expected_type );
+  if( node->value )
+  {
+    node->value->invite( this );
+    value.swap( return_value );
+
+    CallLoc guard( this, node->loc );
+    value = save_cast( value, expected_type );
+  }
+  else
+  {
+    switch( expected_type->type.getEnum() )
+    {
+      case Type::UINT8 : value = Value( uint8_t ( 0 ) ); break;
+      case Type::INT8  : value = Value( int8_t  ( 0 ) ); break;
+      case Type::UINT16: value = Value( uint16_t( 0 ) ); break;
+      case Type::INT16 : value = Value( int16_t ( 0 ) ); break;
+      case Type::UINT32: value = Value( uint32_t( 0 ) ); break;
+      case Type::INT32 : value = Value( int32_t ( 0 ) ); break;
+      case Type::UINT64: value = Value( uint64_t( 0 ) ); break;
+      case Type::INT64 : value = Value( int64_t ( 0 ) ); break;
+      case Type::FLOAT : value = Value( float   ( 0 ) ); break;
+      case Type::DOUBLE: value = Value( double  ( 0 ) ); break;
+      case Type::STRING: value = Value( String() ); break;
+      case Type::OUTPUT: value = Value( (Output*)0 ); break;
+      case Type::INOUT : value = Value( new InOut( getGC(), node->identifier ) ); break;
+      default:
+        throw ParseException( node->loc )
+          << "Type '" << expected_type << "'"
+          << " does not have a default value, so an initializer has to be specified."
+          ;
+    }
+  }
 
   if( !scope->create_unified( identifier, value ) )
   {

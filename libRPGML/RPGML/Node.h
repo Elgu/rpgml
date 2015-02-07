@@ -546,6 +546,38 @@ private:
   CountPtr< const SharedObject > m_so;
 };
 
+class Identity : public Node
+{
+  typedef Node Base;
+public:
+  Identity( GarbageCollector *gc, const String &identifier );
+  virtual ~Identity( void );
+  virtual const char *getName( void ) const;
+  virtual bool tick( CountPtr< JobQueue > );
+};
+
+class InOut : public Collectable
+{
+  typedef Collectable Base;
+public:
+  InOut( GarbageCollector *_gc, const String &identifier );
+  virtual ~InOut( void );
+
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children ) const;
+
+  const String &getIdentifier( void ) const;
+  Input *getInput( void ) const;
+  Output *getOutput( void ) const;
+
+  void disconnect( void );
+  void connect( Output *output );
+  void connect( Input *input );
+
+private:
+  CountPtr< Identity > m_id;
+};
+
 typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *parent, const SharedObject *so );
 typedef CountPtr< Node > (*create_Node_t)( GarbageCollector *gc, const String &identifier, const SharedObject *so );
 

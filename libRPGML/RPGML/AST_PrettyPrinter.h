@@ -84,5 +84,17 @@ private:
 } // namespace AST
 } // namespace RPGML
 
+namespace std {
+
+static inline
+std::ostream &operator<<( std::ostream &o, const RPGML::AST::TypeExpression *type )
+{
+  RPGML::AST::PrettyPrinter pretty( &o );
+  pretty.visit( type );
+  return o;
+}
+
+} // namespace std
+
 #endif
 
