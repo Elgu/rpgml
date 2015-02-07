@@ -52,7 +52,7 @@ void Function_PRINT::gc_getChildren( Children &children ) const
   Base::gc_getChildren( children );
 }
 
-Value Function_PRINT::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args )
+Value Function_PRINT::call_impl( const Location *loc, index_t recursion_depth, Scope *, index_t n_args, const Value *args )
 {
   if( recursion_depth > MAX_RECURSION_DEPTH )
   {
