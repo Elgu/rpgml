@@ -58,74 +58,56 @@ public:
 
   explicit
   Array( GarbageCollector *_gc, int dims, const index_t *s=0 )
-  : Base( _gc )
+  : Base( _gc, dims )
   , m_element0( pointer() )
-  , m_dims( dims )
   {
     _check_dims();
-    std::fill( m_size, m_size+dims, 0 );
-    std::fill( m_size+dims, m_size+4, 1 );
     if( dims == 0 ) resize_v( 0, 0 );
     else if( s ) resize_v( dims, s );
   }
 
   explicit
   Array( GarbageCollector *_gc, int dims, index_t sx )
-  : Base( _gc )
+  : Base( _gc, dims )
   , m_element0( pointer() )
-  , m_dims( dims )
   {
     _check_dims( 1 );
-    std::fill( m_size, m_size+1, 0 );
-    std::fill( m_size+1, m_size+4, 1 );
     resize( sx );
   }
 
   explicit
   Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy )
-  : Base( _gc )
+  : Base( _gc, dims )
   , m_element0( pointer() )
-  , m_dims( dims )
   {
     _check_dims( 2 );
-    std::fill( m_size, m_size+2, 0 );
-    std::fill( m_size+2, m_size+4, 1 );
     resize( sx, sy );
   }
 
   explicit
   Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy, index_t sz )
-  : Base( _gc )
+  : Base( _gc, dims )
   , m_element0( pointer() )
-  , m_dims( dims )
   {
     _check_dims( 3 );
-    std::fill( m_size, m_size+3, 0 );
-    std::fill( m_size+3, m_size+4, 1 );
     resize( sx, sy, sz );
   }
 
   explicit
   Array( GarbageCollector *_gc, int dims, index_t sx, index_t sy, index_t sz, index_t st )
-  : Base( _gc )
+  : Base( _gc, dims )
   , m_element0( pointer() )
-  , m_dims( dims )
   {
     _check_dims( 4 );
-    std::fill( m_size, m_size+4, 0 );
     resize( sx, sy, sz, st );
   }
 
   explicit
   Array( GarbageCollector *_gc, const Size &s )
-  : Base( _gc )
+  : Base( _gc, s.getDims() )
   , m_element0( pointer() )
-  , m_dims( s.getDims() )
   {
     _check_dims();
-    const int dims = s.getDims();
-    std::fill( m_size, m_size+dims, 0 );
-    std::fill( m_size+dims, m_size+4, 1 );
     resize( s );
   }
 
@@ -134,22 +116,9 @@ public:
 
   void swap( RPGML::Array< Element > &other )
   {
-    const int dims = m_dims;
-    if( dims != other.m_dims )
-    {
-      throw Exception()
-        << "Cannot swap an Array with another one with different dimensions"
-        << ", this has " << dims
-        << ", the other has " << other.m_dims
-        ;
-    }
+    Base::swap( other );
     m_elements_data.swap( other.m_elements_data );
     std::swap( m_element0, other.m_element0 );
-    for( int d=0; d<dims; ++d )
-    {
-      std::swap( m_size[ d ], other.m_size[ d ] );
-      std::swap( m_stride[ d ], other.m_stride[ d ] );
-    }
   }
 
   virtual void gc_clear( void )
@@ -357,29 +326,9 @@ public:
     return false;
   }
 
-  virtual index_t        getDims( void ) const
-  {
-    return m_dims;
-  }
-
   virtual Type           getType( void ) const
   {
     return Type( TypeOf< Element >::E );
-  }
-
-  virtual Size getSize( void ) const
-  {
-    return Size( m_dims, m_size );
-  }
-
-  virtual index_t size( void ) const
-  {
-    index_t ret = 1;
-    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
-    {
-      ret *= m_size[ d ];
-    }
-    return ret;
   }
 
   index_t capacity( void ) const
@@ -418,19 +367,7 @@ public:
   bool isDense( void ) const
   {
     if( m_element0 == pointer() ) return true;
-    stride_t dense_stride = 1;
-    for( int d( 0 ), dims( m_dims ); d<dims; ++d )
-    {
-      if( 0 == m_size[ d ] ) return true;
-      if( m_stride[ d ] != dense_stride ) return false;
-      dense_stride *= m_size[ d ];
-    }
-    return true;
-  }
-
-  const stride_t *getStride( void ) const
-  {
-    return m_stride;
+    return Base::isDense();
   }
 
   const_pointer elements( void ) const
@@ -486,20 +423,6 @@ public:
     return ret;
   }
 
-  virtual Value getValue( index_t x=0, index_t y=0, index_t z=0, index_t t=0 ) const
-  {
-    const int dims = m_dims;
-    const index_t xyzt[ 4 ] = { x, y, z, t };
-    if( inRange_v( dims, xyzt ) )
-    {
-      return CreateValue< Element >()( at_v( dims, xyzt ) );
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, xyzt ) );
-    }
-  }
-
   virtual Value getValue_v( int dims, const index_t *x ) const
   {
     if( inRange_v( dims, x ) )
@@ -509,25 +432,6 @@ public:
     else
     {
       throw OutOfRange( getSize(), Coordinates( dims, x ) );
-    }
-  }
-
-  virtual Value getValue( const Coordinates &x ) const
-  {
-    return getValue_v( x.getDims(), x );
-  }
-
-  virtual void setValue( const Value &value, index_t x=0, index_t y=0, index_t z=0, index_t t=0 )
-  {
-    const int dims = m_dims;
-    const index_t xyzt[ 4 ] = { x, y, z, t };
-    if( inRange_v( dims, xyzt ) )
-    {
-      at_v( dims, xyzt ) = value.get< Element >();
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, xyzt ) );
     }
   }
 
@@ -543,9 +447,28 @@ public:
     }
   }
 
-  virtual void setValue( const Value &value, const Coordinates &x )
+  virtual Reference getReference_v( int dims, const index_t *x )
   {
-    setValue_v( value, x.getDims(), x );
+    if( inRange_v( dims, x ) )
+    {
+      return createReference( x );
+    }
+    else
+    {
+      throw OutOfRange( getSize(), Coordinates( dims, x ) );
+    }
+  }
+
+  virtual ConstReference getReference_v( int dims, const index_t *x ) const
+  {
+    if( inRange_v( dims, x ) )
+    {
+      return createReference( x );
+    }
+    else
+    {
+      throw OutOfRange( getSize(), Coordinates( dims, x ) );
+    }
   }
 
   void fill( const Element &e )
@@ -561,69 +484,6 @@ public:
   virtual bool isValueArray( void ) const
   {
     return _isValue( (const Element*)0 );
-  }
-
-  stride_t position( index_t x ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != 1 ) throw DimensionsMismatch( 1, m_dims );
-  #endif
-    return position_v( 1, &x );
-  }
-
-  stride_t position( index_t x, index_t y ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != 2 ) throw DimensionsMismatch( 1, m_dims );
-  #endif
-    const index_t X[ 2 ] = { x, y };
-    return position_v( 2, X );
-  }
-
-  stride_t position( index_t x, index_t y, index_t z ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != 3 ) throw DimensionsMismatch( 1, m_dims );
-  #endif
-    const index_t X[ 3 ] = { x, y, z };
-    return position_v( 3, X );
-  }
-
-  stride_t position( index_t x, index_t y, index_t z, index_t t ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != 4 ) throw DimensionsMismatch( 1, m_dims );
-  #endif
-    const index_t X[ 4 ] = { x, y, z, t };
-    return position_v( 4, X );
-  }
-
-  stride_t position_v( int dims, const index_t *x ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != dims ) throw DimensionsMismatch( dims, m_dims );
-  #endif
-    // Note: Use dims instead of m_dims here, so inlining will work
-    if( dims > 0 )
-    {
-      stride_t pos = 0;
-//      for( int d = dims-1; d >= 0; --d )
-      for( int d = 0; d < dims; ++d ) // faster
-      {
-#ifndef NDEBUG
-        if( x[ d ] >= m_size[ d ] )
-        {
-          throw OutOfRange( getSize(), Coordinates( dims, x ) );
-        }
-#endif
-        pos += stride_t( x[ d ] ) * m_stride[ d ];
-      }
-      return pos;
-    }
-    else
-    {
-      return 0;
-    }
   }
 
   reference at( index_t x )
@@ -1149,31 +1009,8 @@ public:
   }
 
 private:
-  void _check_dims( void )
-  {
-    if( m_dims < 0 || m_dims > 4 )
-    {
-      throw Exception() << "Dimensions must be positive and at most 4, is " << m_dims;
-    }
-  }
-
-  void _check_dims( int expected )
-  {
-    if( m_dims != expected )
-    {
-      throw Exception() << "Expected dimensions to be " << expected << ", is " << m_dims;
-    }
-  }
-
-  static inline bool _isValue( const Value* ) { return true; }
-  template< class T >
-  static inline bool _isValue( const T* ) { return false; }
-
   CountPtr< ArrayData< Element > > m_elements_data;
   pointer m_element0;
-  index_t m_size[ 4 ];
-  stride_t m_stride[ 4 ];
-  const int m_dims;
 };
 
 template< class Element >
