@@ -611,7 +611,7 @@ public:
   explicit
   CompoundStatement( const Location *_loc )
   : Statement( _loc )
-  , own_frame( true )
+  , creates_own_frame( true )
   {}
 
   virtual ~CompoundStatement( void ) {}
@@ -626,7 +626,7 @@ public:
   }
 
   std::vector< CountPtr< const Statement > > statements;
-  bool own_frame;
+  bool creates_own_frame;
 };
 
 class FunctionDefinitionStatement : public Statement

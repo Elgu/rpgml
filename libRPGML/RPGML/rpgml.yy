@@ -285,7 +285,7 @@ array_constant
   ;
 
 frame_constant
-  : FRAME compound_statement { ($1); ($2)->own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($2) ); }
+  : FRAME compound_statement { ($1); ($2)->creates_own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($2) ); }
   ;
 
 primary_expression
@@ -766,25 +766,25 @@ function_argument_decl_list
 function_definition_statement
   : type_expression identifier '(' ')' compound_statement
     {
-      ($5)->own_frame = false;
+      ($5)->creates_own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5) );
       (void)($1);
     }
   | type_expression identifier '(' function_argument_decl_list ')' compound_statement
     {
-      ($6)->own_frame = false;
+      ($6)->creates_own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), ($4), ($6) );
       (void)($1);
     }
   | METHOD identifier '(' ')' compound_statement
     {
-      ($5)->own_frame = false;
+      ($5)->creates_own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5), true );
       (void)($1);
     }
   | METHOD identifier '(' function_argument_decl_list ')' compound_statement
     {
-      ($6)->own_frame = false;
+      ($6)->creates_own_frame = false;
       ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4), ($6), true );
       (void)($1);
     }

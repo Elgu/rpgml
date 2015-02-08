@@ -727,7 +727,7 @@ void InterpretingASTVisitor::visit( const AST::CastExpression         *node )
 
 void InterpretingASTVisitor::visit( const AST::CompoundStatement            *node )
 {
-  CountPtr< Frame > body = ( node->own_frame ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
+  CountPtr< Frame > body = ( node->creates_own_frame ? new Frame( scope->getGC(), scope->getCurr() ) : 0 );
   Scope::EnterLeaveGuard guard( scope, body );
 
   const index_t n = index_t( node->statements.size() );
@@ -1061,18 +1061,11 @@ void InterpretingASTVisitor::visit( const AST::ForSequenceStatement         *nod
 
   const String &identifier = node->identifier;
 
-  Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
-  Frame::Ref for_variable = push_for_variable.get();
-  if( for_variable.isNull() )
-  {
-    throw Exception()
-      << "Could not create for-variable '" << identifier << "'"
-      ;
-  }
-
   for( CountPtr< Sequence::Iter > i = sequence.getSequence()->getIter(); !i->done(); i->next() )
   {
-    (*for_variable) = i->get();
+    CountPtr< Frame > body_frame = new Frame( scope->getGC(), scope->getCurr() );
+    Scope::EnterLeaveGuard guard( scope, body_frame );
+    body_frame->push_back( identifier, i->get() );
 
     node->body->invite( this );
 
@@ -1087,20 +1080,15 @@ void InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
 
   const String &identifier = node->identifier;
 
-  Frame::PushPopGuard push_for_variable( scope->getCurr(), identifier );
-  Frame::Ref for_variable = push_for_variable.get();
-  if( for_variable.isNull() )
-  {
-    throw Exception() << "Could not create for-variable '" << identifier << "'";
-  }
-
   if( container.isArray() )
   {
     const ArrayBase *const array = container.getArray();
 
     for( index_t i=0; i<array->size(); ++i )
     {
-      (*for_variable) = array->getValue( i );
+      CountPtr< Frame > body_frame = new Frame( scope->getGC(), scope->getCurr() );
+      Scope::EnterLeaveGuard guard( scope, body_frame );
+      body_frame->push_back( identifier, array->getValue( i ) );
 
       node->body->invite( this );
 
@@ -1113,7 +1101,23 @@ void InterpretingASTVisitor::visit( const AST::ForContainerStatement        *nod
 
     for( CountPtr< Frame::Iterator > i( frame->getIterator() ); !i->done(); i->next() )
     {
-      (*for_variable) = i->get().second;
+      CountPtr< Frame > body_frame = new Frame( scope->getGC(), scope->getCurr() );
+      Scope::EnterLeaveGuard guard( scope, body_frame );
+      body_frame->push_back( identifier, i->get().second );
+
+      node->body->invite( this );
+
+      if( return_encountered ) break;
+    }
+  }
+  else if( container.isSequence() )
+  {
+    const Sequence *const sequence = container.getSequence();
+    for( CountPtr< Sequence::Iter > i = sequence->getIter(); !i->done(); i->next() )
+    {
+      CountPtr< Frame > body_frame = new Frame( scope->getGC(), scope->getCurr() );
+      Scope::EnterLeaveGuard guard( scope, body_frame );
+      body_frame->push_back( identifier, i->get() );
 
       node->body->invite( this );
 
