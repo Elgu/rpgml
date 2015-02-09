@@ -48,6 +48,7 @@ const char *Type::getTypeName( void ) const
     , "Param"
     , "Sequence"
     , "Array"
+    , "Ref"
     , "other"
   };
 
@@ -70,6 +71,7 @@ Type::Enum Type::getTypeEnum( const char *typeName )
     case 'N': return ( ::strcmp( typeName, "Node"     ) ? OTHER : NODE );
     case 'O': return ( ::strcmp( typeName, "Output"   ) ? OTHER : OUTPUT );
     case 'P': return ( ::strcmp( typeName, "Param"    ) ? OTHER : PARAM );
+    case 'R': return ( ::strcmp( typeName, "Ref"      ) ? OTHER : REF );
     case 'S': return ( ::strcmp( typeName, "Sequence" ) ? OTHER : SEQUENCE );
     case 'b': return ( ::strcmp( typeName, "bool"     ) ? OTHER : BOOL );
     case 'd': return ( ::strcmp( typeName, "double"   ) ? OTHER : DOUBLE );

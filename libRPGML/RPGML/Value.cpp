@@ -91,6 +91,7 @@ Value::Value( const Value &other )
     case Type::INOUT   : if( inout ) inout->ref(); break;
     case Type::PARAM   : if( param ) param->ref(); break;
     case Type::SEQUENCE: if( seq   ) seq  ->ref(); break;
+    case Type::REF     : if( ref   ) ref  ->ref(); break;
     case Type::OTHER   : break;
   }
 }
@@ -110,7 +111,6 @@ Value::Value( std::string const &_str  ) : m_type( Type::STRING   ) { String s(_
 Value::Value( char        const *_str  ) : m_type( Type::STRING   ) { String s(_str); str = s.getData(); str->ref(); }
 Value::Value( String      const &_str  ) : m_type( Type::STRING   ) { CountPtr< const StringData > s( _str.getData() ); str = s.get(); str->ref(); }
 Value::Value( StringData  const *_str   ) : m_type( Type::STRING   ) { str   = _str  ; if( str   ) str  ->ref(); }
-Value::Value( ArrayBase         *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; if( arr   ) arr  ->ref(); }
 Value::Value( Frame             *_frame ) : m_type( Type::FRAME    ) { frame = _frame; if( frame ) frame->ref(); }
 Value::Value( Function          *_func  ) : m_type( Type::FUNCTION ) { func  = _func ; if( func  ) func ->ref(); }
 Value::Value( Node              *_node  ) : m_type( Type::NODE     ) { node  = _node ; if( node  ) node ->ref(); }
@@ -119,6 +119,9 @@ Value::Value( Input             *_in    ) : m_type( Type::INPUT    ) { in    = _
 Value::Value( InOut             *_inout ) : m_type( Type::INOUT    ) { inout = _inout; if( inout ) inout->ref(); }
 Value::Value( Param             *_param ) : m_type( Type::PARAM    ) { param = _param; if( param ) param->ref(); }
 Value::Value( Sequence    const *_seq   ) : m_type( Type::SEQUENCE ) { seq   = _seq  ; if( seq   ) seq  ->ref(); }
+Value::Value( ArrayBase         *_arr   ) : m_type( Type::ARRAY    ) { arr   = _arr  ; if( arr   ) arr  ->ref(); }
+Value::Value( const Reference   &_ref   ) : m_type( Type::REF      ) { ref = new Reference( _ref ); ref->ref(); }
+Value::Value( Reference         *_ref   ) : m_type( Type::REF      ) { ref   = _ref  ; if( ref   ) ref  ->ref(); }
 
 Value::Value( const void * )
 {
@@ -143,7 +146,6 @@ Value &Value::set( std::string const &_str  ) { return (*this) = Value( _str  );
 Value &Value::set( char        const *_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( String      const &_str  ) { return (*this) = Value( _str  ); }
 Value &Value::set( StringData  const *_str  ) { return (*this) = Value( _str  ); }
-Value &Value::set( ArrayBase         *_arr  ) { return (*this) = Value( _arr  ); }
 Value &Value::set( Frame               *_frame  ) { return (*this) = Value( _frame  ); }
 Value &Value::set( Function          *_func ) { return (*this) = Value( _func ); }
 Value &Value::set( Node              *_node ) { return (*this) = Value( _node ); }
@@ -152,6 +154,10 @@ Value &Value::set( Input             *_in   ) { return (*this) = Value( _in   );
 Value &Value::set( InOut             *_inout) { return (*this) = Value( _inout); }
 Value &Value::set( Param             *_param) { return (*this) = Value( _param); }
 Value &Value::set( Sequence const    *_seq  ) { return (*this) = Value( _seq  ); }
+Value &Value::set( ArrayBase         *_arr  ) { return (*this) = Value( _arr  ); }
+Value &Value::set( const Reference   &_ref  ) { return (*this) = Value( _ref  ); }
+Value &Value::set( Reference         *_ref  ) { return (*this) = Value( _ref  ); }
+
 Value &Value::set( const Value       &v     ) { return (*this) = v;              }
 
 Value &Value::set( const void *vp )
@@ -174,7 +180,6 @@ void Value::get( int64_t         &x ) const { if( isInt64 () ) x = getInt64 (); 
 void Value::get( float           &x ) const { if( isFloat () ) x = getFloat (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( double          &x ) const { if( isDouble() ) x = getDouble(); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( String          &x ) const { if( isString  () ) x = getString  (); else throw GetFailed( m_type, typeOf( x ) ); }
-void Value::get( ArrayBase      *&x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Frame          *&x ) const { if( isFrame   () ) x = getFrame   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Function       *&x ) const { if( isFunction() ) x = getFunction(); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Node           *&x ) const { if( isNode    () ) x = getNode    (); else throw GetFailed( m_type, typeOf( x ) ); }
@@ -183,6 +188,9 @@ void Value::get( Input          *&x ) const { if( isInput   () ) x = getInput   
 void Value::get( InOut          *&x ) const { if( isInOut   () ) x = getInOut   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Param          *&x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( Sequence const *&x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( ArrayBase      *&x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( Reference      *&x ) const { if( isRef     () ) x = getRef     (); else throw GetFailed( m_type, typeOf( x ) ); }
+
 void Value::get( CountPtr< ArrayBase > &x ) const { if( isArray   () ) x = getArray   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Frame     > &x ) const { if( isFrame   () ) x = getFrame   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Function  > &x ) const { if( isFunction() ) x = getFunction(); else throw GetFailed( m_type, typeOf( x ) ); }
@@ -192,6 +200,7 @@ void Value::get( CountPtr< Input     > &x ) const { if( isInput   () ) x = getIn
 void Value::get( CountPtr< InOut     > &x ) const { if( isInOut   () ) x = getInOut   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Param     > &x ) const { if( isParam   () ) x = getParam   (); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
+void Value::get( CountPtr< Reference > &x ) const { if( isRef() ) x = getRef(); else throw GetFailed( m_type, typeOf( x ) ); }
 
 Value::operator bool            ( void ) const { return save_cast( Type::Bool  () ).get< bool     >(); }
 Value::operator uint8_t         ( void ) const { return save_cast( Type::UInt8 () ).get< uint8_t  >(); }
@@ -205,7 +214,6 @@ Value::operator int64_t         ( void ) const { return save_cast( Type::Int64 (
 Value::operator float           ( void ) const { return save_cast( Type::Float () ).get< float    >(); }
 Value::operator double          ( void ) const { return save_cast( Type::Double() ).get< double   >(); }
 Value::operator String          ( void ) const { return save_cast( Type::String() ).get< String   >(); }
-Value::operator ArrayBase      *( void ) const { return getArray   (); }
 Value::operator Frame          *( void ) const { return getFrame   (); }
 Value::operator Function       *( void ) const { return getFunction(); }
 Value::operator Node           *( void ) const { return getNode    (); }
@@ -214,7 +222,9 @@ Value::operator Input          *( void ) const { return getInput   (); }
 Value::operator InOut          *( void ) const { return save_cast( Type::InOut() ).get< InOut* >(); }
 Value::operator Param          *( void ) const { return getParam   (); }
 Value::operator Sequence const *( void ) const { return getSequence(); }
-Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
+Value::operator ArrayBase      *( void ) const { return getArray   (); }
+Value::operator const Reference&( void ) const { return *getRef     (); }
+Value::operator Reference      *( void ) const { return getRef     (); }
 Value::operator CountPtr< Frame          >( void ) const { return getFrame   (); }
 Value::operator CountPtr< Function       >( void ) const { return getFunction(); }
 Value::operator CountPtr< Node           >( void ) const { return getNode    (); }
@@ -223,6 +233,8 @@ Value::operator CountPtr< Input          >( void ) const { return getInput   ();
 Value::operator CountPtr< InOut          >( void ) const { return getInOut   (); }
 Value::operator CountPtr< Param          >( void ) const { return getParam   (); }
 Value::operator CountPtr< Sequence const >( void ) const { return getSequence(); }
+Value::operator CountPtr< ArrayBase      >( void ) const { return getArray   (); }
+Value::operator CountPtr< Reference      >( void ) const { return getRef     (); }
 
 Value &Value::operator=( const Value &other )
 {
@@ -257,6 +269,7 @@ void Value::clear( void )
     case Type::INOUT   : if( inout && !inout->unref() ) delete inout; break;
     case Type::PARAM   : if( param && !param->unref() ) delete param; break;
     case Type::SEQUENCE: if( seq   && !seq  ->unref() ) delete seq  ; break;
+    case Type::REF     : if( ref   && !ref  ->unref() ) delete ref  ; break;
     case Type::OTHER   : break;
   }
   p = 0;
@@ -1542,6 +1555,7 @@ CountPtr< ArrayBase > new_Array( GarbageCollector *gc, Type type, int dims, cons
     case Type::PARAM   : return new_Array< CountPtr< Param          > >( gc, dims, fill_value );
     case Type::SEQUENCE: return new_Array< CountPtr< Sequence const > >( gc, dims, fill_value );
     case Type::ARRAY   : return new_Array< CountPtr< ArrayBase      > >( gc, dims, fill_value );
+    case Type::REF     : throw ArrayBase::Exception() << "Cannot create an Array of 'Ref' type";
     case Type::OTHER   : throw ArrayBase::Exception() << "Cannot create an Array of 'other' custom type";
     // no default
   }

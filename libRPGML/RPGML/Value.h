@@ -27,19 +27,8 @@
 
 namespace RPGML {
 
-class String  ;
 class StringData;
 class StringUnifier;
-class ArrayBase   ;
-class Frame     ;
-class Function;
-class Node    ;
-class Output  ;
-class Input   ;
-class InOut   ;
-class Param   ;
-class Sequence;
-class Collectable;
 template< class Elements > class Array;
 
 #if 0
@@ -132,7 +121,6 @@ public:
   explicit Value ( String   const &_str  );
   explicit Value ( StringData const *_str );
 
-  explicit Value ( ArrayBase      *_arr  );
   explicit Value ( Frame          *_frame );
   explicit Value ( Function       *_func );
   explicit Value ( Node           *_node );
@@ -141,6 +129,9 @@ public:
   explicit Value ( InOut          *_inout );
   explicit Value ( Param          *_param );
   explicit Value ( Sequence const *_seq  );
+  explicit Value ( ArrayBase      *_arr  );
+  explicit Value ( const Reference&_ref );
+  explicit Value ( Reference      *_ref );
 
   explicit Value ( const void * );
 
@@ -165,7 +156,6 @@ public:
   Value &set( char        const *_str  );
   Value &set( String      const &_str  );
   Value &set( StringData  const *_str );
-  Value &set( ArrayBase      *_arr  );
   Value &set( Frame          *_frame );
   Value &set( Function       *_func );
   Value &set( Node           *_node );
@@ -174,6 +164,9 @@ public:
   Value &set( InOut          *_inout );
   Value &set( Param          *_param );
   Value &set( Sequence const *_seq  );
+  Value &set( ArrayBase      *_arr  );
+  Value &set( const Reference &_ref );
+  Value &set( Reference      *_ref );
   Value &set( const Value &v );
 
   Value &set( const void * );
@@ -203,9 +196,8 @@ public:
   bool isInt64   ( void ) const { return is( Type::INT64    ); }
   bool isFloat   ( void ) const { return is( Type::FLOAT    ); }
   bool isDouble  ( void ) const { return is( Type::DOUBLE   ); }
-
   bool isString  ( void ) const { return is( Type::STRING   ); }
-  bool isArray   ( void ) const { return is( Type::ARRAY    ); }
+
   bool isFrame   ( void ) const { return is( Type::FRAME    ); }
   bool isFunction( void ) const { return is( Type::FUNCTION ); }
   bool isNode    ( void ) const { return is( Type::NODE     ); }
@@ -214,6 +206,8 @@ public:
   bool isInOut   ( void ) const { return is( Type::INOUT    ); }
   bool isParam   ( void ) const { return is( Type::PARAM    ); }
   bool isSequence( void ) const { return is( Type::SEQUENCE ); }
+  bool isArray   ( void ) const { return is( Type::ARRAY    ); }
+  bool isRef     ( void ) const { return is( Type::REF      ); }
 
   bool isInt( void ) const { return isInt32(); }
   bool isScalar( void ) const { return getType().isScalar(); }
@@ -241,6 +235,7 @@ public:
   InOut          *getInOut   ( void ) const { Value_assert( isInOut   () ); return inout  ; }
   Param          *getParam   ( void ) const { Value_assert( isParam   () ); return param  ; }
   Sequence const *getSequence( void ) const { Value_assert( isSequence() ); return seq ; }
+  Reference      *getRef     ( void ) const { Value_assert( isRef     () ); return ref; }
 
   int             getInt     ( void ) const { return getInt32(); }
 
@@ -256,7 +251,6 @@ public:
   operator float           ( void ) const;
   operator double          ( void ) const;
   operator String          ( void ) const;
-  operator ArrayBase      *( void ) const;
   operator Frame          *( void ) const;
   operator Function       *( void ) const;
   operator Node           *( void ) const;
@@ -265,8 +259,10 @@ public:
   operator InOut          *( void ) const;
   operator Param          *( void ) const;
   operator Sequence const *( void ) const;
+  operator ArrayBase      *( void ) const;
+  operator const Reference&( void ) const;
+  operator Reference      *( void ) const;
 
-  operator CountPtr< ArrayBase      >( void ) const;
   operator CountPtr< Frame          >( void ) const;
   operator CountPtr< Function       >( void ) const;
   operator CountPtr< Node           >( void ) const;
@@ -275,6 +271,8 @@ public:
   operator CountPtr< InOut          >( void ) const;
   operator CountPtr< Param          >( void ) const;
   operator CountPtr< Sequence const >( void ) const;
+  operator CountPtr< ArrayBase      >( void ) const;
+  operator CountPtr< Reference      >( void ) const;
 
   void get( bool     &x ) const;
   void get( uint8_t  &x ) const;
@@ -289,7 +287,6 @@ public:
   void get( double   &x ) const;
   void get( String   &x ) const;
 
-  void get( ArrayBase      *&x ) const;
   void get( Frame          *&x ) const;
   void get( Function       *&x ) const;
   void get( Node           *&x ) const;
@@ -298,7 +295,9 @@ public:
   void get( InOut          *&x ) const;
   void get( Param          *&x ) const;
   void get( Sequence const *&x ) const;
-  void get( CountPtr< ArrayBase > &x ) const;
+  void get( ArrayBase      *&x ) const;
+  void get( Reference      *&x ) const;
+
   void get( CountPtr< Frame     > &x ) const;
   void get( CountPtr< Function  > &x ) const;
   void get( CountPtr< Node      > &x ) const;
@@ -307,6 +306,9 @@ public:
   void get( CountPtr< InOut     > &x ) const;
   void get( CountPtr< Param     > &x ) const;
   void get( CountPtr< const Sequence > &x ) const;
+  void get( CountPtr< ArrayBase > &x ) const;
+  void get( CountPtr< Reference > &x ) const;
+
   void get( Value &x ) const { x = (*this); }
   template< class T > void get( T &x ) const { throw GetFailed( m_type, typeOf( x ) ); }
 
@@ -355,6 +357,7 @@ private:
     Param            *param;
     Sequence const   *seq  ;
     ArrayBase        *arr  ;
+    Reference        *ref  ;
   };
   Type m_type;
 };

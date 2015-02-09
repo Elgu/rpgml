@@ -74,6 +74,7 @@ public:
     CPPUNIT_ASSERT( Type( Type::PARAM    ).getEnum() == Type::PARAM    );
     CPPUNIT_ASSERT( Type( Type::SEQUENCE ).getEnum() == Type::SEQUENCE );
     CPPUNIT_ASSERT( Type( Type::ARRAY    ).getEnum() == Type::ARRAY    );
+    CPPUNIT_ASSERT( Type( Type::REF      ).getEnum() == Type::REF      );
     CPPUNIT_ASSERT( Type( Type::OTHER    ).getEnum() == Type::OTHER    );
 
     Type t;
@@ -106,6 +107,7 @@ public:
     CPPUNIT_ASSERT( std::string( "Param"    ) == Type( Type::PARAM    ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "Sequence" ) == Type( Type::SEQUENCE ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "Array"    ) == Type( Type::ARRAY    ).getTypeName() );
+    CPPUNIT_ASSERT( std::string( "Ref"      ) == Type( Type::REF      ).getTypeName() );
     CPPUNIT_ASSERT( std::string( "other"    ) == Type( Type::OTHER    ).getTypeName() );
   }
 
@@ -133,6 +135,7 @@ public:
     CPPUNIT_ASSERT_EQUAL( Type::Param   (), Type( "Param"    ) );
     CPPUNIT_ASSERT_EQUAL( Type::Sequence(), Type( "Sequence" ) );
     CPPUNIT_ASSERT_EQUAL( Type::Array   (), Type( "Array"    ) );
+    CPPUNIT_ASSERT_EQUAL( Type::Ref     (), Type( "Ref"      ) );
     CPPUNIT_ASSERT_EQUAL( Type::Other   (), Type( "other"    ) );
   }
 
@@ -178,6 +181,7 @@ public:
     CPPUNIT_ASSERT( !Type::Param   ().isScalar() );
     CPPUNIT_ASSERT( !Type::Sequence().isScalar() );
     CPPUNIT_ASSERT( !Type::Array   ().isScalar() );
+    CPPUNIT_ASSERT( !Type::Ref     ().isScalar() );
     CPPUNIT_ASSERT( !Type::Other   ().isScalar() );
   }
 
@@ -205,6 +209,7 @@ public:
     CPPUNIT_ASSERT( !Type::Param   ().isInteger() );
     CPPUNIT_ASSERT( !Type::Sequence().isInteger() );
     CPPUNIT_ASSERT( !Type::Array   ().isInteger() );
+    CPPUNIT_ASSERT( !Type::Ref     ().isInteger() );
     CPPUNIT_ASSERT( !Type::Other   ().isInteger() );
   }
 
@@ -232,6 +237,7 @@ public:
     CPPUNIT_ASSERT( !Type::Param   ().isPrimitive() );
     CPPUNIT_ASSERT( !Type::Sequence().isPrimitive() );
     CPPUNIT_ASSERT( !Type::Array   ().isPrimitive() );
+    CPPUNIT_ASSERT( !Type::Ref     ().isPrimitive() );
     CPPUNIT_ASSERT( !Type::Other   ().isPrimitive() );
   }
 
@@ -259,6 +265,7 @@ public:
     CPPUNIT_ASSERT( Type::Param   ().isParam   () );
     CPPUNIT_ASSERT( Type::Sequence().isSequence() );
     CPPUNIT_ASSERT( Type::Array   ().isArray   () );
+    CPPUNIT_ASSERT( Type::Ref     ().isRef     () );
     CPPUNIT_ASSERT( Type::Other   ().isOther   () );
   }
 
@@ -285,6 +292,8 @@ public:
     CPPUNIT_ASSERT( Type::Param   () == typeOf( CountPtr< Param     > () ) );
     CPPUNIT_ASSERT( Type::Sequence() == typeOf( CountPtr< const Sequence  > () ) );
     CPPUNIT_ASSERT( Type::Array   () == typeOf( CountPtr< ArrayBase > () ) );
+    CPPUNIT_ASSERT( Type::Ref     () == typeOf( CountPtr< Reference > () ) );
+    CPPUNIT_ASSERT( Type::Ref     () == typeOf( (Reference*)0 ) );
 
     CPPUNIT_ASSERT( Type::Other   () == typeOf( (const char*)0 ) );
     CPPUNIT_ASSERT( Type::Other   () == typeOf( std::string() ) );

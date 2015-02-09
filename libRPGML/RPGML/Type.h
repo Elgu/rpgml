@@ -35,6 +35,7 @@ class Param;
 class Sequence;
 class ArrayBase;
 class Collectable;
+class Reference;
 template< class RefcountedType > class CountPtr;
 
 class Type
@@ -64,6 +65,7 @@ public:
     , PARAM    // CountPtr< Param          >
     , SEQUENCE // CountPtr< const Sequence >
     , ARRAY    // CountPtr< ArrayBase      >
+    , REF      // Reference
     , OTHER    // anything else
 
     , INT = INT32
@@ -201,6 +203,7 @@ public:
   static Type Param    ( void ) { return Type( Type::PARAM    ); }
   static Type Sequence ( void ) { return Type( Type::SEQUENCE ); }
   static Type Array    ( void ) { return Type( Type::ARRAY    ); }
+  static Type Ref      ( void ) { return Type( Type::REF      ); }
   static Type Other    ( void ) { return Type( Type::OTHER    ); }
 
   static Type Int     ( void ) { return Type::Int32(); }
@@ -226,6 +229,7 @@ public:
   explicit Type( const RPGML::Param       & ) : m_e( Type::PARAM    ) {}
   explicit Type( const RPGML::Sequence    & ) : m_e( Type::SEQUENCE ) {}
   explicit Type( const RPGML::ArrayBase   & ) : m_e( Type::ARRAY    ) {}
+  explicit Type( const RPGML::Reference   & ) : m_e( Type::REF      ) {}
 
   bool isNil     ( void ) const { return ( m_e == Type::NIL      ); }
   bool isBool    ( void ) const { return ( m_e == Type::BOOL     ); }
@@ -249,6 +253,7 @@ public:
   bool isParam   ( void ) const { return ( m_e == Type::PARAM    ); }
   bool isSequence( void ) const { return ( m_e == Type::SEQUENCE ); }
   bool isArray   ( void ) const { return ( m_e == Type::ARRAY    ); }
+  bool isRef     ( void ) const { return ( m_e == Type::REF      ); }
   bool isOther   ( void ) const { return ( m_e == Type::OTHER    ); }
 
   bool isInt      ( void ) const { return isInt32(); }
@@ -280,6 +285,7 @@ public:
       , NIL      // PARAM
       , NIL      // SEQUENCE
       , NIL      // ARRAY
+      , NIL      // REF
       , NIL      // OTHER
     };
 
@@ -323,6 +329,12 @@ template<> struct TypeOf< CountPtr< InOut     > > { static const Type::Enum E = 
 template<> struct TypeOf< CountPtr< Param     > > { static const Type::Enum E = Type::PARAM   ; };
 template<> struct TypeOf< CountPtr< const Sequence  > > { static const Type::Enum E = Type::SEQUENCE; };
 template<> struct TypeOf< CountPtr< ArrayBase > > { static const Type::Enum E = Type::ARRAY   ; };
+template<> struct TypeOf< Reference             > { static const Type::Enum E = Type::REF     ; };
+template<> struct TypeOf< Reference*            > { static const Type::Enum E = Type::REF     ; };
+template<> struct TypeOf< const Reference*      > { static const Type::Enum E = Type::REF     ; };
+template<> struct TypeOf< Reference &           > { static const Type::Enum E = Type::REF     ; };
+template<> struct TypeOf< const Reference &     > { static const Type::Enum E = Type::REF     ; };
+template<> struct TypeOf< CountPtr< Reference > > { static const Type::Enum E = Type::REF     ; };
 
 template< Type::Enum E > struct EnumType {};
 
@@ -347,6 +359,7 @@ template<> struct EnumType< Type::INOUT    >{ typedef CountPtr< InOut     > T; }
 template<> struct EnumType< Type::PARAM    >{ typedef CountPtr< Param     > T; };
 template<> struct EnumType< Type::SEQUENCE >{ typedef CountPtr< const Sequence  > T; };
 template<> struct EnumType< Type::ARRAY    >{ typedef CountPtr< ArrayBase > T; };
+template<> struct EnumType< Type::REF      >{ typedef CountPtr< Reference > T; };
 
 template< typename T > struct IsSigned { static const bool B = false; };
 
