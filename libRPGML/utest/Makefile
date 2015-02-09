@@ -16,6 +16,7 @@ vpath %.cc ../RPGML/
 
 OBJECTS=\
 	utest_main.o\
+	ArrayBase.o\
 	Type.o\
 	Backtrace.o\
 	StringUnifier.o\
