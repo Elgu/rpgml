@@ -20,35 +20,11 @@
 
 #include <RPGML/rpgml.tab.hh>
 #include "StringUnifier.h"
+#include "Source.h"
 
 namespace RPGML {
 
 class GarbageCollector;
-
-class Source : public Refcounted
-{
-public:
-  typedef _Parser::location_type location_type;
-
-  Source( void );
-  virtual ~Source( void );
-
-  char next( location_type *loc );
-  void putBackChar( void );
-
-  void tokenBegin( location_type *loc );
-  void tokenEnd( location_type *loc );
-
-protected:
-  virtual char nextChar( void ) = 0;
-
-private:
-  char trackLocation( char c, location_type *loc );
-
-  char m_prevChar;
-  char m_putBackChar;
-  bool m_charWasPutBack;
-};
 
 class Scanner
 {
@@ -74,8 +50,34 @@ public:
 
   virtual void append( CountPtr< Statement > statement ) = 0;
 
+  class ScannerSource : public Refcounted
+  {
+  public:
+    typedef _Parser::location_type location_type;
+
+    explicit
+    ScannerSource( Source *source );
+    virtual ~ScannerSource( void );
+
+    char next( location_type *loc );
+    void putBackChar( void );
+
+    void tokenBegin( location_type *loc );
+    void tokenEnd( location_type *loc );
+
+  private:
+    char trackLocation( char c, location_type *loc );
+
+    CountPtr< Source > m_source;
+    const char *m_chars;
+    size_t m_pos;
+    char m_prevChar;
+    char m_putBackChar;
+    bool m_charWasPutBack;
+  };
+
 private:
-  CountPtr< Source > m_source;
+  CountPtr< ScannerSource > m_source;
   CountPtr< StringUnifier > m_unifier;
   GarbageCollector *m_gc;
 

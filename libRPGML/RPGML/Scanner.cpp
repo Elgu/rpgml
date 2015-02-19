@@ -29,16 +29,19 @@ namespace RPGML {
 typedef _Parser::location_type location_type;
 typedef _Parser::semantic_type semantic_type;
 
-Source::Source( void )
-: m_prevChar( '\0' )
+Scanner::ScannerSource::ScannerSource( Source *source )
+: m_source( source )
+, m_chars( 0 )
+, m_pos( 0 )
+, m_prevChar( '\0' )
 , m_putBackChar( '\0' )
 , m_charWasPutBack( false )
 {}
 
-Source::~Source( void )
+Scanner::ScannerSource::~ScannerSource( void )
 {}
 
-char Source::next( location_type *loc )
+char Scanner::ScannerSource::next( location_type *loc )
 {
   if( m_charWasPutBack )
   {
@@ -48,30 +51,38 @@ char Source::next( location_type *loc )
   }
 
   trackLocation( m_prevChar, loc );
-  return ( m_prevChar = nextChar() );
+
+  if( 0 == m_chars || '\0' == m_chars[ m_pos ] )
+  {
+    m_chars = m_source->nextChars();
+    if( !m_chars ) return ( m_prevChar = '\0' );
+    m_pos = 0;
+  }
+
+  return ( m_prevChar = m_chars[ m_pos++ ] );
 }
 
-void Source::putBackChar( void )
+void Scanner::ScannerSource::putBackChar( void )
 {
   m_putBackChar = m_prevChar;
   m_charWasPutBack = true;
   m_prevChar = '\0';
 }
 
-void Source::tokenBegin( location_type *loc )
+void Scanner::ScannerSource::tokenBegin( location_type *loc )
 {
   trackLocation( m_prevChar, loc );
   m_prevChar = '\0';
   loc->step();
 }
 
-void Source::tokenEnd( location_type *loc )
+void Scanner::ScannerSource::tokenEnd( location_type *loc )
 {
   trackLocation( m_prevChar, loc );
   m_prevChar = '\0';
 }
 
-char Source::trackLocation( char c, location_type *loc )
+char Scanner::ScannerSource::trackLocation( char c, location_type *loc )
 {
   if( '\n' == c )
   {
@@ -90,7 +101,7 @@ char Source::trackLocation( char c, location_type *loc )
 }
 
 Scanner::Scanner( GarbageCollector *_gc, StringUnifier *unifier, Source *source )
-: m_source( source )
+: m_source( source ? new ScannerSource( source ) : 0 )
 , m_unifier( unifier )
 , m_gc( _gc )
 {
@@ -107,7 +118,7 @@ Scanner &Scanner::getScanner( void )
 
 Scanner &Scanner::setSource( Source *source )
 {
-  m_source = source;
+  m_source = ( source ? new ScannerSource( source ) : 0 );
   return (*this);
 }
 
@@ -146,7 +157,7 @@ GarbageCollector *Scanner::getScannerGC( void ) const
 }
 
 static
-char waste_whitespace( Source *s, location_type *loc )
+char waste_whitespace( Scanner::ScannerSource *s, location_type *loc )
 {
   char c;
   while( isspace( c = s->next( loc ) ) )
@@ -204,7 +215,7 @@ const Keyword keywords[] =
 };
 
 static
-int parse_line_comment( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_line_comment( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   s->tokenBegin( loc );
   for(;;)
@@ -218,7 +229,7 @@ int parse_line_comment( char c, Source *s, StringUnifier *, semantic_type *, loc
 }
 
 static
-int parse_block_comment( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_block_comment( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   s->tokenBegin( loc );
   // waste tokens until "*/"
@@ -240,7 +251,7 @@ int parse_block_comment( char c, Source *s, StringUnifier *, semantic_type *, lo
 }
 
 static
-int parse_identifier( char c, Source *s, StringUnifier *u, semantic_type *token, location_type *loc )
+int parse_identifier( char c, Scanner::ScannerSource *s, StringUnifier *u, semantic_type *token, location_type *loc )
 {
   s->tokenBegin( loc );
 
@@ -275,7 +286,7 @@ int parse_identifier( char c, Source *s, StringUnifier *u, semantic_type *token,
 }
 
 static
-int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   s->tokenBegin( loc );
 
@@ -388,7 +399,7 @@ int parse_number( char c, Source *s, StringUnifier *, semantic_type *token, loca
 }
 
 static
-int parse_string( char c, Source *s, StringUnifier *u, semantic_type *token, location_type *loc )
+int parse_string( char c, Scanner::ScannerSource *s, StringUnifier *u, semantic_type *token, location_type *loc )
 {
   const char parenthis = c;
 
@@ -435,7 +446,7 @@ int parse_string( char c, Source *s, StringUnifier *u, semantic_type *token, loc
 }
 
 static
-int parse_minus( char c, Source *s, StringUnifier *u, semantic_type *token, location_type *loc )
+int parse_minus( char c, Scanner::ScannerSource *s, StringUnifier *u, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -473,7 +484,7 @@ int parse_minus( char c, Source *s, StringUnifier *u, semantic_type *token, loca
 }
 
 static
-int parse_plus( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_plus( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -502,7 +513,7 @@ int parse_plus( char c, Source *s, StringUnifier *, semantic_type *token, locati
 }
 
 static
-int parse_lt( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_lt( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -544,7 +555,7 @@ int parse_lt( char c, Source *s, StringUnifier *, semantic_type *token, location
 }
 
 static
-int parse_gt( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_gt( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -586,7 +597,7 @@ int parse_gt( char c, Source *s, StringUnifier *, semantic_type *token, location
 }
 
 static
-int parse_eq( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_eq( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   int ret = 0;
 
@@ -612,7 +623,7 @@ int parse_eq( char c, Source *s, StringUnifier *, semantic_type *, location_type
 }
 
 static
-int parse_excl( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_excl( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   int ret = 0;
 
@@ -638,7 +649,7 @@ int parse_excl( char c, Source *s, StringUnifier *, semantic_type *, location_ty
 }
 
 static
-int parse_amp( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_amp( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -669,7 +680,7 @@ int parse_amp( char c, Source *s, StringUnifier *, semantic_type *token, locatio
 }
 
 static
-int parse_hat( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_hat( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -700,7 +711,7 @@ int parse_hat( char c, Source *s, StringUnifier *, semantic_type *token, locatio
 }
 
 static
-int parse_pipe( char c, Source *s, StringUnifier *, semantic_type *token, location_type *loc )
+int parse_pipe( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -731,7 +742,7 @@ int parse_pipe( char c, Source *s, StringUnifier *, semantic_type *token, locati
 }
 
 static
-int parse_slash( char c, Source *s, StringUnifier *u, semantic_type *token, location_type *loc )
+int parse_slash( char c, Scanner::ScannerSource *s, StringUnifier *u, semantic_type *token, location_type *loc )
 {
   int ret = 0;
 
@@ -766,7 +777,7 @@ int parse_slash( char c, Source *s, StringUnifier *u, semantic_type *token, loca
 }
 
 static
-int parse_dot( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_dot( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   int ret = 0;
 
@@ -803,7 +814,7 @@ int parse_dot( char c, Source *s, StringUnifier *, semantic_type *, location_typ
 }
 
 static
-int parse_semi( char c, Source *s, StringUnifier *, semantic_type *, location_type *loc )
+int parse_semi( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_type *, location_type *loc )
 {
   int ret = 0;
 
@@ -850,7 +861,7 @@ int parse_semi( char c, Source *s, StringUnifier *, semantic_type *, location_ty
 
 int Scanner::yylex( semantic_type *token, location_type *loc )
 {
-  Source *const s = m_source.get();
+  Scanner::ScannerSource *const s = m_source.get();
   StringUnifier *const u = m_unifier.get();
 
   int ret = -1;

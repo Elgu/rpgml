@@ -14,6 +14,7 @@ libRPGML_SOURCE=\
 	StringUnifier.cpp\
 	Location.cpp\
 	Scanner.cpp\
+	Source.cpp\
 	GarbageCollector.cpp\
 	Value.cpp\
 	String.cpp\

@@ -35,6 +35,7 @@ OBJECTS=\
 	Sequence.o\
 	InterpretingFunction.o\
 	Scanner.o\
+	Source.o\
 	Thread.o\
 	Exception.o\
 	Mutex.o\

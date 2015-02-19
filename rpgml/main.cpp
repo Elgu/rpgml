@@ -48,33 +48,22 @@ using namespace RPGML;
 class ReadlineSource : public Source
 {
 public:
-  ReadlineSource( void )
-  : m_pos( 0 )
-  {}
+  ReadlineSource( void ) {}
   virtual ~ReadlineSource( void ) {}
 
 protected:
-  virtual char nextChar( void )
+  virtual const char *nextChars( void )
   {
     if( m_line.isNull() )
     {
       m_line.set( ::readline( "" ) );
-      m_pos = 0;
+      return m_line;
     }
-
-    if( m_line.isNull() )
+    else
     {
-      // still 0
-      return '\0';
-    }
-    else if( '\0' == m_line[ m_pos ] )
-    {
-      // insert newline at end of line
       m_line.clear();
-      return '\n';
+      return "\n";
     }
-
-    return m_line[ m_pos++ ];
   }
 
   class CharPtrGuard : public Guard< const char >
@@ -90,10 +79,6 @@ protected:
     : Base( c, free_c_str )
     {}
 
-    char operator[]( size_t pos ) const
-    {
-      return get()[ pos ];
-    }
   private:
     static void free_c_str( const char *c )
     {
@@ -102,7 +87,6 @@ protected:
   };
 
   CharPtrGuard m_line;
-  size_t m_pos;
 };
 
 static GarbageCollector gc( 5 );

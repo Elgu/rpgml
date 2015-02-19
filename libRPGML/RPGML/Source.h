@@ -15,39 +15,55 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
-#ifndef RPGML_FileSource_h
-#define RPGML_FileSource_h
+#ifndef RPGML_Source_h
+#define RPGML_Source_h
 
-#include "Scanner.h"
+#include "Refcounted.h"
 
-#include <cstdio>
+#include <iostream>
 
 namespace RPGML {
 
-class FileSource : public Source
+class Source : public Refcounted
 {
+  typedef Refcounted Base;
 public:
-  FileSource( FILE *file )
-  : m_file( file )
-  {}
+  Source( void );
+  virtual ~Source( void );
 
-  virtual ~FileSource( void )
-  {
-    ::fclose( m_file );
-  }
+  virtual const char *nextChars( void ) = 0;
+};
 
-  virtual const char *nextChars( void )
-  {
-    const size_t n = ::fread( m_buffer, 1, BUFFER_SIZE-1, m_file );
-    if( 0 == n ) return 0;
-    m_buffer[ n ] = '\0';
-    return m_buffer;
-  }
+class CStringSource : public Source
+{
+  typedef Source Base;
+public:
+  explicit
+  CStringSource( const char *str );
+  virtual ~CStringSource( void );
+
+protected:
+  virtual const char *nextChars( void );
 
 private:
-  static const int BUFFER_SIZE = 4096;
+  const char *m_str;
+};
+
+class StdIStreamSource : public Source
+{
+  typedef Source Base;
+public:
+  explicit
+  StdIStreamSource( std::istream *stream );
+  virtual ~StdIStreamSource( void );
+
+protected:
+  virtual const char *nextChars( void );
+
+private:
+  static const int BUFFER_SIZE = 256;
   char m_buffer[ BUFFER_SIZE ];
-  FILE *m_file;
+  std::istream *const m_stream;
 };
 
 } // namespace RPGML
