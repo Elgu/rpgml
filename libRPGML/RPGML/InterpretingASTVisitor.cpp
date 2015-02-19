@@ -1232,13 +1232,13 @@ Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVi
 
   // Get Array dimensions and size
 
-  const index_t to_dims = to->dims->size();
+  const int to_dims = int( to->dims->size() );
   const Type to_type_of = to->of->type;
 
   vector< index_t > to_size( to_dims );
   vector< bool > to_size_known( to_dims, false );
 
-  for( index_t d=0; d<to_dims; ++d )
+  for( int d=0; d<to_dims; ++d )
   {
     const Value &dims_d = to->dims->at( d );
     if( dims_d.isNil() )
@@ -1290,7 +1290,7 @@ Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVi
     const ArrayBase::Size x_size = x_base->getSize();
 
     // Check size of x
-    for( index_t d=0; d<to_dims; ++d )
+    for( int d=0; d<to_dims; ++d )
     {
       if( !to_size_known[ d ] ) continue;
 
