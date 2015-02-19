@@ -1,4 +1,4 @@
-{  int32 i = 23; string foo = "foo"; double d = 0.125; }
+Frame{  int32 i = 23; string foo = "foo"; double d = 0.125; }
 0
 13
 42

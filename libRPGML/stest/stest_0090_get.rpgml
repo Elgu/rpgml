@@ -100,7 +100,3 @@ PRINT_IF( ( .core.get( "type", Sequence( 1 to 2 ) ) == "Sequence" ), "Sequence( 
   PRINT_IF( ( .core.get( "size"      , a )[ 0 ] == 3  ), "Output[][] size 0" );
 }
 
-
-
-
-
