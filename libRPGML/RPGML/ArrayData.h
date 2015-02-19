@@ -43,13 +43,13 @@ public:
   typedef typename elements_t::      iterator       iterator;
   typedef typename elements_t::const_iterator const_iterator;
 
-  ArrayContainer( void ) {}
-  ~ArrayContainer( void ) {}
-
+  explicit
   ArrayContainer( index_t n ) : m_elements( n ) {}
+  ~ArrayContainer( void ) {}
 
   void clear( void ) { m_elements.clear(); }
   index_t size( void ) const { return index_t( m_elements.size() ); }
+  bool empty( void ) const { return m_elements.empty(); }
 
   iterator       begin( void )       { return m_elements.begin(); }
   const_iterator begin( void ) const { return m_elements.begin(); }
@@ -388,17 +388,16 @@ public:
   typedef pointer       iterator;
   typedef const_pointer const_iterator;
 
-  ArrayContainer( void ) {}
-  ~ArrayContainer( void ) {}
-
   explicit
   ArrayContainer( index_t n )
   : m_elements( ( n + 7 ) / 8 )
   , m_size( n )
   {}
+  ~ArrayContainer( void ) {}
 
   void clear( void ) { m_elements.clear(); m_size = 0; }
   index_t size( void ) const { return m_size; }
+  bool empty( void ) const { return m_elements.empty(); }
   index_t capacity( void ) const { return index_t( m_elements.size() * 8 ); }
 
   iterator       begin( void )       { return iterator( m_elements, 0 ); }
@@ -433,8 +432,8 @@ template< class _Element >
 class ArrayData : public Collectable
 {
   typedef Collectable Base;
+protected:
   typedef ArrayContainer< _Element > Container;
-  typedef Container elements_t;
 public:
   typedef _Element Element;
   typedef typename Container::pointer       pointer;
@@ -445,18 +444,10 @@ public:
   typedef typename Container::const_iterator const_iterator;
 
   explicit
-  ArrayData( GarbageCollector *_gc, int dims )
-  : Base( _gc )
-  , m_elements( 0 )
-  , m_dims( dims )
-  {
-    std::fill( m_size, m_size+m_dims, 0 );
-  }
-
-  explicit
   ArrayData( GarbageCollector *_gc, int dims, const index_t *s )
   : Base( _gc )
-  , m_elements( calc_size( dims, s ) )
+  , m_elements( pointer() )
+  , m_capacity( 0 )
   , m_dims( dims )
   {
     std::copy( s, s+dims, m_size );
@@ -465,7 +456,8 @@ public:
   explicit
   ArrayData( GarbageCollector *_gc, const ArrayBase::Size &s )
   : Base( _gc )
-  , m_elements( calc_size( s.getDims(), s.getCoords() ) )
+  , m_elements( pointer() )
+  , m_capacity( 0 )
   , m_dims( s.getDims() )
   {
     std::copy( s.getCoords(), s.getCoords()+m_dims, m_size );
@@ -476,23 +468,15 @@ public:
 
   virtual void gc_clear( void )
   {
-    m_elements.clear();
+    m_elements = pointer();
   }
 
-  virtual void gc_getChildren( Children &children ) const
-  {
-    if( isCollectable( (Element*)0 ) )
-    {
-      for( const_iterator i( m_elements.begin() ), end( m_elements.end() ); i != end; ++i )
-      {
-        children << (*i);
-      }
-    }
-  }
+  virtual void gc_getChildren( Children & ) const
+  {}
 
   pointer first( void )
   {
-    return m_elements.first();
+    return m_elements;
   }
 
   pointer getElement( int dims, const index_t *x )
@@ -510,12 +494,12 @@ public:
       }
       pos += x[ 0 ];
     }
-    return m_elements.begin() + pos;
+    return m_elements + pos;
   }
 
   index_t capacity( void ) const
   {
-    return m_elements.size();
+    return m_capacity;
   }
 
   ArrayBase::Size getSize( void ) const
@@ -528,8 +512,8 @@ public:
   #ifndef NDEBUG
     if( m_dims != dims ) throw ArrayBase::DimensionsMismatch( dims, m_dims );
   #endif
-    const const_pointer this_e = m_elements.first();
-    if( e < this_e || e >= this_e + m_elements.size() )
+    const const_pointer this_e = m_elements;
+    if( e < this_e || e >= this_e + m_capacity )
     {
       return false;
     }
@@ -542,7 +526,7 @@ public:
     return true;
   }
 
-private:
+protected:
   static
   index_t calc_size( int dims, const index_t *s )
   {
@@ -554,9 +538,78 @@ private:
     return ret;
   }
 
-  elements_t m_elements;
+  void setElements( pointer _elements, index_t _capacity )
+  {
+    m_elements = _elements;
+    m_capacity = _capacity;
+  }
+
+private:
+  pointer m_elements;
+  index_t m_capacity;
   index_t m_size[ 4 ];
   const int m_dims;
+};
+
+template< class _Element >
+class ContainerArrayData : public ArrayData< _Element >
+{
+  typedef ArrayData< _Element > Base;
+  typedef typename Base::Container Container;
+public:
+  typedef typename Base::Element Element;
+  typedef typename Base::pointer       pointer;
+  typedef typename Base::const_pointer const_pointer;
+  typedef typename Base::reference       reference;
+  typedef typename Base::const_reference const_reference;
+  typedef typename Base::iterator       iterator;
+  typedef typename Base::const_iterator const_iterator;
+
+  explicit
+  ContainerArrayData( GarbageCollector *_gc, int dims, const index_t *s )
+  : Base( _gc, dims, s )
+  , m_container( Base::calc_size( dims, s ) )
+  {
+    if( !m_container.empty() )
+    {
+      Base::setElements( &m_container[ 0 ], index_t( m_container.size() ) );
+    }
+  }
+
+  explicit
+  ContainerArrayData( GarbageCollector *_gc, const ArrayBase::Size &s )
+  : Base( _gc, s )
+  , m_container( Base::calc_size( s.getDims(), s.getCoords() ) )
+  {
+    if( !m_container.empty() )
+    {
+      Base::setElements( &m_container[ 0 ], index_t( m_container.size() ) );
+    }
+  }
+
+  virtual ~ContainerArrayData( void )
+  {}
+
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    m_container.clear();
+  }
+
+  virtual void gc_getChildren( Collectable::Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    if( isCollectable( (Element*)0 ) )
+    {
+      for( const_iterator i( m_container.begin() ), end( m_container.end() ); i != end; ++i )
+      {
+        children << (*i);
+      }
+    }
+  }
+
+private:
+  Container m_container;
 };
 
 } // namespace RPGML
