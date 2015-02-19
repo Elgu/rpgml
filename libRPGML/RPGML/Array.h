@@ -111,10 +111,96 @@ public:
     resize( s );
   }
 
+  //! Wrapper
+  Array( GarbageCollector *_gc, pointer element0, int dims, const index_t *_size, const index_t *_stride = 0 )
+  : Base( _gc, dims )
+  , m_element0( pointer() )
+  {
+    _check_dims();
+    wrap( element0, dims, _size, _stride );
+  }
+
+  //! Wrapper
+  Array( GarbageCollector *_gc, pointer element0, const Size &_size, const index_t *_stride = 0 )
+  : Base( _gc, size.getDims() )
+  , m_element0( pointer() )
+  {
+    _check_dims();
+    wrap( element0, _size, _stride );
+  }
+
   virtual ~Array( void )
   {}
 
-  void swap( RPGML::Array< Element > &other )
+  Array &operator=( const Array &other )
+  {
+    Base::operator=( other );
+    m_elements_data = other.m_elements_data;
+    m_element0 = other.m_element0;
+    return (*this);
+  }
+
+  template< class OtherElement >
+  Array &assign( const Array< OtherElement > *other )
+  {
+    if( getDims() != other->getDims() )
+    {
+      throw DimensionsMismatch( getDims(), other->getDims() )
+        << "Number of dimensions must match for Array<>::assign()"
+        ;
+    }
+
+    resize( other->getSize() );
+    std::copy( other->begin(), other->end(), begin() );
+
+    return (*this);
+  }
+
+  template< class OtherElement >
+  Array &assign( const CountPtr< Array< OtherElement > > &other )
+  {
+    return assign( other.get() );
+  }
+
+  template< class OtherElement >
+  Array &assign( const CountPtr< const Array< OtherElement > > &other )
+  {
+    return assign( other.get() );
+  }
+
+  void wrap( pointer element0, int dims, const index_t *_size, const index_t *_stride = 0 )
+  {
+    if( dims != m_dims )
+    {
+      throw Exception()
+        << "Dimensions specified at resize() (" << dims << ")"
+        << " must match dimensions specified at construction (" << m_dims << ")"
+        ;
+    }
+    m_element0 = element0;
+    m_elements_data.reset();
+    std::copy( _size, _size+dims, m_size );
+    if( _stride )
+    {
+      std::copy( _stride, _stride+dims, m_stride );
+    }
+    else
+    {
+      index_t stride_d = 1;
+      for( int d=0; d<dims; ++d )
+      {
+        m_stride[ d ] = stride_d;
+        stride_d *= _size[ d ];
+      }
+    }
+  }
+
+  void wrap( pointer element0, const Size &_size, const index_t *_stride = 0 )
+  {
+    wrap( element0, _size.getDims(), _size.getCoords(), _stride );
+  }
+
+  void swap( Array &other )
   {
     Base::swap( other );
     m_elements_data.swap( other.m_elements_data );
@@ -423,6 +509,19 @@ public:
     return ret;
   }
 
+  CountPtr< Array > copy( Array *target = 0 ) const
+  {
+    if( target )
+    {
+      (*target) = (*this);
+      return target;
+    }
+    else
+    {
+      return new Array( (*this) );
+    }
+  }
+
   virtual Value getValue_v( int dims, const index_t *x ) const
   {
     if( inRange_v( dims, x ) )
@@ -593,35 +692,35 @@ public:
     return true;
   }
 
-  CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s ) const
+  CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = 0 ) const
   {
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     ret->setROI( dims, x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( int dims, const index_t *x, const index_t *s )
+  CountPtr< Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = 0 )
   {
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     ret->setROI( dims, x, s );
     return ret;
   }
 
-  CountPtr< const Array > getROI( const Coordinates &x, const Size &s ) const
+  CountPtr< const Array > getROI( const Coordinates &x, const Size &s, Array *_ret = 0 ) const
   {
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     ret->setROI( x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( const Coordinates &x, const Size &s )
+  CountPtr< Array > getROI( const Coordinates &x, const Size &s, Array *_ret = 0 )
   {
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     ret->setROI( x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t w ) const
+  CountPtr< Array > getROI( index_t x, index_t w, Array *_ret = 0 ) const
   {
     if( 1 != m_dims )
     {
@@ -629,12 +728,12 @@ public:
         << "Dimensions must be 2 for getROI( x, w ), is " << m_dims
         ;
     }
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     ret->setROI( 1, &x, &w );
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t y, index_t sx, index_t sy ) const
+  CountPtr< Array > getROI( index_t x, index_t y, index_t sx, index_t sy, Array *_ret = 0 ) const
   {
     if( 2 != m_dims )
     {
@@ -642,14 +741,14 @@ public:
         << "Dimensions must be 2 for getROI( x, y, sx, sy ), is " << m_dims
         ;
     }
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     const index_t X[ 2 ] = { x, y };
     const index_t S[ 2 ] = { sx, sy };
     ret->setROI( 2, X, S );
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t y, index_t z, index_t sx, index_t sy, index_t sz ) const
+  CountPtr< Array > getROI( index_t x, index_t y, index_t z, index_t sx, index_t sy, index_t sz, Array *_ret = 0 ) const
   {
     if( 3 != m_dims )
     {
@@ -657,7 +756,7 @@ public:
         << "Dimensions must be 3 for getROI( x, y, z, sx, sy, sz ), is " << m_dims
         ;
     }
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     const index_t X[ 3 ] = { x, y, z };
     const index_t S[ 3 ] = { sx, sy, sz };
     ret->setROI( 3, X, S );
@@ -667,6 +766,7 @@ public:
   CountPtr< Array > getROI(
       index_t x, index_t y, index_t z, index_t t
     , index_t sx, index_t sy, index_t sz, index_t st
+    , Array *_ret = 0
     ) const
   {
     if( 4 != m_dims )
@@ -675,7 +775,7 @@ public:
         << "Dimensions must be 4 for getROI( x, y, z, t, sx, sy, sz, st ), is " << m_dims
         ;
     }
-    CountPtr< Array > ret = new Array( (*this) );
+    CountPtr< Array > ret = copy( _ret );
     const index_t X[ 4 ] = { x, y, z, t };
     const index_t S[ 4 ] = { sx, sy, sz, st };
     ret->setROI( 4, X, S );
@@ -840,6 +940,62 @@ public:
     return (*this);
   }
 
+  CountPtr< Array > getLine( int dims, const index_t *pos, int direction = 0, Array *_ret = 0 ) const
+  {
+    if( dims != m_dims )
+    {
+      throw Exception()
+        << "'dims' specified at getLine() (" << dims << ")"
+        << " must match dimensions specified at construction (" << m_dims << ")"
+        ;
+    }
+    if( direction < 0 || direction >= dims )
+    {
+      throw Exception()
+        << "'direction' out of range, must be less than 'dims' (" << dims << "), is " << direction
+        ;
+    }
+    if( _ret && _ret->getDims() != 1 )
+    {
+      throw Exception()
+        << "If '_ret' is specified at getLine(), it must be 1-dimensional, is " << _ret->getDims()
+        ;
+    }
+    CountPtr< Array > ret( _ret ? _ret : new Array( getGC(), 1 ) );
+
+    ret->m_elements_data = m_elements_data;
+    ret->m_element0 = &const_cast< Array* >( this )->at_v( dims, pos );
+
+    ret->m_stride[ 0 ] = m_stride[ direction ];
+    ret->m_size[ 0 ] = m_size[ direction ] - pos[ direction ];
+
+    return ret;
+  }
+
+  CountPtr< Array > line( int direction, index_t x, Array *_ret = 0 ) const
+  {
+    const index_t pos[ 1 ] = { x };
+    return getLine( 1, pos, direction, _ret );
+  }
+
+  CountPtr< Array > line( int direction, index_t x, index_t y, Array *_ret = 0 ) const
+  {
+    const index_t pos[ 2 ] = { x, y };
+    return getLine( 2, pos, direction, _ret );
+  }
+
+  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, Array *_ret = 0 ) const
+  {
+    const index_t pos[ 3 ] = { x, y, z };
+    return getLine( 3, pos, direction, _ret );
+  }
+
+  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, index_t t, Array *_ret = 0 ) const
+  {
+    const index_t pos[ 4 ] = { x, y, z, t };
+    return getLine( 4, pos, direction, _ret );
+  }
+
   ArrayBase &reserve( index_t sx=1, index_t sy=1, index_t sz=1, index_t st=1 )
   {
     assert( m_dims >= 0 );
@@ -988,7 +1144,7 @@ public:
     std::fill( m_stride + dims, m_stride + 4, stride_t( 0 ) );
 
     // Allocate new data
-    m_elements_data = new ArrayData< Element >( getGC(), dims, res );
+    m_elements_data = new ContainerArrayData< Element >( getGC(), dims, res );
     m_element0 = m_elements_data->first();
 
     // Copy old data
@@ -1037,6 +1193,28 @@ CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Va
     return new_Array< Element >( gc, dims, &fill_element );
   }
   return new_Array< Element >( gc, dims );
+}
+
+template< class Element >
+static inline
+CountPtr< Array< Element > > cloneAs( const ArrayBase *x )
+{
+  const ArrayBase::Size size = x->getSize();
+  CountPtr< Array< Element > > ret = new Array< Element >( x->getGC(), size );
+
+  CountPtr< ArrayBase::ConstValueIterator > i = x->getConstValueIterator();
+
+  for(
+      typename Array< Element >::iterator o( ret->begin() ), end( ret->end() )
+    ; !i->done() && ( o != end )
+    ; i->next(), ++o
+    )
+  {
+    const Value xi = i->get();
+    (*o) = xi.save_cast< Element >();
+  }
+
+  return ret;
 }
 
 typedef Array< bool                       >     BoolArray;
