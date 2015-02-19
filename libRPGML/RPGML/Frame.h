@@ -106,6 +106,11 @@ public:
   Ref      getStack( index_t index );
   ConstRef getStack( index_t index ) const;
 
+  Ref      operator[]( const char *identifier );
+  ConstRef operator[]( const char *identifier ) const;
+  Ref      operator[]( index_t index );
+  ConstRef operator[]( index_t index ) const;
+
   //! like 'foo.bar.identifier'
   String genGlobalName( const String &identifier ) const;
 

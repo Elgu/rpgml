@@ -285,6 +285,26 @@ Frame::Ref Frame::getStack( index_t index )
   }
 }
 
+Frame::Ref      Frame::operator[]( const char *identifier )
+{
+  return getVariable( identifier );
+}
+
+Frame::ConstRef Frame::operator[]( const char *identifier ) const
+{
+  return getVariable( identifier );
+}
+
+Frame::Ref      Frame::operator[]( index_t index )
+{
+  return getStack( index );
+}
+
+Frame::ConstRef Frame::operator[]( index_t index ) const
+{
+  return getStack( index );
+}
+
 String Frame::genGlobalName( const String &identifier ) const
 {
   String ret = identifier;
