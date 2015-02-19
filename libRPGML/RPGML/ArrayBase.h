@@ -138,13 +138,29 @@ public:
     return as;
   }
 
+  template< class DataType >
+  CountPtr< DataType > getAs( void )
+  {
+    DataType *as = 0;
+    return getAs( as );
+  }
+
+  template< class DataType >
+  CountPtr< const DataType > getAs( void ) const
+  {
+    const DataType *as = 0;
+    return getAs( as );
+  }
+
   virtual const std::type_info &getTypeInfo( void ) const = 0;
   virtual ArrayBase &clear( void ) = 0;
 
   bool isDense( void ) const;
   index_t size( void ) const;
 
-  index_t         getDims  ( void ) const { return m_dims; }
+  bool empty( void ) const { return 0 == size(); }
+
+  int             getDims  ( void ) const { return m_dims; }
   Size            getSize  ( void ) const { return Size( m_dims, m_size ); }
   const stride_t *getStride( void ) const { return m_stride; }
   virtual Type    getType  ( void ) const = 0;
@@ -185,6 +201,42 @@ public:
   virtual bool isValueArray( void ) const = 0;
 
   const char *getTypeName( void ) const { return getType().getTypeName(); }
+
+  inline
+  index_t getSizeX( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims < 1 ) throw Exception() << "Dimensions must be at least 1 for getSizeX(), is " << m_dims;
+  #endif
+    return m_size[ 0 ];
+  }
+
+  inline
+  index_t getSizeY( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims < 2 ) throw Exception() << "Dimensions must be at least 2 for getSizeY(), is " << m_dims;
+  #endif
+    return m_size[ 1 ];
+  }
+
+  inline
+  index_t getSizeZ( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims < 3 ) throw Exception() << "Dimensions must be at least 3 for getSizeZ(), is " << m_dims;
+  #endif
+    return m_size[ 2 ];
+  }
+
+  inline
+  index_t getSizeT( void ) const
+  {
+  #ifndef NDEBUG
+    if( m_dims < 4 ) throw Exception() << "Dimensions must be at least 4 for getSizeT(), is " << m_dims;
+  #endif
+    return m_size[ 3 ];
+  }
 
   inline
   stride_t position( index_t x ) const
@@ -265,6 +317,7 @@ protected:
   template< class T >
   static inline bool _isValue( const T* ) { return false; }
 
+  ArrayBase &operator=( const ArrayBase &other );
   void swap( ArrayBase &other );
 
   index_t m_size[ 4 ];

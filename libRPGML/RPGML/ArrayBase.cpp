@@ -172,6 +172,23 @@ void ArrayBase::_check_dims( int expected )
   }
 }
 
+ArrayBase &ArrayBase::operator=( const ArrayBase &other )
+{
+  if( getDims() != other.getDims() )
+  {
+    throw DimensionsMismatch( other.getDims(), getDims() )
+      << "When assigning Arrays, the dimensions must match."
+      ;
+  }
+  const int dims = getDims();
+  for( int d=0; d<dims; ++d )
+  {
+    m_size[ d ]   = other.m_size[ d ];
+    m_stride[ d ] = other.m_stride[ d ];
+  }
+  return (*this);
+}
+
 void ArrayBase::swap( ArrayBase &other )
 {
   const int dims = m_dims;
