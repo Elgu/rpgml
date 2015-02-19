@@ -38,11 +38,13 @@ class utest_Array : public CppUnit::TestFixture
   CPPUNIT_TEST( test_getAs );
   CPPUNIT_TEST( test_iterator );
   CPPUNIT_TEST( test_getROI );
+  CPPUNIT_TEST( test_getLine );
   CPPUNIT_TEST( test_random_access_iterator );
   CPPUNIT_TEST( test_reserve );
   CPPUNIT_TEST( test_mirror_sparse_rotate );
   CPPUNIT_TEST( test_BoolContainer );
   CPPUNIT_TEST( test_Array_bool );
+  CPPUNIT_TEST( test_wrapper );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -128,9 +130,9 @@ public:
     Array< int > i2( gc, 2 );
     Array< float > f1( gc, 1 );
     Array< String > s0( gc, 0 );
-    CPPUNIT_ASSERT_EQUAL( index_t( 2 ), i2.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 1 ), f1.getDims() );
-    CPPUNIT_ASSERT_EQUAL( index_t( 0 ), s0.getDims() );
+    CPPUNIT_ASSERT_EQUAL( 2, i2.getDims() );
+    CPPUNIT_ASSERT_EQUAL( 1, f1.getDims() );
+    CPPUNIT_ASSERT_EQUAL( 0, s0.getDims() );
 
     CPPUNIT_ASSERT_EQUAL( Type::Int(), i2.getType() );
     CPPUNIT_ASSERT_EQUAL( Type::Float(), f1.getType() );
@@ -422,7 +424,6 @@ public:
   void test_getROI( void )
   {
     GarbageCollector gc;
-    typedef Array< int > IntArray;
 
     {
       CountPtr< IntArray > a = new IntArray( &gc, 1, 5 );
@@ -541,6 +542,110 @@ public:
             CPPUNIT_ASSERT_EQUAL( int( x+y*3 ), a->at( x, y ) );
           }
         }
+      }
+    }
+  }
+
+  void test_getLine( void )
+  {
+    GarbageCollector gc;
+
+    {
+      CountPtr< IntArray > a = new IntArray( &gc, 2, 3, 5 );
+
+      for( index_t y=0, i=0; y<5; ++y )
+      for( index_t x=0     ; x<3; ++x, ++i )
+      {
+        a->at( x, y ) = i;
+      }
+
+      {
+        index_t pos[ 2 ] = { 0, 0 };
+        CountPtr< IntArray > line;
+
+        CPPUNIT_ASSERT_THROW( line = a->getLine( 1, pos ), ArrayBase::Exception );
+        CPPUNIT_ASSERT( line.isNull() );
+        CPPUNIT_ASSERT_THROW( line = a->getLine( 3, pos ), ArrayBase::Exception );
+        CPPUNIT_ASSERT( line.isNull() );
+        CPPUNIT_ASSERT_THROW( line = a->getLine( 2, pos,  2 ), ArrayBase::Exception );
+        CPPUNIT_ASSERT( line.isNull() );
+        CPPUNIT_ASSERT_THROW( line = a->getLine( 2, pos, -1 ), ArrayBase::Exception );
+        CPPUNIT_ASSERT( line.isNull() );
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 3 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL( 0, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL( 1, (*line)[ 1 ] );
+        CPPUNIT_ASSERT_EQUAL( 2, (*line)[ 2 ] );
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos, 1 ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 5 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL(  0, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL(  3, (*line)[ 1 ] );
+        CPPUNIT_ASSERT_EQUAL(  6, (*line)[ 2 ] );
+        CPPUNIT_ASSERT_EQUAL(  9, (*line)[ 3 ] );
+        CPPUNIT_ASSERT_EQUAL( 12, (*line)[ 4 ] );
+
+        pos[ 0 ] = 1;
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 2 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL( 1, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL( 2, (*line)[ 1 ] );
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos, 1 ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 5 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL(  1, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL(  4, (*line)[ 1 ] );
+        CPPUNIT_ASSERT_EQUAL(  7, (*line)[ 2 ] );
+        CPPUNIT_ASSERT_EQUAL( 10, (*line)[ 3 ] );
+        CPPUNIT_ASSERT_EQUAL( 13, (*line)[ 4 ] );
+
+        pos[ 0 ] = 1;
+        pos[ 1 ] = 1;
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 2 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL( 4, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL( 5, (*line)[ 1 ] );
+
+        CPPUNIT_ASSERT_NO_THROW( line = a->getLine( 2, pos, 1 ) );
+        CPPUNIT_ASSERT( !line.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 4 ), line->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL(  4, (*line)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL(  7, (*line)[ 1 ] );
+        CPPUNIT_ASSERT_EQUAL( 10, (*line)[ 2 ] );
+        CPPUNIT_ASSERT_EQUAL( 13, (*line)[ 3 ] );
+
+        CountPtr< IntArray > line2 = new IntArray( &gc, 1 );
+
+        CPPUNIT_ASSERT_NO_THROW( a->getLine( 2, pos, 0, line2 ) );
+        CPPUNIT_ASSERT( !line2.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line2->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 2 ), line2->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL( 4, (*line2)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL( 5, (*line2)[ 1 ] );
+
+        CPPUNIT_ASSERT_NO_THROW( a->getLine( 2, pos, 1, line2 ) );
+        CPPUNIT_ASSERT( !line2.isNull() );
+        CPPUNIT_ASSERT_EQUAL( 1, line2->getDims() );
+        CPPUNIT_ASSERT_EQUAL( index_t( 4 ), line2->getSizeX() );
+        CPPUNIT_ASSERT_EQUAL(  4, (*line2)[ 0 ] );
+        CPPUNIT_ASSERT_EQUAL(  7, (*line2)[ 1 ] );
+        CPPUNIT_ASSERT_EQUAL( 10, (*line2)[ 2 ] );
+        CPPUNIT_ASSERT_EQUAL( 13, (*line2)[ 3 ] );
+
       }
     }
   }
@@ -1512,6 +1617,77 @@ public:
           CPPUNIT_ASSERT_EQUAL( bits[ 100 - (i+1)*13 ], bool(*iter4 ) );
         }
       }
+    }
+  }
+
+  void test_wrapper( void )
+  {
+    GarbageCollector gc;
+
+    int data[ 8*4 ] =
+    {
+       0,  1,  2,  3,  4,  5,  6,  7,
+       8,  9, 10, 11, 12, 13, 14, 15,
+      16, 17, 18, 19, 20, 21, 22, 23,
+      24, 25, 26, 27, 28, 29, 30, 31
+    };
+
+    {
+      const index_t size[ 1 ] = { 4 };
+      CountPtr< IntArray > a = new IntArray( &gc, data, 1, size );
+
+      CPPUNIT_ASSERT_EQUAL( 1, a->getDims() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 4 ), a->getSizeX() );
+      CPPUNIT_ASSERT_EQUAL( 0, (*a)[ 0 ] );
+      CPPUNIT_ASSERT_EQUAL( 1, (*a)[ 1 ] );
+      CPPUNIT_ASSERT_EQUAL( 2, (*a)[ 2 ] );
+      CPPUNIT_ASSERT_EQUAL( 3, (*a)[ 3 ] );
+    }
+
+    {
+      const index_t size  [ 2 ] = { 3, 2 };
+      const index_t stride[ 2 ] = { 3, 16 };
+      CountPtr< IntArray > a = new IntArray( &gc, data, 2, size, stride );
+
+      CPPUNIT_ASSERT_EQUAL( 2, a->getDims() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 3 ), a->getSizeX() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 2 ), a->getSizeY() );
+      CPPUNIT_ASSERT_EQUAL( 0, a->at( 0, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 3, a->at( 1, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 6, a->at( 2, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 16, a->at( 0, 1 ) );
+      CPPUNIT_ASSERT_EQUAL( 19, a->at( 1, 1 ) );
+      CPPUNIT_ASSERT_EQUAL( 22, a->at( 2, 1 ) );
+    }
+
+    {
+      const index_t size[ 1 ] = { 4 };
+      CountPtr< IntArray > a = new IntArray( &gc, 1 );
+      a->wrap( data, 1, size );
+
+      CPPUNIT_ASSERT_EQUAL( 1, a->getDims() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 4 ), a->getSizeX() );
+      CPPUNIT_ASSERT_EQUAL( 0, (*a)[ 0 ] );
+      CPPUNIT_ASSERT_EQUAL( 1, (*a)[ 1 ] );
+      CPPUNIT_ASSERT_EQUAL( 2, (*a)[ 2 ] );
+      CPPUNIT_ASSERT_EQUAL( 3, (*a)[ 3 ] );
+    }
+
+    {
+      const index_t size  [ 2 ] = { 3, 2 };
+      const index_t stride[ 2 ] = { 3, 16 };
+      CountPtr< IntArray > a = new IntArray( &gc, 2 );
+      a->wrap( data, 2, size, stride );
+
+      CPPUNIT_ASSERT_EQUAL( 2, a->getDims() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 3 ), a->getSizeX() );
+      CPPUNIT_ASSERT_EQUAL( index_t( 2 ), a->getSizeY() );
+      CPPUNIT_ASSERT_EQUAL( 0, a->at( 0, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 3, a->at( 1, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 6, a->at( 2, 0 ) );
+      CPPUNIT_ASSERT_EQUAL( 16, a->at( 0, 1 ) );
+      CPPUNIT_ASSERT_EQUAL( 19, a->at( 1, 1 ) );
+      CPPUNIT_ASSERT_EQUAL( 22, a->at( 2, 1 ) );
     }
   }
 };
