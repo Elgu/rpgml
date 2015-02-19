@@ -127,7 +127,7 @@ Value::Value( const void * )
 {
   throw Exception()
     << "Internal: Tried to set a Value with a const pointer"
-    << ": Try using a cost_cast<>, but be careful, that enables possible writes"
+    << ": Try using a const_cast<>, but be careful, that enables possible writes"
     ;
 }
 
@@ -202,18 +202,18 @@ void Value::get( CountPtr< Param     > &x ) const { if( isParam   () ) x = getPa
 void Value::get( CountPtr< const Sequence > &x ) const { if( isSequence() ) x = getSequence(); else throw GetFailed( m_type, typeOf( x ) ); }
 void Value::get( CountPtr< Reference > &x ) const { if( isRef() ) x = getRef(); else throw GetFailed( m_type, typeOf( x ) ); }
 
-Value::operator bool            ( void ) const { return save_cast( Type::Bool  () ).get< bool     >(); }
-Value::operator uint8_t         ( void ) const { return save_cast( Type::UInt8 () ).get< uint8_t  >(); }
-Value::operator int8_t          ( void ) const { return save_cast( Type::Int8  () ).get< int8_t   >(); }
-Value::operator uint16_t        ( void ) const { return save_cast( Type::UInt16() ).get< uint16_t >(); }
-Value::operator int16_t         ( void ) const { return save_cast( Type::Int16 () ).get< int16_t  >(); }
-Value::operator uint32_t        ( void ) const { return save_cast( Type::UInt32() ).get< uint32_t >(); }
-Value::operator int32_t         ( void ) const { return save_cast( Type::Int32 () ).get< int32_t  >(); }
-Value::operator uint64_t        ( void ) const { return save_cast( Type::UInt64() ).get< uint64_t >(); }
-Value::operator int64_t         ( void ) const { return save_cast( Type::Int64 () ).get< int64_t  >(); }
-Value::operator float           ( void ) const { return save_cast( Type::Float () ).get< float    >(); }
-Value::operator double          ( void ) const { return save_cast( Type::Double() ).get< double   >(); }
-Value::operator String          ( void ) const { return save_cast( Type::String() ).get< String   >(); }
+Value::operator bool            ( void ) const { return save_cast< bool     >(); }
+Value::operator uint8_t         ( void ) const { return save_cast< uint8_t  >(); }
+Value::operator int8_t          ( void ) const { return save_cast< int8_t   >(); }
+Value::operator uint16_t        ( void ) const { return save_cast< uint16_t >(); }
+Value::operator int16_t         ( void ) const { return save_cast< int16_t  >(); }
+Value::operator uint32_t        ( void ) const { return save_cast< uint32_t >(); }
+Value::operator int32_t         ( void ) const { return save_cast< int32_t  >(); }
+Value::operator uint64_t        ( void ) const { return save_cast< uint64_t >(); }
+Value::operator int64_t         ( void ) const { return save_cast< int64_t  >(); }
+Value::operator float           ( void ) const { return save_cast< float    >(); }
+Value::operator double          ( void ) const { return save_cast< double   >(); }
+Value::operator String          ( void ) const { return save_cast< String   >(); }
 Value::operator Frame          *( void ) const { return getFrame   (); }
 Value::operator Function       *( void ) const { return getFunction(); }
 Value::operator Node           *( void ) const { return getNode    (); }
@@ -1416,6 +1416,40 @@ namespace Value_impl {
 
 } // namespace Value_impl
 
+std::ostream &Value::print_Type( std::ostream &o ) const
+{
+  if( isArray() )
+  {
+    const ArrayBase *const array = getArray();
+    const Type array_type = array->getType();
+
+    if( array_type.isArray() )
+    {
+      if( !array->empty() )
+      {
+        static const index_t pos[ 4 ] = { 0, 0, 0, 0 };
+        array->getValue_v( array->getDims(), pos ).print_Type( o );
+      }
+      else
+      {
+        o << "int[]";
+      }
+    }
+    else
+    {
+      o << array_type;
+    }
+
+    o << "[]";
+  }
+  else
+  {
+    o << getTypeName();
+  }
+
+  return o;
+}
+
 std::ostream &Value::print( std::ostream &o ) const
 {
   using namespace Value_impl;
@@ -1454,12 +1488,12 @@ std::ostream &Value::print( std::ostream &o ) const
     case Type::FRAME:
       {
         const Frame *m = getFrame();
-        o << "{ ";
+        o << "Frame{ ";
         for( CountPtr< RPGML::Frame::Iterator > j( m->getIterator() ); !j->done(); j->next() )
         {
           const Frame::Iterator::Type v( j->get() );
+          v.second.print_Type( o );
           o
-            << " " << v.second.getTypeName()
             << " " << v.first
             << " = ";
 
@@ -1472,9 +1506,9 @@ std::ostream &Value::print( std::ostream &o ) const
             o << v.second;
           }
 
-          o << ";";
+          o << "; ";
         }
-        o << " }";
+        o << "}";
       }
       break;
 

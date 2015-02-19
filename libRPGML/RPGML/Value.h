@@ -77,6 +77,9 @@ public:
   Value to( Type type ) const;
   Value save_cast( Type type ) const;
 
+  template< class To > To to       ( void ) const { return to       ( TypeOf< To >::E ).get< To >(); }
+  template< class To > To save_cast( void ) const { return save_cast( TypeOf< To >::E ).get< To >(); }
+
   bool operator< ( const Value &right ) const;
   bool operator<=( const Value &right ) const;
   bool operator> ( const Value &right ) const;
@@ -103,6 +106,7 @@ public:
   void swap( Value &other );
 
   std::ostream &print( std::ostream &o ) const;
+  std::ostream &print_Type( std::ostream &o ) const;
 
   explicit Value ( bool     _x );
   explicit Value ( uint8_t  _x );
