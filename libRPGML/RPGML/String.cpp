@@ -64,12 +64,13 @@ namespace RPGML {
 
   CountPtr< const MallocString > MallocString::create( const char *s, size_t len, const char *s2, size_t len2 )
   {
-    assert( s2 || !len2 );
+    if( !s ) len = 0;
+    if( !s2 ) len2 = 0;
     const size_t memsize = ( sizeof( MallocString )+1 ) + ( len + len2 );
     CountPtr< MallocString > ret( new ( ::operator new( memsize ) ) MallocString() );
 
     char *str = (char*)ret->m_str;
-    strncpy( str, s, len );
+    if( s ) strncpy( str, s, len );
     if( s2 ) strncpy( str+len, s2, len2 );
     str[ len+len2 ] = '\0';
 
@@ -121,7 +122,7 @@ namespace RPGML {
   String::String( const char *str, const char *str2 )
   : m_c_str( empty_c_str )
   {
-    const size_t len = strlen( str );
+    const size_t len = ( str ? strlen( str ) : 0 );
     const size_t len2 = ( str2 ? strlen( str2 ) : 0 );
     m_str = MallocString::create( str, len, str2, len2 );
     m_c_str = m_str->get();
