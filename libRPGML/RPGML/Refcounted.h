@@ -103,6 +103,18 @@ public:
     }
   }
 
+  //! @brief Returns the referenced object and removes this reference to it without deleting the object
+  RefcountedType *release( void )
+  {
+    RefcountedType *const ret = m_p;
+    if( m_p )
+    {
+      m_p->unref();
+      m_p = 0;
+    }
+    return ret;
+  }
+
   // This does not work! this operator is not used
 //  CountPtr &operator=( CountPtr cp )
 //  {
@@ -123,15 +135,19 @@ public:
     return this->reset( p );
   }
 
-  bool operator==( const CountPtr &cp ) const
-  {
-    return m_p == cp.m_p;
-  }
+  bool operator==( const RefcountedType *p ) const { return m_p == p; }
+  bool operator!=( const RefcountedType *p ) const { return m_p != p; }
+  bool operator< ( const RefcountedType *p ) const { return m_p <  p; }
+  bool operator<=( const RefcountedType *p ) const { return m_p <= p; }
+  bool operator> ( const RefcountedType *p ) const { return m_p >  p; }
+  bool operator>=( const RefcountedType *p ) const { return m_p >= p; }
 
-  bool operator<( const CountPtr &cp ) const
-  {
-    return m_p < cp.m_p;
-  }
+  bool operator==( const CountPtr &cp ) const { return m_p == cp.m_p; }
+  bool operator!=( const CountPtr &cp ) const { return m_p != cp.m_p; }
+  bool operator< ( const CountPtr &cp ) const { return m_p <  cp.m_p; }
+  bool operator<=( const CountPtr &cp ) const { return m_p <= cp.m_p; }
+  bool operator> ( const CountPtr &cp ) const { return m_p >  cp.m_p; }
+  bool operator>=( const CountPtr &cp ) const { return m_p >= cp.m_p; }
 
   template< class CompatibleRefcountedType >
   CountPtr &reset( CompatibleRefcountedType *p )
