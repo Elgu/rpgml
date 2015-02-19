@@ -80,6 +80,9 @@ private:
     NAME( const std::string &text ) throw() \
     : Base( text ) \
     {} \
+    NAME( const RPGML::Exception &e ) throw() \
+    : Base( e ) \
+    {} \
     virtual ~NAME( void ) throw() {}; \
     template< class T > \
     NAME &operator<<( const T &x ) \
