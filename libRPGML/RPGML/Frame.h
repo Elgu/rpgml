@@ -23,6 +23,7 @@
 #include "GarbageCollector.h"
 #include "types.h"
 #include "Exception.h"
+#include "Iterator.h"
 
 #include <map>
 #include <vector>
