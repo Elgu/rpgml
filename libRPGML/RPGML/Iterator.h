@@ -1,17 +1,17 @@
 /* This file is part of RPGML.
- * 
+ *
  * Copyright (c) 2014, Gunnar Payer, All rights reserved.
- * 
+ *
  * RPGML is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -19,6 +19,7 @@
 #define RPGML_Iterator_h
 
 #include "Refcounted.h"
+#include "GarbageCollector.h"
 #include "types.h"
 
 #include <vector>
@@ -27,19 +28,44 @@
 namespace RPGML {
 
 template< class _Type >
-class Iterator : public Refcounted
+class IteratorBase
 {
 public:
   typedef _Type Type;
 
-  Iterator( void ) {}
-  virtual ~Iterator( void ) {}
+  IteratorBase( void ) {}
+  virtual ~IteratorBase( void ) {}
 
   virtual bool done( void ) = 0; // not const
   virtual void next( void ) = 0;
   virtual Type get( void ) = 0;
+};
+
+template< class _Type >
+class Iterator : public IteratorBase< _Type >, public Refcounted
+{
+  typedef IteratorBase< _Type > Base;
+public:
+  typedef typename Base::Type Type;
+
+  Iterator( void ) {}
+  virtual ~Iterator( void ) {}
 
   virtual CountPtr< Iterator > clone( void ) const = 0;
+};
+
+template< class _Type >
+class GCIterator : public IteratorBase< _Type >, public Collectable
+{
+  typedef IteratorBase< _Type > Base;
+public:
+  typedef typename Base::Type Type;
+
+  explicit
+  GCIterator( GarbageCollector *_gc ) : Collectable( _gc ) {}
+  virtual ~GCIterator( void ) {}
+
+  virtual CountPtr< GCIterator > clone( void ) const = 0;
 };
 
 template< class BaseIterator >
