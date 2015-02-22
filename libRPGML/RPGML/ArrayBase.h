@@ -23,6 +23,7 @@
 #include "Type.h"
 #include "Value.h"
 #include "Refcounted.h"
+#include "Iterator.h"
 
 #include <typeinfo>
 
@@ -108,7 +109,7 @@ public:
 
   private:
     const index_t *const m_coords;
-    int m_dims;
+    const int m_dims;
   };
 
   typedef Coordinates Size;
