@@ -940,6 +940,43 @@ public:
     return (*this);
   }
 
+  Array &transpose( int d1=0, int d2=1 ) { return setTransposed( d1, d2 ); }
+
+  Array &setTransposed( int d1=0, int d2=1 )
+  {
+    const int dims = m_dims;
+    if( d1 < 0 || d1 >= dims )
+    {
+      throw Exception()
+        << "Dimension d1 out of range in setTransposed(),"
+        << " must be at least 0 and less than " << dims << ", is " << d1
+        ;
+    }
+    if( d2 < 0 || d2 >= dims )
+    {
+      throw Exception()
+        << "Dimension d2 out of range in setTransposed(),"
+        << " must be at least 0 and less than " << dims << ", is " << d2
+        ;
+    }
+    if( d1 == d2 )
+    {
+      throw Exception()
+        << "Dimensions d1 and d2 must be different in setTransposed(), are " << d1
+        ;
+    }
+
+    std::swap( m_stride[ d1 ], m_stride[ d2 ] );
+    return (*this);
+  }
+
+  CountPtr< Array > getTransposed( int d1=0, int d2=1, Array *_ret = 0 ) const
+  {
+    CountPtr< Array > ret = copy( _ret );
+    ret->setTransposed( d1, d2 );
+    return ret;
+  }
+
   CountPtr< Array > getLine( int dims, const index_t *pos, int direction = 0, Array *_ret = 0 ) const
   {
     if( dims != m_dims )
