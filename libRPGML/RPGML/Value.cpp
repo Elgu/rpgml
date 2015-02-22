@@ -1362,7 +1362,7 @@ int Value::compare_exactly( const Value &other ) const
 namespace Value_impl {
 
   static
-  std::ostream &print( std::ostream &o, const ArrayBase *array )
+  std::ostream &print( std::ostream &o, const ArrayBase *array, int newline_dim )
   {
     const ArrayBase::Size size = array->getSize();
     const index_t dims = size.getDims();
@@ -1394,12 +1394,12 @@ namespace Value_impl {
           }
           else
           {
-            if( d > 1 ) o << std::endl;
+            if( d > 1 && d >= newline_dim ) o << std::endl;
             for( int s=0; s<d; ++s )
             {
               o << ";";
             }
-            o << std::endl;
+            if( d >= newline_dim ) o << std::endl; else o << " ";
           }
           break;
         }
@@ -1473,14 +1473,24 @@ std::ostream &Value::print( std::ostream &o ) const
     case Type::ARRAY   :
       {
         const ArrayBase *const a = getArray();
-        const int dims = a->getDims();
+        const ArrayBase::Size size = a->getSize();
+        const int dims = size.getDims();
+
+        int newline_dim = 1;
+        {
+          index_t s = size[ 0 ];
+          for( ; newline_dim < 4 && s < 16; ++newline_dim )
+          {
+            s *= size[ newline_dim ];
+          }
+        }
 
         o << "[ ";
-        if( dims > 1 ) o << std::endl;
+        if( dims > newline_dim ) o << std::endl;
 
-        Value_impl::print( o, a );
+        Value_impl::print( o, a, newline_dim );
 
-        if( dims > 1 ) o << std::endl;
+        if( dims > newline_dim ) o << std::endl;
         o << " ]";
       }
       break;
