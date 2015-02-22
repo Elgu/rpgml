@@ -239,9 +239,12 @@ public:
 
   const pointer  &get      ( void ) const { return m_p; }
   const index_t  *getPos   ( void ) const { return m_pos; }
+  const index_t  &getPos   ( int d ) const { return m_pos[ d ]; }
   int             getDims  ( void ) const { return m_dims; }
   const index_t  *getSize  ( void ) const { return m_size; }
+  const index_t  &getSize  ( int d ) const { return m_size[ d ]; }
   const stride_t *getStride( void ) const { return m_stride; }
+  const stride_t &getStride( int d ) const { return m_stride[ d ]; }
 
 private:
   index_t m_pos[ 4 ];
