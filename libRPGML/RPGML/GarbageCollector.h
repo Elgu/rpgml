@@ -19,7 +19,6 @@
 #define RPGML_GarbageCollector_h
 
 #include "types.h"
-#include "Iterator.h"
 #include "Refcounted.h"
 #include "Mutex.h"
 #include "Atomic.h"
