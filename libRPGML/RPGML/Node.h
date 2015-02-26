@@ -78,6 +78,7 @@
   const Array< type > *var_identifier = 0; \
   { \
     const Input *const input = getInput( INPUT_ENUM ); \
+    if( !input->isConnected() ) throw NotConnected( input ); \
     if( !input->getAs( var_identifier ) ) \
     { \
       throw GetAsFailed( input, var_identifier ); \
@@ -98,13 +99,16 @@
   const Array< type > *var_identifier = 0; \
   { \
     const Input *const input = getInput( INPUT_ENUM ); \
+    if( !input->isConnected() ) throw NotConnected( input ); \
     if( !input->getAs( var_identifier ) ) \
     { \
       throw GetAsFailed( input, var_identifier ); \
     } \
     if( var_identifier->getDims() != dims ) \
     { \
-      throw IncompatibleOutput( input ); \
+      throw IncompatibleOutput( input ) \
+        << ": Expected " << dims << " dimensions, has " << var_identifier->getDims() \
+        ; \
     } \
   } \
 
@@ -120,7 +124,9 @@
       } \
       if( var_identifier->getDims() != dims ) \
       { \
-        throw IncompatibleOutput( input ); \
+        throw IncompatibleOutput( input ) \
+          << ": Expected " << dims << " dimensions, has " << var_identifier->getDims() \
+          ; \
       } \
     } \
   } \
@@ -176,6 +182,59 @@ class Input;
 class Output;
 class Node;
 
+EXCEPTION_DERIVED( ExitRequest   , Exception );
+
+class NotConnected;
+class NotReady;
+class IncompatibleOutput;
+class GetAsFailed;
+
+class NotConnected : public Exception
+{
+  typedef Exception Base;
+public:
+  explicit NotConnected( const Input *_input );
+  EXCEPTION_BODY( NotConnected )
+  CountPtr< const Input > input;
+};
+
+class NotReady : public Exception
+{
+  typedef Exception Base;
+public:
+  explicit NotReady( const Port *_port );
+  EXCEPTION_BODY( NotReady)
+  CountPtr< const Port > port;
+};
+
+class IncompatibleOutput : public Exception
+{
+  typedef Exception Base;
+public:
+  explicit IncompatibleOutput( const Input *_input );
+  EXCEPTION_BODY( IncompatibleOutput )
+  CountPtr< const Input > input;
+};
+
+class GetAsFailed : public Exception
+{
+  typedef Exception Base;
+public:
+  template< class Element >
+  explicit GetAsFailed( const Input *input, const Array< Element > *, int _dims = -1 );
+
+  template< class Element >
+  explicit GetAsFailed( const Output *output, const Array< Element > *, int _dims = -1 );
+
+  EXCEPTION_BODY( GetAsFailed )
+  CountPtr< const Port > port;
+  int dims;
+
+private:
+  template< class Element >
+  void _set( const char *t );
+};
+
 class Port : public Collectable
 {
   typedef Collectable Base;
@@ -221,9 +280,10 @@ public:
   template< class DataType >
   const DataType *getAs( const DataType* &as ) const
   {
+    if( !isConnected() ) throw NotConnected( this );
     const ArrayBase *const data = getData();
-    if( data ) return data->getAs( as );
-    return ( as = 0 );
+    if( !data ) throw NotReady( this );
+    return data->getAs( as );
   }
 
 private:
@@ -265,15 +325,15 @@ public:
   template< class DataType >
   DataType *getAs( DataType* &as )
   {
-    if( !m_data.isNull() ) return m_data->getAs( as );
-    return ( as = 0 );
+    if( !isReady() ) throw NotReady( this );
+    return m_data->getAs( as );
   }
 
   template< class DataType >
   const DataType *getAs( const DataType* &as ) const
   {
-    if( !m_data.isNull() ) return m_data->getAs( as );
-    return ( as = 0 );
+    if( !isReady() ) throw NotReady( this );
+    return m_data->getAs( as );
   }
 
   void resolve( void );
@@ -345,65 +405,10 @@ class Node : public Frame
 public:
   EXCEPTION_BASE( Exception );
 
-  EXCEPTION_DERIVED( ExitRequest   , Exception );
   EXCEPTION_DERIVED( NotFound      , Exception );
   EXCEPTION_DERIVED( InputNotFound , NotFound  );
   EXCEPTION_DERIVED( OutputNotFound, NotFound  );
   EXCEPTION_DERIVED( ParamNotFound , NotFound  );
-
-  class NotConnected;
-  class NotReady;
-  class IncompatibleOutput;
-  class GetAsFailed;
-
-  class NotConnected : public Exception
-  {
-    typedef Exception Base;
-  public:
-    explicit NotConnected( const Input *_input );
-    EXCEPTION_BODY( NotConnected )
-    CountPtr< const Input > input;
-  };
-
-  class NotReady : public Exception
-  {
-    typedef Exception Base;
-  public:
-    explicit NotReady( const Input *_input );
-    EXCEPTION_BODY( NotReady)
-    CountPtr< const Input > input;
-  };
-
-  class IncompatibleOutput : public Exception
-  {
-    typedef Exception Base;
-  public:
-    explicit IncompatibleOutput( const Input *_input );
-    EXCEPTION_BODY( IncompatibleOutput )
-    CountPtr< const Input > input;
-  };
-
-  class GetAsFailed : public Exception
-  {
-    typedef Exception Base;
-  public:
-    template< class Element >
-    explicit GetAsFailed( const Port *_port, const Array< Element > *, int _dims = -1 )
-    : port( _port )
-    , dims( _dims )
-    {
-      (*this)
-        << "Could not get '" << port->getIdentifier() << "'"
-        << " as 'Array< " << getTypeName< Element >() << " >"
-        ;
-      if( dims >= 0 ) (*this) << "[ " << dims << " ]";
-      (*this) << "'";
-    }
-
-    EXCEPTION_BODY( GetAsFailed )
-    CountPtr< const Port > port;
-    int dims;
-  };
 
   class InitFailed : public Exception
   {
@@ -529,13 +534,10 @@ protected:
   double   getDouble( int input_index ) const;
   String   getString( int input_index ) const;
 
-private:
-  template< class Scalar, class From >
-  Scalar getScalarFrom( int input_index ) const;
-
   template< class Scalar >
   Scalar getScalar( int input_index ) const;
 
+private:
   friend class ::utest_Node;
   typedef Array< CountPtr< Input  > > inputs_t;
   typedef Array< CountPtr< Output > > outputs_t;
@@ -582,6 +584,36 @@ typedef CountPtr< Function > (*create_Function_t)( GarbageCollector *gc, Frame *
 typedef CountPtr< Node > (*create_Node_t)( GarbageCollector *gc, const String &identifier, const SharedObject *so );
 
 template< class Element >
+GetAsFailed::GetAsFailed( const Input *input, const Array< Element > *, int _dims )
+: port( input )
+, dims( _dims )
+{
+  const char *const t = ( input->getData() ? input->getData()->getTypeName() : "not connected or not ready" );
+  _set< Element >( t );
+}
+
+template< class Element >
+GetAsFailed::GetAsFailed( const Output *output, const Array< Element > *, int _dims )
+: port( output )
+, dims( _dims )
+{
+  const char *const t = ( output->getData() ? output->getData()->getTypeName() : "not ready" );
+  _set< Element >( t );
+}
+
+template< class Element >
+void GetAsFailed::_set( const char *t )
+{
+  (*this)
+    << "Could not get '" << port->getIdentifier() << "'"
+    << " as 'Array< " << getTypeName< Element >() << " >"
+    << ", is 'Array< " << t << " >"
+    ;
+  if( dims >= 0 ) (*this) << "[ " << dims << " ]";
+  (*this) << "'";
+}
+
+template< class Element >
 void Output::init( const String &identifier, int dims, const index_t *size )
 {
   setIdentifier( identifier );
@@ -620,6 +652,29 @@ void Output::initData( int dims, const index_t *size )
   }
 
   out->resize_v( dims, size );
+}
+
+template< class Scalar >
+Scalar Node::getScalar( int input_index ) const
+{
+  GET_INPUT_BASE( input_index, base );
+  if( base->getDims() != 0 )
+  {
+    throw IncompatibleOutput( getInput( input_index ) )
+      << ": Expected 0 dimensions, has " << base->getDims()
+      ;
+  }
+
+  try
+  {
+    return base->getValue().save_cast( TypeOf< Scalar >::E );
+  }
+  catch( const Value::CastFailed &e )
+  {
+    throw IncompatibleOutput( getInput( input_index ) )
+      << e.what()
+      ;
+  }
 }
 
 } // namespace RPGML

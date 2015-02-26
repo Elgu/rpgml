@@ -582,7 +582,7 @@ CountPtr< ArrayBase > Node::resolve( ArrayBase *in_base )
   return in_base;
 }
 
-Node::NotConnected::NotConnected( const Input *_input )
+NotConnected::NotConnected( const Input *_input )
 : input( _input )
 {
   (*this)
@@ -590,15 +590,15 @@ Node::NotConnected::NotConnected( const Input *_input )
     ;
 }
 
-Node::NotReady::NotReady( const Input *_input )
-: input( _input )
+NotReady::NotReady( const Port *_port )
+: port( _port )
 {
   (*this)
-    << "Input '" << input->getIdentifier() << "' is not ready."
+    << "Port '" << port->getIdentifier() << "' is not ready."
     ;
 }
 
-Node::IncompatibleOutput::IncompatibleOutput( const Input *_input )
+IncompatibleOutput::IncompatibleOutput( const Input *_input )
 : input( _input )
 {
   (*this)
@@ -635,48 +635,6 @@ int64_t  Node::getInt64 ( int input_index ) const { return getScalar< int64_t  >
 float    Node::getFloat ( int input_index ) const { return getScalar< float    >( input_index ); }
 double   Node::getDouble( int input_index ) const { return getScalar< double   >( input_index ); }
 String   Node::getString( int input_index ) const { return getScalar< String   >( input_index ); }
-
-template< class Scalar, class From >
-Scalar Node::getScalarFrom( int input_index ) const
-{
-  GET_INPUT_AS_DIMS( input_index, in, From, 0 );
-  const Value ret( (**in) );
-  try
-  {
-    const Value tmp = ret.save_cast( TypeOf< Scalar >::E );
-    return tmp.get< Scalar >();
-  }
-  catch( const Value::CastFailed &e )
-  {
-    throw IncompatibleOutput( getInput( input_index ) )
-      << e.what()
-      ;
-  }
-}
-
-template< class Scalar >
-Scalar Node::getScalar( int input_index ) const
-{
-  GET_INPUT_BASE( input_index, base );
-
-  switch( base->getType().getEnum() )
-  {
-    case Type::BOOL  : return getScalarFrom< Scalar, bool     >( input_index );
-    case Type::UINT8 : return getScalarFrom< Scalar, uint8_t  >( input_index );
-    case Type::INT8  : return getScalarFrom< Scalar, int8_t   >( input_index );
-    case Type::UINT16: return getScalarFrom< Scalar, uint16_t >( input_index );
-    case Type::INT16 : return getScalarFrom< Scalar, int16_t  >( input_index );
-    case Type::UINT32: return getScalarFrom< Scalar, uint32_t >( input_index );
-    case Type::INT32 : return getScalarFrom< Scalar, int32_t  >( input_index );
-    case Type::UINT64: return getScalarFrom< Scalar, uint64_t >( input_index );
-    case Type::INT64 : return getScalarFrom< Scalar, int64_t  >( input_index );
-    case Type::FLOAT : return getScalarFrom< Scalar, float    >( input_index );
-    case Type::DOUBLE: return getScalarFrom< Scalar, double   >( input_index );
-    case Type::STRING: return getScalarFrom< Scalar, String   >( input_index );
-    default:
-      throw IncompatibleOutput( getInput( input_index ) );
-  }
-}
 
 Identity::Identity( GarbageCollector *_gc, const String &identifier )
 : Node( _gc, identifier, 0, 1, 1 )
