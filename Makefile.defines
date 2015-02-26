@@ -1,5 +1,7 @@
 
-RPGML_SRC_ROOT=$(shell while [ ! -d "ROOT" -a `pwd` != "/" ]; do cd .. ; done && echo `pwd` )
+ifeq ($(RPGML_SRC_ROOT),)
+	RPGML_SRC_ROOT=$(shell while [ ! -d "ROOT" -a `pwd` != "/" ]; do cd .. ; done && echo `pwd` )
+endif
 
 .SUFFIXES: .o .cpp .cc .hh .yy .dep .output .expected .rpgml
 
@@ -21,8 +23,12 @@ CFLAGS=\
 	-Wswitch\
 	-I$(RPGML_SRC_ROOT)/libRPGML/\
  	-fPIC\
-	-g -O0\
-	-DDEBUG\
+
+ifeq (${RELEASE},1)
+CFLAGS+= -g -O3 -DNDEBUG
+else
+CFLAGS+= -g -O0 -DDEBUG
+endif
 
 #	-Wsuggest-attribute=noreturn\
 #	-Wsuggest-attribute=pure\
