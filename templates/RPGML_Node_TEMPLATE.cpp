@@ -55,7 +55,7 @@ void TEMPLATE::gc_getChildren( Children &children ) const
 
 void TEMPLATE::set_foo( const Value &value, index_t, int, const index_t* )
 {
-  if( value.getType() != Type::String() )
+  if( !value.isString() )
   {
     throw Exception() << "Param 'foo' must be set with string.";
   }
