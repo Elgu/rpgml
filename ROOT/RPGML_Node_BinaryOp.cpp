@@ -76,6 +76,8 @@ template< class X, class Y > struct op_impl< X, Y, BOP_DIV     > { typedef typen
 template< class X, class Y > struct op_impl< X, Y, BOP_ADD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x + y ); } };
 template< class X, class Y > struct op_impl< X, Y, BOP_SUB     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x - y ); } };
 template< class X, class Y > struct op_impl< X, Y, BOP_MOD     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return Ret( x % y ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_MIN     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return std::min( Ret(x), Ret(y) ); } };
+template< class X, class Y > struct op_impl< X, Y, BOP_MAX     > { typedef typename RetType< X, Y >::T Ret; static Ret doit( const X &x, const Y &y ) { return std::max( Ret(x), Ret(y) ); } };
 
 template< class T1, class T2, BOP OP >
 struct impl
@@ -544,6 +546,8 @@ bool BinaryOp::tick( void )
     case BOP_ADD    : return tick1          < BOP_ADD     >();
     case BOP_SUB    : return tick1_no_string< BOP_SUB     >();
     case BOP_MOD    : return tick1_int      < BOP_MOD     >();
+    case BOP_MIN    : return tick1          < BOP_MIN     >();
+    case BOP_MAX    : return tick1          < BOP_MAX     >();
     case BOP_UNDEFINED:
       throw Exception() << "Param 'op' was not set";
   }

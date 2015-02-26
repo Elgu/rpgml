@@ -1,0 +1,5 @@
+
+Function max( x, y )
+{
+  return .binaryOp( x, "max", y );
+}

@@ -1,0 +1,5 @@
+
+Function min( x, y )
+{
+  return .binaryOp( x, "min", y );
+}

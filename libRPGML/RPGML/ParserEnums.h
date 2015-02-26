@@ -44,6 +44,8 @@ enum BOP
   , BOP_ADD
   , BOP_SUB
   , BOP_MOD
+  , BOP_MAX
+  , BOP_MIN
 };
 
 static inline
@@ -61,6 +63,7 @@ const char *getBOPStr( BOP bop )
     , "&", "|", "^"
     , "*", "/", "+", "-"
     , "%"
+    , "min", "max"
   };
   return op[ bop ];
 }
@@ -148,6 +151,10 @@ BOP getBOP( const char *const bop )
       {
         case '\0': return BOP_MOD;
       }
+      break;
+    case 'm':
+      if( 0 == ::strcmp( bop, "min" ) ) return BOP_MIN;
+      if( 0 == ::strcmp( bop, "max" ) ) return BOP_MAX;
       break;
   }
 

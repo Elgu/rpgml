@@ -196,6 +196,8 @@ namespace binaryOp_impl {
       case BOP_ADD    : return Value( left + right );
       case BOP_SUB    : return Value( left - right );
       case BOP_MOD    : return Value( left % right );
+      case BOP_MIN    : return ( left < right ? left : right );
+      case BOP_MAX    : return ( left > right ? left : right );
       default:
         throw "Invalid op";
     }
