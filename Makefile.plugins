@@ -1,0 +1,38 @@
+.PHONY: all clean undepend
+
+FUNCTION_SOURCE=$(shell find . -name "RPGML_Function_*.cpp")
+FUNCTION_SOs=$(shell echo $(FUNCTION_SOURCE) | sed -e "s/RPGML_Function/libRPGML_Function/g" -e "s/\.cpp/\.so/g" )
+NODE_SOURCE=$(shell find . -name "RPGML_Node_*.cpp")
+NODE_SOs=$(shell echo $(NODE_SOURCE) | sed -e "s/RPGML_Node/libRPGML_Node/g" -e "s/\.cpp/\.so/g" )
+
+all: $(FUNCTION_SOs) $(NODE_SOs)
+
+SOURCE=$(FUNCTION_SOURCE) $(NODE_SOURCE)
+
+DEP_FILES=$(foreach s, $(SOURCE), $(dir $(s)).$(notdir $(s) ).dep)
+
+.depend: $(DEP_FILES)
+	@cat $(DEP_FILES) > .depend
+
+undepend:
+	rm -f $(DEP_FILES) .depend
+
+clean:
+	rm -f $(DEP_FILES)
+	rm -f $(shell find . -name "*.o")
+	rm -f $(shell find . -name "*.o.LDFLAGS")
+	rm -f $(shell find . -name "*.o.CXXFLAGS")
+	rm -f $(shell find . -name ".*.dep")
+	rm -f $(shell find . -name ".depend")
+	rm -f $(FUNCTION_SOs) $(NODE_SOs)
+
+print:
+	@echo FUNCTION_SOURCE='$(FUNCTION_SOURCE)'
+	@echo FUNCTION_SOs='$(FUNCTION_SOs)'
+	@echo NODE_SOURCE='$(NODE_SOURCE)'
+	@echo NODE_SOs='$(NODE_SOs)'
+	@echo DEP_FILES='$(DEP_FILES)'
+
+include .depend
+
+
