@@ -1,0 +1,5 @@
+
+Function abs( x )
+{
+  return math.mathOp1( "abs", x );
+}

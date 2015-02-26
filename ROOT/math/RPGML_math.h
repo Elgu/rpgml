@@ -21,6 +21,7 @@
 #include "RPGML_MapOp.h"
 
 #include <cmath>
+#include <cstring>
 
 namespace RPGML {
 namespace math {
@@ -47,6 +48,7 @@ enum MOP1
   , MOP1_LOG10
   , MOP1_LOG2
   , MOP1_LOG1P
+  , MOP1_ABS
 };
 
 static inline
@@ -62,6 +64,7 @@ const char *getMOP1Str( MOP1 op )
     , "exp", "exp10", "exp2", "expm1"
     , "sqrt"
     , "log", "log10", "log2", "log1p"
+    , "abs"
   };
   return str[ op ];
 };
@@ -79,6 +82,7 @@ MOP1 getMOP1( const char *op )
     case 'a':
       switch( op[ 1 ] )
       {
+        case 'b': return MOP1_ABS;
         case 's': return MOP1_ASIN;
         case 'c': return MOP1_ACOS;
         case 't': return MOP1_ATAN;
@@ -232,6 +236,31 @@ DEFINE_FLOAT_MATHOP1( MOP1_LOG10, log10 );
 DEFINE_FLOAT_MATHOP1( MOP1_LOG2 , log2  );
 DEFINE_FLOAT_MATHOP1( MOP1_LOG1P, log1p );
 
+bool     abs( const bool     &x ) { return x; }
+uint8_t  abs( const uint8_t  &x ) { return x; }
+int8_t   abs( const int8_t   &x ) { return int8_t( std::abs( int( x ) ) ); }
+uint16_t abs( const uint16_t &x ) { return x; }
+int16_t  abs( const int16_t  &x ) { return int16_t( std::abs( int( x ) ) ); }
+uint32_t abs( const uint32_t &x ) { return x; }
+int32_t  abs( const int32_t  &x ) { return std::abs( x ); }
+uint64_t abs( const uint64_t &x ) { return x; }
+int64_t  abs( const int64_t  &x ) { return std::abs( x ); }
+float    abs( const float    &x ) { return ::fabsf( x ); }
+double   abs( const double   &x ) { return ::fabs( x ); }
+
+template< class _T >
+struct  MathOp1_op< _T, MOP1_ABS >
+{
+  static const MOP1 op = MOP1_ABS;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef _T T, Ret;
+  Ret operator()( const T &x ) const { return RPGML::math::abs( x ); }
+};
+
 template< class T, class Ret=T >
 static
 Ret mathOp1( MOP1 op, const T &x )
@@ -257,6 +286,7 @@ Ret mathOp1( MOP1 op, const T &x )
     case MOP1_LOG10  : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG10   > >()( x ) );
     case MOP1_LOG2   : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG2    > >()( x ) );
     case MOP1_LOG1P  : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG1P   > >()( x ) );
+    case MOP1_ABS    : return Ret( MapOp< T, MathOp1_op< T, MOP1_ABS     > >()( x ) );
     default:
       throw Exception() << "Undefined op";
   }
