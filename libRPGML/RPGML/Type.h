@@ -206,7 +206,7 @@ public:
   static Type Ref      ( void ) { return Type( Type::REF      ); }
   static Type Other    ( void ) { return Type( Type::OTHER    ); }
 
-  static Type Int     ( void ) { return Type::Int32(); }
+  static Type Int     ( void ) { return Int32(); }
 
   explicit Type( const bool               & ) : m_e( Type::BOOL     ) {}
   explicit Type( const uint8_t            & ) : m_e( Type::UINT8    ) {}
