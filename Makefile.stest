@@ -25,3 +25,6 @@ PRETTYPRINTER=$(RPGML_SRC_ROOT)/rpgml/prettyprinter
 stest: $(STEST_RESULTS)
 	@touch .rerun_stest
 
+cppcheck:
+	cppcheck . --enable=all --inconclusive -DDEBUG --platform=unix64 -rp --std=c++11 -v 2> err.txt
+
