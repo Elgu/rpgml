@@ -1215,7 +1215,7 @@ CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const El
 }
 
 template< class Element >
-CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value = Value() )
+CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Value &fill_value )
 {
   const Type element_type( TypeOf< Element >::E );
   if( element_type.isOther() )
