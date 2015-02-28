@@ -1285,7 +1285,7 @@ Value Value::operator% ( const Value &right ) const
       case Type::UINT64 : return Value( l.getUInt64() % r.getUInt64() );
       case Type::INT64  : return Value( l.getInt64 () % r.getInt64 () );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw Exception() << "Internal error: unhandled scalar";
     }
   }
   else if( left.isScalar() && right.isScalar() )
@@ -1300,7 +1300,7 @@ Value Value::operator% ( const Value &right ) const
       case Type::FLOAT  : return Value( Value_impl::modulo( l.getFloat (), r.getFloat () ) );
       case Type::DOUBLE : return Value( Value_impl::modulo( l.getDouble(), r.getDouble() ) );
       default:
-        throw Exception( "Internal error: unhandled scalar" );
+        throw Exception() << "Internal error: unhandled scalar";
     }
   }
 
@@ -1567,7 +1567,7 @@ std::ostream &Value::print( std::ostream &o ) const
     case Type::SEQUENCE: getSequence()->print( o ); break;
 
     default:
-      throw Exception( "Invalid Type for Value::print()" );
+      throw Exception() << "Invalid Type for Value::print()";
   }
 
   return o;

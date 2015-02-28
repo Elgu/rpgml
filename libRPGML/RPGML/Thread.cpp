@@ -73,8 +73,8 @@ void Thread::start( void *(*start_routine)(void*), void *arg )
   switch( ret )
   {
     case EAGAIN: throw InsufficientResources();
-    case EINVAL: throw StartException( "Internal: Invalid settings in attr" );
-    case EPERM : throw StartException( "Internal: No permission to set the scheduling policy and parameters specified in attr" );
+    case EINVAL: throw StartException() << "Internal: Invalid settings in attr";
+    case EPERM : throw StartException() << "Internal: No permission to set the scheduling policy and parameters specified in attr";
     default: {}
   }
 
@@ -93,7 +93,7 @@ void Thread::join( size_t *exit_status )
   {
     case EDEADLK: throw DeadLock();
     case EINVAL : throw NotJoinable();
-    case ESRCH  : throw JoinException( "Internal: No thread with the ID thread could be found" );
+    case ESRCH  : throw JoinException() << "Internal: No thread with the ID thread could be found";
     default: {}
   }
 
@@ -110,7 +110,7 @@ void Thread::cancel( void )
 
   switch( ret )
   {
-    case ESRCH: throw CancelException( "Internal: No thread with the ID thread could be found" );
+    case ESRCH: throw CancelException() << "Internal: No thread with the ID thread could be found";
     default: {}
   }
 

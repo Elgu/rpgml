@@ -342,7 +342,7 @@ Frame::Ref Frame::push_back( const String &identifier, const Value &value )
 void Frame::pop_back( void )
 {
   assert( m_values.size() == m_identifiers.size() );
-  if( m_values.empty() ) throw Exception( "Frame already empty" );
+  if( m_values.empty() ) throw Exception() << "Frame already empty";
 
   const size_t new_size = m_values.size()-1;
   m_values.resize( new_size );

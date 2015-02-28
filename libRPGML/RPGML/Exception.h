@@ -76,13 +76,6 @@ private:
 #define EXCEPTION_BODY( NAME ) \
     NAME( void ) throw() \
     {} \
-    explicit \
-    NAME( const std::string &text ) throw() \
-    : Base( text ) \
-    {} \
-    NAME( const RPGML::Exception &e ) throw() \
-    : Base( e ) \
-    {} \
     virtual ~NAME( void ) throw() {}; \
     template< class T > \
     NAME &operator<<( const T &x ) \
@@ -124,8 +117,9 @@ private:
 
 #define EXCEPTION_DERIVED_DEFINE_FIXED_TEXT( PARENT, NAME, FIXED_TEXT ) \
   PARENT::NAME::NAME( void ) throw() \
-  : Base( FIXED_TEXT ) \
-  {}
+  { \
+    (*this) << FIXED_TEXT; \
+  }
 
 } // namespace RPGML
 
