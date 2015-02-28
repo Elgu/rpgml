@@ -610,7 +610,7 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
 //    std::cerr << "executing Node " << node->getIdentifier() << " done" << std::endl;
     ret = 0;
   }
-  catch( const RPGML::Node::ExitRequest &e )
+  catch( const RPGML::ExitRequest &e )
   {
 //    std::cerr << "RPGML::Node::ExitRequest" << std::endl;
     graph->setExitRequest( e.what() );
