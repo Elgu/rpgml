@@ -460,7 +460,7 @@ int Window::event_filter( SDL_Event *event )
 
 int Window::event_filter_dispatch( void *self, SDL_Event *event )
 {
-  return ((Window*)self)->event_filter( event );
+  return reinterpret_cast< Window* >( self )->event_filter( event );
 }
 
 void Window::push_event( const SDL_Event *event )
