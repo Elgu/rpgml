@@ -143,7 +143,7 @@ bool Input::hasChanged( void ) const
 
 Output::Output( GarbageCollector *_gc, Node *parent )
 : Port( _gc, parent )
-, m_inputs( new inputs_t( _gc, 1 ) )
+, m_inputs( new InputArray( _gc, 1 ) )
 , m_hasChanged( false )
 {}
 
@@ -193,10 +193,10 @@ void Output::disconnect( void )
 {
   if( m_inputs.isNull() ) return;
 
-  CountPtr< inputs_t > tmp = new inputs_t( m_inputs->getGC(), 1 );
+  CountPtr< InputArray > tmp = new InputArray( m_inputs->getGC(), 1 );
   std::swap( (*tmp), (*m_inputs) );
 
-  for( inputs_t::const_iterator i( tmp->begin() ), end( tmp->end() ); i != end; ++i )
+  for( InputArray::const_iterator i( tmp->begin() ), end( tmp->end() ); i != end; ++i )
   {
     if( !(*i).isNull() ) (*i)->disconnect();
   }
@@ -204,7 +204,7 @@ void Output::disconnect( void )
 
 void Output::disconnect( Input *input )
 {
-  for( inputs_t::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
+  for( InputArray::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i).get() == input )
     {
@@ -225,19 +225,22 @@ void Output::connect( Input *input )
   }
 
   CountPtr< Input > *free_pos = 0;
-  for( inputs_t::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
+  if( !m_inputs->empty() )
   {
-    Input *const input_i = (*i).get();
-    if( input_i == input )
+    for( InputArray::iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
     {
-      // already connected
-      return;
-    }
-    else if( 0 == input_i )
-    {
-      // store there
-      free_pos = &(*i);
-      break;
+      Input *const input_i = (*i).get();
+      if( input_i == input )
+      {
+        // already connected
+        return;
+      }
+      else if( 0 == input_i )
+      {
+        // store there
+        free_pos = &(*i);
+        break;
+      }
     }
   }
 
@@ -256,7 +259,7 @@ void Output::connect( Input *input )
 
 bool Output::isConnected( void ) const
 {
-  for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
+  for( InputArray::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( !i->isNull() ) return true;
   }
@@ -302,9 +305,9 @@ Node::Node(
   , index_t num_params
   )
 : Frame( _gc, 0 )
-, m_inputs( new inputs_t( _gc , 1 ) )
-, m_outputs( new outputs_t( _gc , 1 ) )
-, m_params( new params_t( _gc , 1 ) )
+, m_inputs( new InputArray( _gc , 1 ) )
+, m_outputs( new OutputArray( _gc , 1 ) )
+, m_params( new ParamArray( _gc , 1 ) )
 , m_so( so )
 {
   setIdentifier( identifier );
@@ -366,7 +369,7 @@ Input *Node::getInput( int i ) const
 Input *Node::getInput( const char *identifier, index_t *index ) const
 {
   if( index ) (*index) = 0;
-  for( inputs_t::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
+  for( InputArray::const_iterator i( m_inputs->begin() ), end( m_inputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
     if( index ) ++(*index);
@@ -391,7 +394,7 @@ Output *Node::getOutput( int i ) const
 Output *Node::getOutput( const char *identifier, index_t *index ) const
 {
   if( index ) (*index) = 0;
-  for( outputs_t::const_iterator i( m_outputs->begin() ), end( m_outputs->end() ); i != end; ++i )
+  for( OutputArray::const_iterator i( m_outputs->begin() ), end( m_outputs->end() ); i != end; ++i )
   {
     if( (*i)->getIdentifier() == identifier ) return (*i);
     if( index ) ++(*index);
@@ -416,7 +419,7 @@ Param *Node::getParam( int i ) const
 Param *Node::getParam( const char *identifier, index_t *index ) const
 {
   if( index ) (*index) = 0;
-  for( params_t::const_iterator i( m_params->begin() ), end( m_params->end() ); i != end; ++i )
+  for( ParamArray::const_iterator i( m_params->begin() ), end( m_params->end() ); i != end; ++i )
   {
     if( !(*i).isNull() && (*i)->getIdentifier() == identifier ) return (*i);
     if( index ) ++(*index);

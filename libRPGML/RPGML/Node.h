@@ -253,6 +253,10 @@ private:
   friend class ::utest_Node;
   CountPtr< Node > m_parent;
   String m_identifier;
+
+private:
+  Port( const Port &other );
+  Port &operator=( const Port &other );
 };
 
 class Input : public Port
@@ -341,15 +345,13 @@ public:
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
-  typedef Array< CountPtr< Input > > inputs_t;
-
-  typedef inputs_t::iterator inputs_iterator;
+  typedef InputArray::iterator inputs_iterator;
   inputs_iterator inputs_begin( void );
   inputs_iterator inputs_end  ( void );
 
 private:
   friend class ::utest_Node;
-  CountPtr< inputs_t  > m_inputs;
+  CountPtr< InputArray > m_inputs;
   CountPtr< ArrayBase > m_data;
   bool m_hasChanged;
 };
@@ -539,12 +541,9 @@ protected:
 
 private:
   friend class ::utest_Node;
-  typedef Array< CountPtr< Input  > > inputs_t;
-  typedef Array< CountPtr< Output > > outputs_t;
-  typedef Array< CountPtr< Param  > > params_t;
-  CountPtr< inputs_t  > m_inputs;
-  CountPtr< outputs_t > m_outputs;
-  CountPtr< params_t  > m_params;
+  CountPtr< InputArray  > m_inputs;
+  CountPtr< OutputArray > m_outputs;
+  CountPtr< ParamArray  > m_params;
   CountPtr< const SharedObject > m_so;
 };
 
