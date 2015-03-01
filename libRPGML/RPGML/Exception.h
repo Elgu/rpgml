@@ -89,6 +89,9 @@ private:
   { \
   public: \
     typedef RPGML::Exception Base;\
+    NAME( const RPGML::Exception &e ) \
+    : Base( e ) \
+    {} \
     EXCEPTION_BODY( NAME )\
   }
 
