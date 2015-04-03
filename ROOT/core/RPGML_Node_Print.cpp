@@ -52,8 +52,7 @@ bool Print::tick_scalar( const ArrayBase *in_base )
 
 bool Print::tick( void )
 {
-  const ArrayBase *const in_base = getInput( INPUT_IN )->getData();
-  if( !in_base ) throw NotConnected( getInput( INPUT_IN ) );
+  GET_INPUT_BASE( INPUT_IN, in_base );
   const index_t in_dims = in_base->getDims();
 
   if( in_dims > 4 )
