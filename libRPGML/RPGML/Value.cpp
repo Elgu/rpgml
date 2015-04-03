@@ -1477,6 +1477,7 @@ std::ostream &Value::print( std::ostream &o ) const
         const int dims = size.getDims();
 
         int newline_dim = 1;
+        if( dims > 0 )
         {
           index_t s = size[ 0 ];
           for( ; newline_dim < 4 && s < 16; ++newline_dim )
