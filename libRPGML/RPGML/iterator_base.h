@@ -19,15 +19,22 @@
 #define RPGML_iterator_base_h
 
 #include "types.h"
+#include "Exception.h"
+#include "Type.h"
 
 #include <algorithm>
 #include <iterator>
+#include <iostream>
+#include <cassert>
+
+class utest_iterator_base;
 
 namespace RPGML {
 
 template< class _T, class _reference = _T&, class _pointer = _T*>
 class iterator_base : public std::iterator< std::random_access_iterator_tag, _T >
 {
+  friend class ::utest_iterator_base;
 public:
   typedef _T T;
   typedef _T value_type;
@@ -54,15 +61,14 @@ public:
   }
 
   explicit
-  iterator_base( const ArrayBase::Size &s, const stride_t *stride, pointer element0, const index_t *pos=0 )
-  : m_size( s.getCoords() )
+  iterator_base( int dims, const index_t *size, const stride_t *stride, pointer element0, const index_t *pos=0 )
+  : m_size( size )
   , m_stride( stride )
   , m_p( element0 )
-  , m_dims( s.getDims() )
+  , m_dims( dims )
   {
     if( pos )
     {
-      const int dims = m_dims;
       std::copy( pos, pos+dims, m_pos );
       std::fill( m_pos+dims, m_pos+4, index_t( 0 ) );
       for( int d = 0; d < dims; ++d )
@@ -127,7 +133,7 @@ protected:
     {
       const stride_t size_d = m_size[ d ];
       const stride_t old_pos_d = stride_t( m_pos[ d ] );
-      const stride_t new_pos_d = ( old_pos_d + x ) % size_d;
+      const stride_t new_pos_d = ( d < dims-1 ? ( old_pos_d + x ) % size_d : old_pos_d + x );
 
       m_pos[ d ] = index_t( new_pos_d );
       m_p += ( new_pos_d - old_pos_d ) * m_stride[ d ];
@@ -150,8 +156,11 @@ protected:
       const stride_t size_d = m_size[ d ];
       const stride_t old_pos_d = stride_t( m_pos[ d ] );
       const stride_t new_pos_d =
-        ( old_pos_d < x
-        ? ( ( old_pos_d - x ) % size_d ) + size_d
+        ( d < dims-1
+        ? ( old_pos_d < x
+          ? ( ( old_pos_d - x ) % size_d ) + size_d
+          : old_pos_d - x
+          )
         : old_pos_d - x
         );
 
@@ -236,6 +245,37 @@ public:
   iterator_base &operator+=( stride_t x ) { this->inc( x ); return (*this); }
   iterator_base &operator-=( stride_t x ) { this->dec( x ); return (*this); }
   reference operator[]( stride_t x ) const { return *( (*this) + x ); }
+
+  std::ostream &print( std::ostream &o ) const
+  {
+    o << m_p;
+
+    o << " :[ ";
+    for( int d=0; d<m_dims; ++d )
+    {
+      if( d > 0 ) o << ", ";
+      o << m_size[ d ];
+    }
+    o << " ]";
+
+    o << " @[ ";
+    for( int d=0; d<m_dims; ++d )
+    {
+      if( d > 0 ) o << ", ";
+      o << m_pos[ d ];
+    }
+    o << " ]";
+
+    o << " +[ ";
+    for( int d=0; d<m_dims; ++d )
+    {
+      if( d > 0 ) o << ", ";
+      o << m_stride[ d ];
+    }
+    o << " ]";
+
+    return o;
+  }
 
   const pointer  &get      ( void ) const { return m_p; }
   const index_t  *getPos   ( void ) const { return m_pos; }
@@ -339,6 +379,16 @@ bool operator>=(
 }
 
 } // namespace RPGML
+
+namespace std {
+
+  template< class Element, class _reference, class _pointer >
+  std::ostream &operator<<( std::ostream &o, const RPGML::iterator_base< Element, _reference, _pointer > &x )
+  {
+    return x.print( o );
+  }
+
+} // namespace std
 
 #endif
 
