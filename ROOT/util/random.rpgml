@@ -1,0 +1,21 @@
+
+Function random( type, seed, dims=0, sizeX=nil, sizeY=nil, sizeZ=nil, sizeT=nil )
+{
+  Random ret( type=type, dims=dims );
+
+  if( "Output" == getType( seed ) )
+  {
+    seed -> ret.seed;
+  }
+  else
+  {
+    ret.const_seed = seed;
+  }
+
+  sizeX -> ret.sizeX;
+  sizeY -> ret.sizeY;
+  sizeZ -> ret.sizeZ;
+  sizeT -> ret.sizeT;
+
+  return ret.out;
+}
