@@ -1,0 +1,32 @@
+
+
+double[] d1 = [ 0 to 7 ]; 
+Output a1 = d1;
+
+print( sparse( a1, 0, 1 ) ); print( "\n" );
+print( sparse( a1, 0, 2 ) ); print( "\n" );
+print( sparse( a1, 0, 2, 1 ) ); print( "\n" );
+print( sparse( a1, 0, 3, 0 ) ); print( "\n" );
+print( sparse( a1, 0, 3, 1 ) ); print( "\n" );
+print( sparse( a1, 0, 3, 2 ) ); print( "\n" );
+print( sparse( a1, 0, 3 ) ); print( "\n" );
+
+print( "=======\n" );
+
+double[,] d2 = [
+  0, 1, 2, 3;
+  4, 5, 6, 7;
+  8, 9, 10, 11;
+  12, 13, 14, 15
+]; 
+Output a2 = d2;
+
+print( sparse( sparse( a2, 0, 1 ), 1, 1 ) ); print( "\n" );
+print( sparse( sparse( a2, 0, 2 ), 1, 1 ) ); print( "\n" );
+print( sparse( sparse( a2, 0, 1 ), 1, 2 ) ); print( "\n" );
+print( sparse( sparse( a2, 0, 2 ), 1, 2 ) ); print( "\n" );
+print( sparse( sparse( a2, 0, 2, 1 ), 1, 2    ) ); print( "\n" );
+print( sparse( sparse( a2, 0, 2    ), 1, 2, 1 ) ); print( "\n" );
+
+exit();
+

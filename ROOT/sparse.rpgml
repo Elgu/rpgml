@@ -1,0 +1,11 @@
+
+Function sparse( in, d, nth, offset=nil )
+{
+  Sparse ret();
+  in  -> ret.in;
+  d   -> ret.d;
+  nth -> ret.nth;
+  offset -> ret.offset;
+  return ret.out;
+}
+
