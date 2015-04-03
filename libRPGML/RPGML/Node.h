@@ -539,6 +539,9 @@ protected:
   template< class Scalar >
   Scalar getScalar( int input_index ) const;
 
+  template< class Scalar >
+  Scalar getScalarIfConnected( int input_index, const Scalar &disconnected_value ) const;
+
 private:
   friend class ::utest_Node;
   CountPtr< InputArray  > m_inputs;
@@ -657,6 +660,31 @@ template< class Scalar >
 Scalar Node::getScalar( int input_index ) const
 {
   GET_INPUT_BASE( input_index, base );
+  if( base->getDims() != 0 )
+  {
+    throw IncompatibleOutput( getInput( input_index ) )
+      << ": Expected 0 dimensions, has " << base->getDims()
+      ;
+  }
+
+  try
+  {
+    return base->getValue().save_cast( TypeOf< Scalar >::E );
+  }
+  catch( const Value::CastFailed &e )
+  {
+    throw IncompatibleOutput( getInput( input_index ) )
+      << e.what()
+      ;
+  }
+}
+
+template< class Scalar >
+Scalar Node::getScalarIfConnected( int input_index, const Scalar &disconnected_value ) const
+{
+  GET_INPUT_BASE_IF_CONNECTED( input_index, base );
+  if( !base ) return disconnected_value;
+
   if( base->getDims() != 0 )
   {
     throw IncompatibleOutput( getInput( input_index ) )
