@@ -112,7 +112,7 @@ public:
   }
 
   //! Wrapper
-  Array( GarbageCollector *_gc, pointer element0, int dims, const index_t *_size, const index_t *_stride = 0 )
+  Array( GarbageCollector *_gc, pointer element0, int dims, const index_t *_size, const stride_t *_stride = 0 )
   : Base( _gc, dims )
   , m_element0( pointer() )
   {
@@ -121,7 +121,7 @@ public:
   }
 
   //! Wrapper
-  Array( GarbageCollector *_gc, pointer element0, const Size &_size, const index_t *_stride = 0 )
+  Array( GarbageCollector *_gc, pointer element0, const Size &_size, const stride_t *_stride = 0 )
   : Base( _gc, size.getDims() )
   , m_element0( pointer() )
   {
@@ -168,7 +168,7 @@ public:
     return assign( other.get() );
   }
 
-  void wrap( pointer element0, int dims, const index_t *_size, const index_t *_stride = 0 )
+  void wrap( pointer element0, int dims, const index_t *_size, const stride_t *_stride = 0 )
   {
     if( dims != m_dims )
     {
@@ -195,7 +195,7 @@ public:
     }
   }
 
-  void wrap( pointer element0, const Size &_size, const index_t *_stride = 0 )
+  void wrap( pointer element0, const Size &_size, const stride_t *_stride = 0 )
   {
     wrap( element0, _size.getDims(), _size.getCoords(), _stride );
   }
@@ -220,12 +220,12 @@ public:
 
   iterator begin( void )
   {
-    return iterator( getSize(), getStride(), elements() );
+    return iterator( m_dims, m_size, getStride(), elements() );
   }
 
   const_iterator begin( void ) const
   {
-    return const_iterator( getSize(), getStride(), elements() );
+    return const_iterator( m_dims, m_size, getStride(), elements() );
   }
 
   iterator end( void )
@@ -236,11 +236,11 @@ public:
       index_t end_pos[ dims ];
       if( dims > 1 ) std::fill( end_pos, end_pos+(dims-1), 0 );
       end_pos[ dims-1 ] = m_size[ dims-1 ];
-      return iterator( getSize(), getStride(), elements(), end_pos );
+      return iterator( m_dims, m_size, getStride(), elements(), end_pos );
     }
     else
     {
-      return iterator( getSize(), getStride(), elements()+1 );
+      return iterator( m_dims, m_size, getStride(), elements()+1 );
     }
   }
 
@@ -252,11 +252,11 @@ public:
       index_t end_pos[ dims ];
       if( dims > 1 ) std::fill( end_pos, end_pos+(dims-1), 0 );
       end_pos[ dims-1 ] = m_size[ dims-1 ];
-      return const_iterator( getSize(), getStride(), elements(), end_pos );
+      return const_iterator( m_dims, m_size, getStride(), elements(), end_pos );
     }
     else
     {
-      return const_iterator( getSize(), getStride(), elements()+1 );
+      return const_iterator( m_dims, m_size, getStride(), elements()+1 );
     }
   }
 
@@ -507,6 +507,31 @@ public:
     CountPtr< Array > ret = new Array( getGC(), getSize() );
     std::copy( begin(), end(), ret->begin() );
     return ret;
+  }
+
+  template< class Element >
+  CountPtr< Array< Element > > cloneAs( void ) const
+  {
+    CountPtr< Array< Element > > ret = new Array< Element >( getGC(), getSize() );
+
+    CountPtr< ArrayBase::ConstValueIterator > i = getConstValueIterator();
+
+    for(
+        typename Array< Element >::iterator o( ret->begin() ), e( ret->end() )
+      ; !i->done() && ( o != e )
+      ; i->next(), ++o
+      )
+    {
+      const Value xi = i->get();
+      (*o) = xi.save_cast< Element >();
+    }
+
+    return ret;
+  }
+
+  virtual CountPtr< ArrayBase > copy( void ) const
+  {
+    return new Array( *this );
   }
 
   CountPtr< Array > copy( Array *target = 0 ) const
@@ -782,7 +807,7 @@ public:
     return ret;
   }
 
-  Array &setROI( int dims, const index_t *x, const index_t *s )
+  virtual ArrayBase &setROI( int dims, const index_t *x, const index_t *s )
   {
     if( dims != m_dims )
     {
@@ -806,7 +831,7 @@ public:
     return (*this);
   }
 
-  Array &setROI( const Coordinates &x, const Size &s )
+  ArrayBase &setROI( const Coordinates &x, const Size &s )
   {
     if( x.getDims() != s.getDims() )
     {
@@ -819,9 +844,9 @@ public:
     return setROI( x.getDims(), x.getCoords(), s.getCoords() );
   }
 
-  Array &mirror( int d ) { return setMirrored( d ); }
+  ArrayBase &mirror( int d ) { return setMirrored( d ); }
 
-  Array &setMirrored( int d )
+  ArrayBase &setMirrored( int d )
   {
     if( d < 0 || d >= m_dims )
     {
@@ -837,9 +862,9 @@ public:
     return (*this);
   }
 
-  Array &sparse( int d, stride_t nth, index_t offset=0 ) { return setSparse( d, nth, offset ); }
+  ArrayBase &sparse( int d, stride_t nth, index_t offset=0 ) { return setSparse( d, nth, offset ); }
 
-  Array &setSparse( int d, stride_t nth, index_t offset=0 )
+  virtual ArrayBase &setSparse( int d, stride_t nth, index_t offset=0 )
   {
     if( d < 0 || d >= m_dims )
     {
@@ -868,8 +893,6 @@ public:
 
     return (*this);
   }
-
-  Array &rotate( int times90deg, int d1=0, int d2=1 ) { return setRotated( times90deg, d1, d2 ); }
 
   //! Rotates in screen-coordinates (d1=0("x"), d2=1("y")) clock-wise, cartesian anti-clockwise
   Array &setRotated( int times90deg, int d1=0, int d2=1 )
@@ -940,9 +963,7 @@ public:
     return (*this);
   }
 
-  Array &transpose( int d1=0, int d2=1 ) { return setTransposed( d1, d2 ); }
-
-  Array &setTransposed( int d1=0, int d2=1 )
+  virtual ArrayBase &setTransposed( int d1=0, int d2=1 )
   {
     const int dims = m_dims;
     if( d1 < 0 || d1 >= dims )
@@ -967,6 +988,7 @@ public:
     }
 
     std::swap( m_stride[ d1 ], m_stride[ d2 ] );
+    std::swap( m_size[ d1 ], m_size[ d2 ] );
     return (*this);
   }
 
@@ -975,6 +997,11 @@ public:
     CountPtr< Array > ret = copy( _ret );
     ret->setTransposed( d1, d2 );
     return ret;
+  }
+
+  CountPtr< Array > T( int d1=0, int d2=1, Array *_ret = 0 ) const
+  {
+    return getTransposed( d1, d2, _ret );
   }
 
   CountPtr< Array > getLine( int dims, const index_t *pos, int direction = 0, Array *_ret = 0 ) const
@@ -1031,6 +1058,62 @@ public:
   {
     const index_t pos[ 4 ] = { x, y, z, t };
     return getLine( 4, pos, direction, _ret );
+  }
+
+  //! Adds new dimension before position 'dim' (is that position in the result), this dimension has size 1
+  CountPtr< Array > addDim( int dim, Array *_ret = 0 ) const
+  {
+    if( getDims() >= 4 )
+    {
+      throw Exception()
+        << "Cannot addDim(), getDims() is already " << getDims()
+        ;
+    }
+
+    const int dims = getDims();
+    const int new_dims = dims+1;
+
+    if( _ret && _ret->getDims() != new_dims )
+    {
+      throw Exception()
+        << "Dimension of '_ret' must match dimension of Array plus one"
+        << ": is " << _ret->getDims()
+        << ", should be " << new_dims
+        ;
+    }
+
+    if( dim < 0 || dim > getDims() )
+    {
+      throw Exception()
+        << "'dim' must not be negative and at most getDims()"
+        << ": getDims() is " << dims
+        << ", 'dim' is " << dim
+        ;
+    }
+
+    CountPtr< Array > ret( _ret ? _ret : new Array( getGC(), new_dims ) );
+
+    index_t new_size[ new_dims ];
+    stride_t new_stride[ new_dims ];
+
+    std::copy( m_size, m_size+dim, new_size );
+    new_size[ dim ] = 1;
+    std::copy( m_size+dim, m_size+dims, new_size+dim+1 );
+
+    std::copy( m_stride, m_stride+dim, new_stride );
+    if( dim < dims )
+    {
+      new_stride[ dim ] = m_stride[ dim ];
+    }
+    else
+    {
+      new_stride[ dim ] = m_stride[ dims-1 ] * m_size[ dims-1 ];
+    }
+    std::copy( m_stride+dim, m_stride+dims, new_stride+dim+1 );
+
+    ret->wrap( m_element0, new_dims, new_size, new_stride );
+
+    return ret;
   }
 
   ArrayBase &reserve( index_t sx=1, index_t sy=1, index_t sz=1, index_t st=1 )
@@ -1187,10 +1270,9 @@ public:
     // Copy old data
     if( old_elements != pointer() )
     {
-      const Size common( dims, common_size );
-      const_iterator o = const_iterator( common, old_stride, old_elements );
-      iterator       n = iterator      ( common, m_stride  , m_element0   );
-      iterator       n_end = iterator  ( common, m_stride  , m_element0   , common_end );
+      const_iterator o = const_iterator( dims, common_size, old_stride, old_elements );
+      iterator       n = iterator      ( dims, common_size, m_stride  , m_element0   );
+      iterator       n_end = iterator  ( dims, common_size, m_stride  , m_element0   , common_end );
 
       for( ; n != n_end; ++n, ++o )
       {
@@ -1232,18 +1314,48 @@ CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Va
   return new_Array< Element >( gc, dims );
 }
 
+/*
 template< class Element >
-static inline
-CountPtr< Array< Element > > cloneAs( const ArrayBase *x )
+CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
 {
-  const ArrayBase::Size size = x->getSize();
-  CountPtr< Array< Element > > ret = new Array< Element >( x->getGC(), size );
+  switch( base->getType().getEnum() )
+  {
+    case Type::BOOL    : return base->getAs< Array< bool                       > >()->cloneAs< Element >();
+    case Type::UINT8   : return base->getAs< Array< uint8_t                    > >()->cloneAs< Element >();
+    case Type::INT8    : return base->getAs< Array< int8_t                     > >()->cloneAs< Element >();
+    case Type::UINT16  : return base->getAs< Array< uint16_t                   > >()->cloneAs< Element >();
+    case Type::INT16   : return base->getAs< Array< int16_t                    > >()->cloneAs< Element >();
+    case Type::UINT32  : return base->getAs< Array< uint32_t                   > >()->cloneAs< Element >();
+    case Type::INT32   : return base->getAs< Array< int32_t                    > >()->cloneAs< Element >();
+    case Type::UINT64  : return base->getAs< Array< uint64_t                   > >()->cloneAs< Element >();
+    case Type::INT64   : return base->getAs< Array< int64_t                    > >()->cloneAs< Element >();
+    case Type::FLOAT   : return base->getAs< Array< float                      > >()->cloneAs< Element >();
+    case Type::DOUBLE  : return base->getAs< Array< double                     > >()->cloneAs< Element >();
+    case Type::STRING  : return base->getAs< Array< String                     > >()->cloneAs< Element >();
+    case Type::FRAME   : return base->getAs< Array< CountPtr< Frame          > > >()->cloneAs< Element >();
+    case Type::FUNCTION: return base->getAs< Array< CountPtr< Function       > > >()->cloneAs< Element >();
+    case Type::NODE    : return base->getAs< Array< CountPtr< Node           > > >()->cloneAs< Element >();
+    case Type::OUTPUT  : return base->getAs< Array< CountPtr< Output         > > >()->cloneAs< Element >();
+    case Type::INPUT   : return base->getAs< Array< CountPtr< Input          > > >()->cloneAs< Element >();
+    case Type::INOUT   : return base->getAs< Array< CountPtr< InOut          > > >()->cloneAs< Element >();
+    case Type::PARAM   : return base->getAs< Array< CountPtr< Param          > > >()->cloneAs< Element >();
+    case Type::SEQUENCE: return base->getAs< Array< CountPtr< const Sequence > > >()->cloneAs< Element >();
+    case Type::ARRAY   : return base->getAs< Array< CountPtr< ArrayBase      > > >()->cloneAs< Element >();
+    default:
+      throw Exception() << "Cannot cloneAs() Array of Other or Ref Type, is '" << base->getType() << "'";
+  }
+}
+*/
+template< class Element >
+CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
+{
+  CountPtr< Array< Element > > ret = new Array< Element >( base->getGC(), base->getSize() );
 
-  CountPtr< ArrayBase::ConstValueIterator > i = x->getConstValueIterator();
+  CountPtr< ArrayBase::ConstValueIterator > i = base->getConstValueIterator();
 
   for(
-      typename Array< Element >::iterator o( ret->begin() ), end( ret->end() )
-    ; !i->done() && ( o != end )
+      typename Array< Element >::iterator o( ret->begin() ), e( ret->end() )
+    ; !i->done() && ( o != e )
     ; i->next(), ++o
     )
   {

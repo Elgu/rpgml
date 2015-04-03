@@ -170,7 +170,10 @@ public:
   virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 ) = 0;
   virtual ArrayBase &resize( const Size &size ) = 0;
 
+  //! Deep copy, own copy own data, isDense()
   virtual CountPtr< ArrayBase > clone( void ) const = 0;
+  //! Bare copy of the Array structure, same data, stride etc.
+  virtual CountPtr< ArrayBase > copy ( void ) const = 0;
 
   typedef Iterator< Value > ConstValueIterator;
   virtual CountPtr< ConstValueIterator > getConstValueIterator( void ) const = 0;
@@ -202,6 +205,17 @@ public:
   virtual bool isValueArray( void ) const = 0;
 
   const char *getTypeName( void ) const { return getType().getTypeName(); }
+
+  virtual ArrayBase &setROI( int dims, const index_t *x, const index_t *s ) = 0;
+  virtual ArrayBase &setMirrored( int d ) = 0;
+  virtual ArrayBase &setSparse( int d, stride_t nth, index_t offset=0 ) = 0;
+  //! Rotates in screen-coordinates (d1=0("x"), d2=1("y")) clock-wise, cartesian anti-clockwise
+  virtual ArrayBase &setRotated( int times90deg, int d1=0, int d2=1 ) = 0;
+  virtual ArrayBase &setTransposed( int d1=0, int d2=1 ) = 0;
+
+  ArrayBase &sparse( int d, stride_t nth, index_t offset=0 ) { return setSparse( d, nth, offset ); }
+  ArrayBase &rotate( int times90deg, int d1=0, int d2=1 ) { return setRotated( times90deg, d1, d2 ); }
+  ArrayBase &transpose( int d1=0, int d2=1 ) { return setTransposed( d1, d2 ); }
 
   inline
   index_t getSizeX( void ) const
