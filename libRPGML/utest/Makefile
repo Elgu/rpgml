@@ -45,6 +45,7 @@ OBJECTS=\
 	ParseException.o\
 	WaitLock.o\
 	rpgml.tab.o\
+	utest_iterator_base.o\
 	utest_Array.o\
 	utest_Exception.o\
 	utest_Type.o\
