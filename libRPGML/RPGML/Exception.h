@@ -87,8 +87,8 @@ private:
 #define EXCEPTION_BASE( NAME ) \
   class NAME : public RPGML::Exception \
   { \
-  public: \
     typedef RPGML::Exception Base;\
+  public: \
     NAME( const RPGML::Exception &e ) \
     : Base( e ) \
     {} \
@@ -98,16 +98,16 @@ private:
 #define EXCEPTION_DERIVED( NAME, BASE ) \
   class NAME : public BASE \
   { \
-  public: \
     typedef BASE Base;\
+  public: \
     EXCEPTION_BODY( NAME )\
   }
 
 #define EXCEPTION_DERIVED_FIXED_TEXT( NAME, BASE ) \
   class NAME : public BASE \
   { \
-  public: \
     typedef BASE Base;\
+  public: \
     NAME( void ) throw(); \
     virtual ~NAME( void ) throw() {}; \
     template< class T > \
