@@ -52,14 +52,9 @@ void Graph::addNode( Node *node )
     to_be_checked.pop_back();
 
     if( !curr ) continue;
+    if( alreadyAdded( curr ) ) continue;
 
-    if( m_Node_to_index.end() != m_Node_to_index.find( curr ) )
-    {
-      // Already added
-      continue;
-    }
-
-    m_Node_to_index[ curr ] = m_nodes->size();
+    m_Node_to_index.insert( make_pair( curr, m_nodes->size() ) );
     m_nodes->push_back( new GraphNode( getGC(), this, curr ) );
     m_order_determined = false;
 
@@ -71,6 +66,16 @@ void Graph::addNode( Node *node )
 
       to_be_checked.push_back( input->getOutput()->getParent() );
     }
+  }
+}
+
+void Graph::print() const
+{
+  for( index_t i( 0 ), end( m_nodes->size() ); i < end; ++i )
+  {
+    Node *const node = (*m_nodes)[ i ]->node.get();
+    std::cerr << "(*m_nodes)[ " << i << " ].get() = " << (const void*)(*m_nodes)[ i ].get() << std::endl;
+    std::cerr << "(*m_nodes)[ " << i << " ]->node.get() = " << (const void*)node << std::endl;
   }
 }
 
@@ -96,13 +101,12 @@ void Graph::merge( void )
   do
   {
     merged_one = false;
+    const index_t num_nodes = m_nodes->size();
 
     CountPtr< GraphNodeArray > new_nodes = new GraphNodeArray( getGC(), 1 );
-    new_nodes->reserve( m_nodes->size() / 2 );
+    new_nodes->reserve( num_nodes / 2 );
 
     sort( m_nodes->begin(), m_nodes->end(), GraphNode::compare_less );
-
-    const index_t num_nodes = m_nodes->size();
 
     // Start of first block of equivalent Nodes
     index_t equal_first = 0;
@@ -126,13 +130,11 @@ void Graph::merge( void )
           GraphNodeArray::Element &gn_merge_node = (*m_nodes)[ merge_i ];
           Node *const merge_node = gn_merge_node->node;
 
-          /*
           cerr
             << "Merging '" << merge_node->getIdentifier() << "'"
             << " into '" << merge_into->getIdentifier() << "'"
             << endl
             ;
-            */
 
           bool merge_failed = false;
 
@@ -184,7 +186,7 @@ void Graph::merge( void )
         // Add first to the new nodes array
         new_nodes->push_back( gn_merge_into );
 
-        // Start of next block
+        // The current Node is the start of the next block
         equal_first = equal_last = i;
       }
     }
@@ -198,7 +200,8 @@ void Graph::merge( void )
   m_Node_to_index.clear();
   for( index_t i( 0 ), end( m_nodes->size() ); i < end; ++i )
   {
-    m_Node_to_index[ (*m_nodes)[ i ]->node.get() ] = i;
+    Node *const node = (*m_nodes)[ i ]->node.get();
+    m_Node_to_index.insert( make_pair( node, i ) );
   }
 
 //  cerr << "merge: ending with " << m_nodes.size() << " nodes" << endl;
@@ -276,7 +279,11 @@ void Graph::determine_order( void )
       index_t predecessor_node_index = index_t(-1);
       if( !alreadyAdded( predecessor_node, &predecessor_node_index ) )
       {
-        throw "Input is connected to Node not belonging to this Graph";
+        throw Exception()
+          << "Input '" << input->getParent()->getIdentifier() << "." << input->getIdentifier() << "'"
+          << " is connected to Output '" << predecessor_node->getIdentifier() << "." << input->getOutput()->getIdentifier() << "'"
+          << " ( Node " << (const void*)predecessor_node << " ) not belonging to this Graph"
+          ;
       }
 
       GraphNode *const predecessor = (*m_nodes)[ predecessor_node_index ];
