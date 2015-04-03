@@ -37,11 +37,14 @@ class Graph : public Collectable
 {
   typedef Collectable Base;
 public:
+  EXCEPTION_BASE( Exception );
 
   explicit
   Graph( GarbageCollector *_gc );
 
   virtual ~Graph( void );
+
+  void print() const;
 
   void addNode( Node *node );
   bool alreadyAdded( const Node *node, index_t *index = 0 ) const;
