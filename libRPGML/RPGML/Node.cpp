@@ -489,11 +489,19 @@ void Node::setAllOutputChanged( bool changed )
 
 bool Node::hasAnyInputChanged( void ) const
 {
-  for( index_t i( 0 ), end( m_inputs->size() ); i < end; ++i )
+  const index_t end = m_inputs->size();
+  if( 0 == end ) return true;
+  index_t num_connected = 0;
+  for( index_t i=0; i < end; ++i )
   {
     Input *const input = (*m_inputs)[ i ];
-    if( input && input->hasChanged() ) return true;
+    if( input )
+    {
+      if( input->isConnected() ) ++num_connected;
+      if( input->hasChanged() ) return true;
+    }
   }
+  if( 0 == num_connected ) return true;
   return false;
 }
 
