@@ -321,10 +321,10 @@ public:
   const ArrayBase *getData( void ) const;
 
   template< class Element >
-  void initData( int dims, const index_t *size );
+  Array< Element > *initData( int dims, const index_t *size );
 
   template< class Element >
-  void initData( const ArrayBase::Size &size ) { initData< Element >( size.getDims(), size.getCoords() ); }
+  Array< Element > *initData( const ArrayBase::Size &size ) { return initData< Element >( size.getDims(), size.getCoords() ); }
 
   template< class DataType >
   DataType *getAs( DataType* &as )
@@ -638,7 +638,7 @@ void Output::init( const String &identifier, int dims, const index_t *size )
 }
 
 template< class Element >
-void Output::initData( int dims, const index_t *size )
+Array< Element > *Output::initData( int dims, const index_t *size )
 {
   CountPtr< ArrayBase > out = getData();
 
@@ -654,6 +654,7 @@ void Output::initData( int dims, const index_t *size )
   }
 
   out->resize_v( dims, size );
+  return out->getAs< Array< Element > >();
 }
 
 template< class Scalar >
