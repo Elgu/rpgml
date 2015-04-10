@@ -60,15 +60,13 @@ private:
     NUM_PARAMS
   };
 
-  template< BOP OP > bool tick1          ( void );
-  template< BOP OP > bool tick1_int      ( void );
-  template< BOP OP > bool tick1_no_string( void );
+  template< BOP OP > bool tick1          ( const ArrayBase *in1_base, const ArrayBase *in2_base );
+  template< BOP OP > bool tick1_bool_ret ( const ArrayBase *in1_base, const ArrayBase *in2_base );
+  template< BOP OP > bool tick1_shift    ( const ArrayBase *in1_base, const ArrayBase *in2_base );
+  template< BOP OP > bool tick1_int      ( const ArrayBase *in1_base, const ArrayBase *in2_base );
+  template< BOP OP > bool tick1_no_string( const ArrayBase *in1_base, const ArrayBase *in2_base );
 
-  template< BOP OP, class T1 > bool tick2          ( const ArrayBase *in1_base );
-  template< BOP OP, class T1 > bool tick2_int      ( const ArrayBase *in1_base );
-  template< BOP OP, class T1 > bool tick2_no_string( const ArrayBase *in1_base );
-
-  template< BOP OP, class T1, class T2 > bool tick3( const Array< T1 > *in1, const ArrayBase *in2_base );
+  template< BOP OP, class T1, class T2 > bool tick3( const ArrayBase *in1_base, const ArrayBase *in2_base );
 
   typedef NodeParam< BinaryOp > NParam;
   BOP m_op;
