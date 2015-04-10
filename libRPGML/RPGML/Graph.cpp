@@ -130,11 +130,13 @@ void Graph::merge( void )
           GraphNodeArray::Element &gn_merge_node = (*m_nodes)[ merge_i ];
           Node *const merge_node = gn_merge_node->node;
 
+          /*
           cerr
             << "Merging '" << merge_node->getIdentifier() << "'"
             << " into '" << merge_into->getIdentifier() << "'"
             << endl
             ;
+            */
 
           bool merge_failed = false;
 
