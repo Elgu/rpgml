@@ -549,8 +549,8 @@ Value Value::to( Type type ) const
         {
           case Type::NIL    : return Value( String::Static() );
           case Type::BOOL   : s << getBool  (); break;
-          case Type::UINT8  : s << getUInt8 (); break;
-          case Type::INT8   : s << getInt8  (); break;
+          case Type::UINT8  : s << int( getUInt8 () ); break;
+          case Type::INT8   : s << int( getInt8  () ); break;
           case Type::UINT16 : s << getUInt16(); break;
           case Type::INT16  : s << getInt16 (); break;
           case Type::UINT32 : s << getUInt32(); break;
@@ -563,7 +563,8 @@ Value Value::to( Type type ) const
             throw CastFailed( x.getType(), type );
         }
 
-        return Value( String( s.str() ) );
+        std::string str_tmp( s.str() );
+        return Value( String::MoveFrom( str_tmp ) );
       }
 
     case Type::OUTPUT:
