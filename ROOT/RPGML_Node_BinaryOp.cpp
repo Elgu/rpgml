@@ -148,22 +148,7 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
     Block( void ) {}
     virtual ~Block( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out ) = 0;
-
-  protected:
-    index_t getBlockSize( void ) const
-    {
-      return BLOCK_SIZE;
-    }
-
-    OutType *getOutBlock( void )
-    {
-      return m_out_block;
-    }
-
-  private:
-    static const index_t BLOCK_SIZE = 4096;
-    OutType m_out_block[ BLOCK_SIZE ];
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p ) = 0;
   };
 
   template< class InType, class OutType >
@@ -220,17 +205,14 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
 
     virtual ~CopyBlock( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out )
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p )
     {
-      OutType *const out_p = Base::getOutBlock();
-      index_t _n = 0;
-      const index_t bs = Base::getBlockSize();
-      for( ; _n < bs && m_in_i != m_in_end; ++_n, ++m_in_i )
+      index_t i = 0;
+      for( ; i < buffer_n && m_in_i != m_in_end; ++i, ++m_in_i )
       {
-        out_p[ _n ] = (*m_in_i);
+        buffer_p[ i ] = (*m_in_i);
       }
-      n = _n;
-      out = out_p;
+      n = i;
       return ( n > 0 );
     }
 
@@ -266,18 +248,15 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
 
     virtual ~CastBlock( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out )
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p )
     {
-      OutType *const out_p = Base::getOutBlock();
-      index_t _n = 0;
-      const index_t bs = Base::getBlockSize();
-      for( ; _n < bs && m_in_i != m_in_end; ++_n, ++m_in_i )
+      index_t i = 0;
+      for( ; i < buffer_n && m_in_i != m_in_end; ++i, ++m_in_i )
       {
         const InType &in_i = (*m_in_i);
-        out_p[ _n ] = cast_impl< InType, OutType >()( in_i );
+        buffer_p[ i ] = cast_impl< InType, OutType >()( in_i );
       }
-      n = _n;
-      out = out_p;
+      n = i;
       return ( n > 0 );
     }
 
@@ -376,18 +355,22 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
     BinaryOpBlock( const CountPtr< BlockBase > &in1, const CountPtr< BlockBase > &in2 )
     : m_in1( in1->getAs< Block< InType1 > >() )
     , m_in2( in2->getAs< Block< InType2 > >() )
+    , m_buffer1( 0, 1 )
+    , m_buffer2( 0, 1 )
     {}
     virtual ~BinaryOpBlock( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out )
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p )
     {
       index_t n1 = 0;
       index_t n2 = 0;
-      const InType1 *in1 = 0;
-      const InType2 *in2 = 0;
+      m_buffer1.resize( buffer_n );
+      m_buffer2.resize( buffer_n );
+      const typename Array< InType1 >::pointer in1 = m_buffer1.elements();
+      const typename Array< InType2 >::pointer in2 = m_buffer2.elements();
 
-      m_in1->next( n1, in1 );
-      m_in2->next( n2, in2 );
+      m_in1->next( n1, buffer_n, in1 );
+      m_in2->next( n2, buffer_n, in2 );
 
       if( n1 != n2 )
       {
@@ -398,32 +381,31 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
           ;
       }
 
-      const index_t _n = n1;
-      if( _n > Base::getBlockSize() )
+      if( n1 > buffer_n )
       {
         throw BinaryOp::Exception()
           << "BinaryOpBlock: the n that was delivered is bigger than the block size"
-          << ": n = " << _n
-          << ", block size = " << Base::getBlockSize()
+          << ": n = " << n1
+          << ", block size = " << buffer_n
           ;
       }
 
       const op_impl< InType1, InType2, OP > op;
 
-      OutType *const out_p = Base::getOutBlock();
-      for( index_t i=0; i<_n; ++i )
+      for( index_t i=0; i<n1; ++i )
       {
-        out_p[ n ] = op( in1[ i ], in2[ i ] );
+        buffer_p[ i ] = op( in1[ i ], in2[ i ] );
       }
 
-      n = _n;
-      out = out_p;
+      n = n1;
       return ( n > 0 );
     }
 
   private:
     const CountPtr< Block< InType1 > > m_in1;
     const CountPtr< Block< InType2 > > m_in2;
+    Array< InType1 > m_buffer1;
+    Array< InType2 > m_buffer2;
   };
 
   template< class OutType, class InType1, class InType2, BOP OP >
@@ -435,43 +417,44 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
     BinaryOpBlockScalar1( const InType1 &in1, const CountPtr< BlockBase > &in2 )
     : m_in1( in1 )
     , m_in2( in2->getAs< Block< InType2 > >() )
+    , m_buffer2( 0, 1 )
     {}
     virtual ~BinaryOpBlockScalar1( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out )
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p )
     {
       index_t n2 = 0;
-      const InType1 &in1 = m_in1;
-      const InType2 *in2 = 0;
 
-      m_in2->next( n2, in2 );
+      m_buffer2.resize( buffer_n );
+      const typename Array< InType2 >::pointer in2 = m_buffer2.elements();
+      m_in2->next( n2, buffer_n, in2 );
 
-      const index_t _n = n2;
-      if( _n > Base::getBlockSize() )
+      if( n2 > buffer_n )
       {
         throw BinaryOp::Exception()
           << "BinaryOpBlock: the n that was delivered is bigger than the block size"
-          << ": n = " << _n
-          << ", block size = " << Base::getBlockSize()
+          << ": n = " << n2
+          << ", block size = " << buffer_n
           ;
       }
 
+      const InType1 &in1 = m_in1;
+
       const op_impl< InType1, InType2, OP > op;
 
-      OutType *const out_p = Base::getOutBlock();
-      for( index_t i=0; i<_n; ++i )
+      for( index_t i=0; i<n2; ++i )
       {
-        out_p[ n ] = op( in1, in2[ i ] );
+        buffer_p[ i ] = op( in1, in2[ i ] );
       }
 
-      n = _n;
-      out = out_p;
+      n = n2;
       return ( n > 0 );
     }
 
   private:
     const InType1                      m_in1;
     const CountPtr< Block< InType2 > > m_in2;
+    Array< InType2 > m_buffer2;
   };
 
   template< class OutType, class InType1, class InType2, BOP OP >
@@ -483,44 +466,44 @@ Type getRetType( Type in1_type, Type in2_type, BOP op )
     BinaryOpBlockScalar2( const CountPtr< BlockBase > &in1, const InType2 &in2 )
     : m_in1( in1->getAs< Block< InType1 > >() )
     , m_in2( in2 )
+    , m_buffer1( 0, 1 )
     {}
 
     virtual ~BinaryOpBlockScalar2( void ) {}
 
-    virtual bool next( index_t &n, const OutType *&out )
+    virtual bool next( index_t &n, index_t buffer_n, typename Array< OutType >::pointer buffer_p )
     {
-      const InType1 *in1 = 0;
-      const InType2 &in2 = m_in2;
-
       index_t n1 = 0;
-      m_in1->next( n1, in1 );
+      m_buffer1.resize( buffer_n );
+      const typename Array< InType1 >::pointer in1 = m_buffer1.elements();
+      m_in1->next( n1, buffer_n, in1 );
 
-      const index_t _n = n1;
-      if( _n > Base::getBlockSize() )
+      if( n1 > buffer_n )
       {
         throw BinaryOp::Exception()
           << "BinaryOpBlock: the n that was delivered is bigger than the block size"
-          << ": n = " << _n
-          << ", block size = " << Base::getBlockSize()
+          << ": n = " << n1
+          << ", block size = " << buffer_n
           ;
       }
 
+      const InType2 &in2 = m_in2;
+
       const op_impl< InType1, InType2, OP > op;
 
-      OutType *const out_p = Base::getOutBlock();
-      for( index_t i=0; i<_n; ++i )
+      for( index_t i=0; i<n1; ++i )
       {
-        out_p[ n ] = op( in1[ i ], in2 );
+        buffer_p[ i ] = op( in1[ i ], in2 );
       }
 
-      n = _n;
-      out = out_p;
+      n = n1;
       return ( n > 0 );
     }
 
   private:
     const CountPtr< Block< InType1 > > m_in1;
     const InType2                      m_in2;
+    Array< InType1 > m_buffer1;
   };
 
 } // namespace BinaryOp_impl
@@ -582,14 +565,44 @@ bool BinaryOp::tick3( const ArrayBase *in1_base, const ArrayBase *in2_base )
       ;
   }
 
-  typename Array< Out >::iterator o = out->begin();
-  index_t n = 0;
-  const Out *res = 0;
-  while( bop->next( n, res ) )
+  static const index_t buffer_n = 4096;
+  Array< Out > buffer( 0, 1 );
+  typename Array< Out >::iterator o;
+//  Out *out_p = 0;
+
+  typedef typename Array< Out >::pointer out_pointer_t;
+  out_pointer_t buffer_p = out_pointer_t();
+  index_t remaining = buffer_n;
+
+//  const bool is_dense = out->isDense();
+//  if( is_dense )
+//  {
+//    buffer_p = out_p;
+//    out_p = out->elements();
+//    remaining = out->size();
+//  }
+//  else
   {
-    for( index_t i=0; i<n; ++i, ++o )
+    buffer.resize( buffer_n );
+    buffer_p = &buffer[ 0 ];
+    o = out->begin();
+  }
+
+  index_t n = 0;
+  while( bop->next( n, min( remaining, buffer_n ), buffer_p ) )
+  {
+//    if( is_dense )
+//    {
+//      remaining -= n;
+//      out_p
+//
+//    }
+//    else
     {
-      (*o) = res[ i ];
+      for( index_t i=0; i<n; ++i, ++o )
+      {
+        (*o) = buffer_p[ i ];
+      }
     }
   }
 
