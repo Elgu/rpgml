@@ -98,16 +98,24 @@ public:
     {}
 
   public:
-    operator bool( void ) const { return ( (*m_p) >> m_b ) & 1; }
+    bool get( void ) const { return ( (*m_p) >> m_b ) & 1; }
+    operator bool( void ) const { return get(); }
 
     pointer operator&( void ) const { return pointer( getP(), getB() ); }
 
-    reference &operator=( bool b )
+    const reference &operator=( bool b ) const
     {
       const uint8_t mask = uint8_t( ~( 1 << m_b ) );
       (*m_p) = ( (*m_p) & mask ) | uint8_t( uint8_t( b ) << m_b );
       return (*this);
     }
+
+    const reference &operator=( const reference &r ) const
+    {
+      return ( (*this) = r.get() );
+    }
+
+    const reference &operator=( const const_reference &r ) const;
 
     uint8_t *getP( void ) const { return m_p; }
      int8_t  getB( void ) const { return m_b; }
@@ -141,13 +149,17 @@ public:
     , m_b( r.getB() )
     {}
 
-    operator bool( void ) const { return ( (*m_p) >> m_b ) & 1; }
+    bool get( void ) const { return ( (*m_p) >> m_b ) & 1; }
+    operator bool( void ) const { return get(); }
 
     const_pointer operator&( void ) const { return const_pointer( getP(), getB() ); }
 
     const uint8_t *getP( void ) const { return m_p; }
-     int8_t  getB( void ) const { return m_b; }
+    int8_t  getB( void ) const { return m_b; }
   private:
+    const_reference &operator=( const const_reference & );
+    const_reference &operator=( const reference & );
+    const_reference &operator=( bool );
     const uint8_t *m_p;
     int8_t  m_b;
   };
@@ -426,6 +438,11 @@ static inline
 ArrayContainer< bool >::const_pointer operator+( ptrdiff_t n, const ArrayContainer< bool >::const_pointer &i )
 {
   return ( i + n );
+}
+
+const ArrayContainer< bool >::reference &ArrayContainer< bool >::reference::operator=( const const_reference &r ) const
+{
+  return ( (*this) = r.get() );
 }
 
 template< class _Element >
