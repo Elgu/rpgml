@@ -47,6 +47,7 @@ public:
   virtual Value call( const Location *loc, index_t recursion_depth, Scope *scope, const Args *call_args );
   virtual Value call( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
   virtual Value call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
+
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
 
@@ -118,9 +119,7 @@ Value NodeCreator::call_impl( const Location *, index_t, Scope *, index_t, const
 
 void NodeCreator::gc_clear( void )
 {
-  Function::gc_clear();
-  m_name.clear();
-  m_create_Node = 0;
+  Base::gc_clear();
 }
 
 void NodeCreator::gc_getChildren( Children &children ) const
@@ -146,11 +145,7 @@ Frame::Frame( GarbageCollector *_gc, Frame *parent, const String &path )
 }
 
 Frame::~Frame( void )
-{
-//  cerr << "Frame " << (void*)this << " destroy: gc = " << (void*)getGC() << endl;
-  gc_clear();
-}
-
+{}
 Frame *Frame::getParent( void ) const
 {
   return m_parent;
@@ -590,7 +585,7 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
 {
 //  std::cerr << "load( '" << path << "', '" << identifier << "', )" << std::endl;
 
-	// Check whether identifier refers to a directory, use it as namespace
+  // Check whether identifier refers to a directory, use it as namespace
   String dir = path + "/" + identifier;
   DIR *const dir_p = opendir( dir.c_str() );
   if( dir_p )
@@ -603,7 +598,7 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
     return getStack( set( unified, Value( ret ) ) );
   }
 
-	// Check whether identifier refers to a Function-plugin
+  // Check whether identifier refers to a Function-plugin
   {
     const String so = path + "/libRPGML_Function_" + identifier + ".so";
     FILE *so_file = fopen( so.c_str(), "rb" );
@@ -635,7 +630,7 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
     }
   }
 
-	// Check whether identifier refers to a Node-plugin
+  // Check whether identifier refers to a Node-plugin
   {
     const String so = path + "/libRPGML_Node_" + identifier + ".so";
     FILE *so_file = fopen( so.c_str(), "rb" );
@@ -672,7 +667,7 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
     }
   }
 
-	// Check whether identifier refers to a script
+  // Check whether identifier refers to a script
   {
     const String rpgml = path + "/" + identifier + ".rpgml";
     FILE *const rpgml_p = fopen( rpgml.c_str(), "r" );
@@ -705,14 +700,13 @@ Frame::Ref Frame::load( const String &path, const String &identifier, const Scop
 
 void Frame::gc_clear( void )
 {
-  m_values.clear();
-  m_identifiers.clear();
-  m_identifier.clear();
   m_parent.reset();
+  m_values.clear();
 }
 
 void Frame::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children << m_parent;
 
   for( size_t i( 0 ), end( m_values.size() ); i<end; ++i )

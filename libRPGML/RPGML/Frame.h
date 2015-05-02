@@ -35,8 +35,8 @@ class SharedObject;
 
 class Frame : public Collectable
 {
-public:
   typedef Collectable Base;
+public:
   EXCEPTION_BASE( Exception );
 
   explicit
