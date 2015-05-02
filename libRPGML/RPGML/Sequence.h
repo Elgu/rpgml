@@ -28,6 +28,7 @@ namespace RPGML {
 
 class Sequence : public Collectable
 {
+  typedef Collectable Base;
 public:
   Sequence( GarbageCollector *gc );
   virtual ~Sequence( void );

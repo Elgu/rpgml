@@ -49,6 +49,7 @@ public:
 
   virtual void gc_getChildren( Children &children ) const
   {
+    Base::gc_getChildren( children );
     children << interpreter;
   }
 

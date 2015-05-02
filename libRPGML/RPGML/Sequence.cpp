@@ -63,11 +63,13 @@ namespace Sequence_impl {
     }
 
     virtual void gc_clear( void )
-    {}
-
-    virtual void gc_getChildren( Children & ) const
     {
-      return;
+      Base::gc_clear();
+    }
+
+    virtual void gc_getChildren( Children &children ) const
+    {
+      Base::gc_getChildren( children );
     }
 
     virtual CountPtr< Sequence > clone( void ) const
@@ -182,7 +184,9 @@ std::ostream &SequenceValueArray::print( std::ostream &o ) const
 }
 
 void SequenceValueArray::gc_clear( void )
-{}
+{
+  m_array.reset();
+}
 
 void SequenceValueArray::gc_getChildren( Children &children ) const
 {

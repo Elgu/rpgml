@@ -42,11 +42,14 @@ CountPtr< JobQueue > ThreadPool::getQueue( void ) const
 
 void ThreadPool::gc_clear( void )
 {
-  clear();
+  Base::gc_clear();
+  m_workers.clear();
+  m_queue.clear();
 }
 
 void ThreadPool::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children
     << m_workers
     << m_queue
@@ -104,11 +107,15 @@ size_t ThreadPool::Worker::run( void )
 }
 
 void ThreadPool::Worker::gc_clear( void )
-{}
+{
+  Base::gc_clear();
+  m_queue.reset();
+}
 
 void ThreadPool::Worker::gc_getChildren( Children &children ) const
 {
-  children.add( m_queue );
+  Base::gc_getChildren( children );
+  children << m_queue;
 }
 
 } // namespace RPGML

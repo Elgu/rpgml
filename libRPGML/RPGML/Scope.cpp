@@ -67,12 +67,14 @@ Scope::~Scope( void )
 
 void Scope::gc_clear( void )
 {
+  Base::gc_clear();
   m_context.reset();
   m_curr.reset();
 }
 
 void Scope::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children
     << m_context
     << m_curr
@@ -441,7 +443,7 @@ CountPtr< Output > Scope::toOutput(
   }
   else
   {
-    throw ParseException( loc ) << "Cannot convert to Output, must be Output, Array or primitive.";
+    throw ParseException( loc ) << "Cannot convert to Output, must be Output, Array or primitive, is " << x.getType();
   }
 }
 

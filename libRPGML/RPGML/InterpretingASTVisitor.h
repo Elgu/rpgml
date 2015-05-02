@@ -28,6 +28,7 @@ class Scope;
 
 class InterpretingASTVisitor : public Collectable, public AST::Visitor
 {
+  typedef Collectable Base;
 public:
   explicit
   InterpretingASTVisitor( GarbageCollector *_gc, Scope *_scope, const Location *call_loc=0, index_t recursion_depth=0 );
@@ -88,7 +89,7 @@ public:
     virtual ~TypeDescr( void ) {}
 
     const CountPtr< const TypeDescr > of;
-    const CountPtr< const Array< Value > > dims;
+    const CountPtr< const ValueArray > dims;
     Type type;
   };
 
@@ -96,6 +97,8 @@ private:
   void dot_access_impl( Value &left, const String &identifier, Value *&value );
   void assign_impl( const AST::AssignmentStatementBase *node, Value *lvalue );
 
+  Value create_default_value( const TypeDescr *of, const String &identifier = String() );
+  CountPtr< ArrayBase > create_array( const TypeDescr *of, const ValueArray *dims );
   void determine_size( const ArrayBase *array, int dims, index_t *size, int dim );
   void fill_array( const ArrayBase *array, const ArrayBase::Size &size, Value *dest, int dim );
   Value save_cast( const Value &x, Type type );
