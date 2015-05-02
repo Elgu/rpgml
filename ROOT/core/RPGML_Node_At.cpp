@@ -111,6 +111,7 @@ bool At::tick2( const ArrayBase *in_base, int coord_dims )
       ++iter[ i ];
     }
 
+    in->checkRange_v( in_dims, C );
     (*out_iter) = in->at_v( in_dims, C );
     ++out_iter;
   }
@@ -231,7 +232,7 @@ bool At::tick( void )
 
 void At::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void At::gc_getChildren( Children &children ) const
