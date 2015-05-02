@@ -83,8 +83,8 @@ bool ROI::tick( void )
 
   for( int d=0; d<dims; ++d )
   {
-    x[ d ] = getUInt32( INPUT_X+d );
-    s[ d ] = getUInt32( INPUT_SX+d );
+    x[ d ] = getScalar< index_t >( INPUT_X+d );
+    s[ d ] = getScalar< index_t >( INPUT_SX+d );
   }
   for( int d=dims; d<4; ++d )
   {
