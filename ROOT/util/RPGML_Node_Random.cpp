@@ -177,7 +177,20 @@ bool Random::tick( void )
     size[ d ] = getScalar< index_t >( INPUT_SIZEX+d );
   }
 
-  const uint64_t seed = getScalarIfConnected< uint64_t >( INPUT_SEED, m_const_seed );
+  uint64_t seed = m_const_seed;
+
+  GET_INPUT_BASE_IF_CONNECTED( INPUT_SEED, seed_base );
+  if( seed_base )
+  {
+    if( seed_base->getType().isString() )
+    {
+      seed = std::hash< std::string >()( getScalar< String >( INPUT_SEED ).c_str() );
+    }
+    else
+    {
+      seed = getScalar< uint64_t >( INPUT_SEED );
+    }
+  }
 
   switch( m_type.getEnum() )
   {
