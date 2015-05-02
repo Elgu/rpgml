@@ -166,6 +166,12 @@ public:
   const stride_t *getStride( void ) const { return m_stride; }
   virtual Type    getType  ( void ) const = 0;
 
+  void checkRange_v( int dims, const index_t *x ) const;
+  void checkRange( const Coordinates &x ) const;
+
+  bool inRange_v( int dims, const index_t *x ) const;
+  bool inRange( const Coordinates &x ) const;
+
   virtual ArrayBase &resize_v( int dims, const index_t *new_size ) = 0;
   virtual ArrayBase &resize( index_t x, index_t y=1, index_t z=1, index_t t=1 ) = 0;
   virtual ArrayBase &resize( const Size &size ) = 0;
@@ -321,6 +327,10 @@ public:
     }
   }
 
+  std::ostream &print( std::ostream &o ) const;
+private:
+  std::ostream &print( std::ostream &o, int newline_dim ) const;
+
 protected:
   Reference      createReference( const index_t *x );
   ConstReference createReference( const index_t *x ) const;
@@ -357,6 +367,12 @@ std::ostream &operator<<( std::ostream &o, const RPGML::ArrayBase::Coordinates &
   }
   o << " ]";
   return o;
+}
+
+inline
+std::ostream &operator<<( std::ostream &o, const RPGML::ArrayBase &a )
+{
+  return a.print( o );
 }
 
 } // namespace std
