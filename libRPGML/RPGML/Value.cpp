@@ -1360,63 +1360,6 @@ int Value::compare_exactly( const Value &other ) const
   }
 }
 
-namespace Value_impl {
-
-  static
-  std::ostream &print( std::ostream &o, const ArrayBase *array, int newline_dim )
-  {
-    const ArrayBase::Size size = array->getSize();
-    const index_t dims = size.getDims();
-
-    typedef ArrayBase::Coordinates X;
-    typedef ArrayBase::CoordinatesIterator C;
-    typedef ArrayBase::ConstValueIterator I;
-
-    CountPtr< I > i( array->getConstValueIterator() );
-    CountPtr< C > c( array->getCoordinatesIterator() );
-
-    index_t last_p[ dims ];
-    X last( dims, last_p );
-    std::fill( last_p, last_p + dims, 0 );
-
-    for( ; !i->done() && !c->done(); i->next(), c->next() )
-    {
-      const X x = c->get();
-
-      // Check, which coordinate changed (highest)
-      // print separator accordingly
-      for( int d = dims-1; d >= 0; --d )
-      {
-        if( x[ d ] != last[ d ] )
-        {
-          if( 0 == d )
-          {
-            o << ", ";
-          }
-          else
-          {
-            if( d > 1 && d >= newline_dim ) o << std::endl;
-            for( int s=0; s<d; ++s )
-            {
-              o << ";";
-            }
-            if( d >= newline_dim ) o << std::endl; else o << " ";
-          }
-          break;
-        }
-      }
-
-      const Value v = i->get();
-      v.print( o );
-
-      std::copy( &x[ 0 ], &x[ 0 ] + dims, last_p );
-    }
-
-    return o;
-  }
-
-} // namespace Value_impl
-
 std::ostream &Value::print_Type( std::ostream &o ) const
 {
   if( isArray() )
@@ -1470,32 +1413,7 @@ std::ostream &Value::print( std::ostream &o ) const
     case Type::FLOAT   : o << getFloat (); break;
     case Type::DOUBLE  : o << getDouble(); break;
     case Type::STRING  : o << getString(); break;
-
-    case Type::ARRAY   :
-      {
-        const ArrayBase *const a = getArray();
-        const ArrayBase::Size size = a->getSize();
-        const int dims = size.getDims();
-
-        int newline_dim = 1;
-        if( dims > 0 )
-        {
-          index_t s = size[ 0 ];
-          for( ; newline_dim < 4 && s < 16; ++newline_dim )
-          {
-            s *= size[ newline_dim ];
-          }
-        }
-
-        o << "[ ";
-        if( dims > newline_dim ) o << std::endl;
-
-        Value_impl::print( o, a, newline_dim );
-
-        if( dims > newline_dim ) o << std::endl;
-        o << " ]";
-      }
-      break;
+    case Type::ARRAY   : getArray()->print( o ); break;
 
     case Type::FRAME:
       {
