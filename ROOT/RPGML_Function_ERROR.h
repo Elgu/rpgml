@@ -48,7 +48,7 @@ private:
   CountPtr< Args > genDeclArgs( void );
 };
 
- // 
+ //
 } // namespace RPGML
 
 #endif
