@@ -178,6 +178,52 @@ namespace SDL {
     bool m_exit_request;
   };
 
+  /*
+  class PurgeThread : public Thread
+  {
+    typedef Thread Base;
+  public:
+    PurgeThread( GarbageCollector *_gc, const CountPtr< PurgeEvents > &purge, const CountPtr< JobQueue > &main_thread_queue )
+    : Thread( _gc, false )
+    , m_purge( purge )
+    , m_main_thread_queue( main_thread_queue )
+    , m_exit_request( false )
+    {}
+    virtual ~PurgeThread( void )
+    {
+      m_exit_request = true;
+      join();
+    }
+
+    virtual void gc_clear( void )
+    {
+      Base::gc_clear();
+      m_purge.reset();
+    }
+
+    virtual void gc_getChildren( Children &children ) const
+    {
+      Base::gc_getChildren( children );
+      children
+        << m_purge
+        ;
+    }
+
+    virtual size_t run( void )
+    {
+      while( !m_exit_request )
+      {
+      }
+      return 0;
+    }
+
+  private:
+    CountPtr< PurgeEvents > m_purge;
+    CountPtr< JobQueue > m_main_thread_queue;
+    bool volatile m_exit_request;
+  };
+  */
+
 } // namespace SDL
 } // namespace RPGML
 
