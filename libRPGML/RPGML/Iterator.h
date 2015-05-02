@@ -41,6 +41,130 @@ public:
   virtual Type get( void ) = 0;
 };
 
+template< class Iterator >
+class PseudoContainer
+{
+public:
+   class iterator : public std::iterator< std::input_iterator_tag, typename Iterator::Type >
+   {
+     typedef std::iterator< std::input_iterator_tag, typename Iterator::Type > Base;
+   public:
+     typedef typename Base::value_type value_type;
+     typedef typename Base::reference reference;
+     typedef typename Base::pointer pointer;
+
+     iterator( void )
+     : m_p( nullptr )
+     {}
+
+   private:
+     friend class PseudoContainer;
+
+     explicit
+     iterator( const PseudoContainer *p )
+     : m_p( p )
+     {}
+
+     iterator( const PseudoContainer *p, const CountPtr< Iterator > &iter )
+     : m_p( p )
+     , m_iter( iter->clone() )
+     {}
+
+   public:
+     iterator( const iterator &other )
+     : m_p( other.m_p )
+     , m_iter( !other.m_iter.isNull() ? other.m_iter->clone() : CountPtr< Iterator >() )
+     {}
+
+     ~iterator( void ) {}
+
+     void swap( iterator &other )
+     {
+       std::swap( m_p, other.m_p );
+       m_iter.swap( other.m_iter );
+     }
+
+     iterator &operator=( const iterator &other )
+     {
+       iterator tmp( other );
+       swap( tmp );
+       return (*this);
+     }
+
+     iterator &operator++( void )
+     {
+       if( m_iter.isNull() ) throw Exception() << "Cannot increment an end-iterator.";
+       m_iter->next();
+       return (*this);
+     }
+
+     iterator operator++( int )
+     {
+       if( m_iter.isNull() ) throw Exception() << "Cannot increment an end-iterator.";
+       iterator ret( m_p, m_iter->clone() );
+       ++(*this);
+       return ret;
+     }
+
+     bool operator==( const iterator &other ) const
+     {
+       if( m_p != other.m_p )
+       {
+         throw Exception() << "Iterators do not belong to the same container.";
+       }
+
+       if( !m_iter.isNull() )
+       {
+         return m_iter->done();
+       }
+
+       if( !other.m_iter.isNull() )
+       {
+         return other.m_iter->done();
+       }
+
+       return true; // both end-iterators
+     }
+
+     bool operator!=( const iterator &other ) const
+     {
+       return !( (*this) == other );
+     }
+
+     value_type operator*( void ) const
+     {
+       return m_iter->get();
+     }
+
+     pointer operator->( void ) const
+     {
+       return &m_iter->get();
+     }
+
+   private:
+     const PseudoContainer *m_p;
+     CountPtr< Iterator > m_iter;
+   };
+
+   explicit
+   PseudoContainer( const CountPtr< const Iterator > &iter )
+   : m_iter( iter )
+   {}
+
+   iterator begin( void ) const
+   {
+     return iterator( this, m_iter->clone() );
+   }
+
+   iterator end( void ) const
+   {
+     return iterator( this );
+   }
+
+private:
+   CountPtr< const Iterator > m_iter;
+};
+
 template< class _Type >
 class Iterator : public IteratorBase< _Type >, public Refcounted
 {
@@ -52,6 +176,11 @@ public:
   virtual ~Iterator( void ) {}
 
   virtual CountPtr< Iterator > clone( void ) const = 0;
+
+  PseudoContainer< Iterator > in( void ) const
+  {
+    return PseudoContainer< Iterator >( this );
+  }
 };
 
 template< class _Type >
@@ -66,6 +195,11 @@ public:
   virtual ~GCIterator( void ) {}
 
   virtual CountPtr< GCIterator > clone( void ) const = 0;
+
+  PseudoContainer< GCIterator > in( void ) const
+  {
+    return PseudoContainer< GCIterator >( this );
+  }
 };
 
 template< class BaseIterator >
