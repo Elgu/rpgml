@@ -80,11 +80,13 @@ public:
 
     virtual void gc_clear( void )
     {
+      Base::gc_clear();
       connections.clear();
     }
 
     virtual void gc_getChildren( Children &children ) const
     {
+      Base::gc_getChildren( children );
       for( size_t i=0; i<connections.size(); ++i )
       {
         children << connections[ i ];

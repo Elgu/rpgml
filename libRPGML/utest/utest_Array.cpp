@@ -227,8 +227,16 @@ public:
     {
       (*m_mark) = true;
     }
-    virtual void gc_clear( void ) {}
-    virtual void gc_getChildren( Children & ) const {}
+    virtual void gc_clear( void )
+    {
+      Base::gc_clear();
+    }
+
+    virtual void gc_getChildren( Children & ) const
+    {
+      Base::gc_getChildren( children );
+    }
+
   private:
     bool *m_mark;
   };
@@ -296,8 +304,8 @@ public:
     , i( _i )
     {}
     int i;
-    virtual void gc_clear( void ) {}
-    virtual void gc_getChildren( Children & ) const {}
+    virtual void gc_clear( void ) { Base::gc_clear(); }
+    virtual void gc_getChildren( Children &children ) const { Base::gc_getChildren( children ); }
   };
 
   template< class T >
