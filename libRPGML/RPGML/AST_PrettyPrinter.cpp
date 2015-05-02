@@ -194,11 +194,11 @@ void PrettyPrinter::visit( const LookupVariableExpression     *node )
 
 void PrettyPrinter::print( const FunctionCallExpression::Args *args )
 {
-  const size_t n = args->size();
+  const index_t n = args->size();
   if( n > 0 )
   {
     (*o) << "( ";
-    for( size_t i=0; i<n; ++i )
+    for( index_t i=0; i<n; ++i )
     {
       if( i > 0 ) (*o) << ", ";
       const FunctionCallExpression::Arg *const arg = args->at( i );
@@ -351,8 +351,8 @@ void PrettyPrinter::visit( const FunctionDefinitionStatement  *node )
   else
   {
     (*o) << "( ";
-    const size_t n = node->args->size();
-    for( size_t i=0; i<n; ++i )
+    const index_t n = node->args->size();
+    for( index_t i=0; i<n; ++i )
     {
       if( i > 0 ) (*o) << ", ";
       const FunctionDefinitionStatement::ArgDecl *arg = node->args->at( i );

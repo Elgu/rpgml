@@ -45,6 +45,7 @@ InterpretingASTVisitor::~InterpretingASTVisitor( void )
 
 void InterpretingASTVisitor::gc_clear( void )
 {
+  Base::gc_clear();
   scope.reset();
   return_value_type_descr.reset();
   return_value_dims.reset();
@@ -53,6 +54,7 @@ void InterpretingASTVisitor::gc_clear( void )
 
 void InterpretingASTVisitor::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children
     << scope
     << return_value_type_descr
@@ -403,11 +405,11 @@ void InterpretingASTVisitor::visit( const AST::FunctionCallExpression       *nod
 
 //  cerr << "calling Function '" << function.getFunction()->getName() << "'" << endl;
 
-  const size_t n_args = node->args->size();
+  const index_t n_args = node->args->size();
   Function::Args args;
   args.reserve( n_args );
 
-  for( size_t i=0; i < n_args; ++i )
+  for( index_t i=0; i < n_args; ++i )
   {
     node->args->at( i )->value->invite( this );
     Value value; value.swap( return_value );
@@ -516,7 +518,8 @@ void InterpretingASTVisitor::visit( const AST::ArrayAccessExpression            
       }
     }
 
-    return_value = array->getValue_v( Dims, &coords_int[ 0 ] );
+    ArrayBase::Coordinates X( Dims, &coords_int[ 0 ] );
+    return_value = array->getValue( X );
     return;
   }
   else if( left.isFrame() || left.isNode() )
@@ -749,10 +752,10 @@ void InterpretingASTVisitor::visit( const AST::FunctionDefinitionStatement  *nod
       ;
   }
 
-  const size_t n_args = node->args->size();
+  const index_t n_args = node->args->size();
   CountPtr< Function::Args > decl_args = new Function::Args( n_args );
 
-  for( size_t i=0; i<n_args; ++i )
+  for( index_t i=0; i<n_args; ++i )
   {
     const AST::FunctionDefinitionStatement::ArgDecl *const decl = node->args->at( i );
     const String &identifier = decl->identifier;
@@ -1137,6 +1140,48 @@ void InterpretingASTVisitor::visit( const AST::ExpressionStatement        *node 
   node->expr->invite( this );
 }
 
+Value InterpretingASTVisitor::create_default_value( const TypeDescr *of, const String &identifier )
+{
+  switch( of->type.getEnum() )
+  {
+    case Type::UINT8 : return Value( uint8_t ( 0 ) ); break;
+    case Type::INT8  : return Value( int8_t  ( 0 ) ); break;
+    case Type::UINT16: return Value( uint16_t( 0 ) ); break;
+    case Type::INT16 : return Value( int16_t ( 0 ) ); break;
+    case Type::UINT32: return Value( uint32_t( 0 ) ); break;
+    case Type::INT32 : return Value( int32_t ( 0 ) ); break;
+    case Type::UINT64: return Value( uint64_t( 0 ) ); break;
+    case Type::INT64 : return Value( int64_t ( 0 ) ); break;
+    case Type::FLOAT : return Value( float   ( 0 ) ); break;
+    case Type::DOUBLE: return Value( double  ( 0 ) ); break;
+    case Type::STRING: return Value( String() ); break;
+    case Type::OUTPUT: return Value( (Output*)0 ); break;
+
+    case Type::INPUT : // fallthrough to INOUT
+    case Type::INOUT : return Value( new InOut( getGC(), identifier ) ); break;
+
+    case Type::ARRAY :
+      {
+        CountPtr< ArrayBase > a = create_array( of->of, of->dims );
+//        cerr << "create_default_value Type::ARRAY " << a->getSize() << endl;
+        for( CountPtr< ArrayBase::CoordinatesIterator > c( a->getCoordinatesIterator() ); !c->done(); c->next() )
+        {
+          const ArrayBase::Coordinates C = c->get();
+          a->setValue( create_default_value( of->of, identifier + toString( C ) ), C );
+//          cerr << " set " << C << " to " << a->getValue( C ) << endl;
+        }
+        return Value( a );
+      }
+      break;
+
+    default:
+      throw Exception()
+        << "Type '" << of->type << "'"
+        << " does not have a default value, so an initializer has to be specified."
+        ;
+  }
+}
+
 void InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
 {
   const String &identifier = node->identifier;
@@ -1159,27 +1204,7 @@ void InterpretingASTVisitor::visit( const AST::VariableCreationStatement *node )
   }
   else
   {
-    switch( expected_type->type.getEnum() )
-    {
-      case Type::UINT8 : value = Value( uint8_t ( 0 ) ); break;
-      case Type::INT8  : value = Value( int8_t  ( 0 ) ); break;
-      case Type::UINT16: value = Value( uint16_t( 0 ) ); break;
-      case Type::INT16 : value = Value( int16_t ( 0 ) ); break;
-      case Type::UINT32: value = Value( uint32_t( 0 ) ); break;
-      case Type::INT32 : value = Value( int32_t ( 0 ) ); break;
-      case Type::UINT64: value = Value( uint64_t( 0 ) ); break;
-      case Type::INT64 : value = Value( int64_t ( 0 ) ); break;
-      case Type::FLOAT : value = Value( float   ( 0 ) ); break;
-      case Type::DOUBLE: value = Value( double  ( 0 ) ); break;
-      case Type::STRING: value = Value( String() ); break;
-      case Type::OUTPUT: value = Value( (Output*)0 ); break;
-      case Type::INOUT : value = Value( new InOut( getGC(), node->identifier ) ); break;
-      default:
-        throw ParseException( node->loc )
-          << "Type '" << expected_type << "'"
-          << " does not have a default value, so an initializer has to be specified."
-          ;
-    }
+    value = create_default_value( expected_type, node->identifier );
   }
 
   if( !scope->create_unified( identifier, value ) )
@@ -1220,27 +1245,21 @@ Value InterpretingASTVisitor::save_cast( const Value &x, Type type )
   }
 }
 
-Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to )
+CountPtr< ArrayBase > InterpretingASTVisitor::create_array( const TypeDescr *of, const ValueArray *dims )
 {
-  if( !to ) return x;
-  if( !to->type.isArray() ) return save_cast( x, to->type );
-
-  // to Array
-
-  if( !to->dims ) throw Exception() << "Internal: No array dimensions specified in TypeDescr";
-  if( !to->of ) throw Exception() << "Internal: No array 'of'-type specified in TypeDescr";
+  if( !dims ) throw Exception() << "Internal: No array dimensions specified in TypeDescr";
+  if( !of ) throw Exception() << "Internal: No array 'of'-type specified in TypeDescr";
 
   // Get Array dimensions and size
 
-  const int to_dims = int( to->dims->size() );
-  const Type to_type_of = to->of->type;
+  const int to_dims = int( dims->size() );
+  const Type to_type_of = of->type;
 
   vector< index_t > to_size( to_dims );
-  vector< bool > to_size_known( to_dims, false );
 
   for( int d=0; d<to_dims; ++d )
   {
-    const Value &dims_d = to->dims->at( d );
+    const Value &dims_d = dims->at( d );
     if( dims_d.isNil() )
     {
       to_size[ d ] = 1; //( value.isArray() ? unknown : 0 );
@@ -1256,7 +1275,6 @@ Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVi
           ;
       }
       to_size[ d ] = index_t( dims_d_i );
-      to_size_known[ d ] = true;
     }
     else
     {
@@ -1267,32 +1285,46 @@ Value InterpretingASTVisitor::save_cast( const Value &x, const InterpretingASTVi
     }
   }
 
-  // Assign x to 'to'
+  // Create array of specified type
+  CountPtr< ArrayBase > ret = new_Array( getGC(), to_type_of, to_dims );
+  ret->resize_v( to_dims, &to_size[ 0 ] );
+  return ret;
+}
+
+Value InterpretingASTVisitor::save_cast( const Value &x, const TypeDescr *to )
+{
+  if( !to ) return x;
+  if( !to->type.isArray() ) return save_cast( x, to->type );
+
+  // to Array
 
   // Create array of specified type
-  CountPtr< ArrayBase > ret( new_Array( getGC(), to_type_of, to_dims ) );
+  CountPtr< ArrayBase > ret = create_array( to->of, to->dims );
+  const ArrayBase::Size to_size = ret->getSize();
+  const int to_dims = to_size.getDims();
+  const Type to_type_of = to->of->type;
 
+  // Assign x to 'to'
   if( x.isArray() )
   {
     // Array <- Array
 
     const ArrayBase *const x_base = x.getArray();
+    const ArrayBase::Size x_size = x_base->getSize();
 
-    if( x_base->getDims() != to_dims )
+    if( x_size.getDims() != to_dims )
     {
       throw Exception()
         << "Number of Array dimensions do not match"
         << ": Expected " << to_dims
-        << ", got " << x_base->getDims()
+        << ", got " << x_size.getDims()
         ;
     }
-
-    const ArrayBase::Size x_size = x_base->getSize();
 
     // Check size of x
     for( int d=0; d<to_dims; ++d )
     {
-      if( !to_size_known[ d ] ) continue;
+      if( to->dims->at( d ).isNil() ) continue;
 
       if( x_size[ d ] != to_size[ d ] )
       {
