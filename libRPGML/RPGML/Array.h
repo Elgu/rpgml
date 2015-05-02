@@ -122,7 +122,7 @@ public:
 
   //! Wrapper
   Array( GarbageCollector *_gc, pointer element0, const Size &_size, const stride_t *_stride = 0 )
-  : Base( _gc, size.getDims() )
+  : Base( _gc, _size.getDims() )
   , m_element0( pointer() )
   {
     _check_dims();
@@ -207,14 +207,15 @@ public:
     std::swap( m_element0, other.m_element0 );
   }
 
-  virtual void gc_clear( void )
+  void gc_clear( void )
   {
-    m_element0 = pointer();
-    m_elements_data.reset();
+    Base::gc_clear();
+    clear();
   }
 
   virtual void gc_getChildren( Children &children ) const
   {
+    Base::gc_getChildren( children );
     children << m_elements_data;
   }
 
@@ -549,50 +550,26 @@ public:
 
   virtual Value getValue_v( int dims, const index_t *x ) const
   {
-    if( inRange_v( dims, x ) )
-    {
-      return CreateValue< Element >()( at_v( dims, x ) );
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, x ) );
-    }
+    checkRange_v( dims, x );
+    return CreateValue< Element >()( at_v( dims, x ) );
   }
 
   virtual void setValue_v( const Value &value, int dims, const index_t *x )
   {
-    if( inRange_v( dims, x ) )
-    {
-      at_v( dims, x ) = value.get< Element >();
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, x ) );
-    }
+    checkRange_v( dims, x );
+    at_v( dims, x ) = value.get< Element >();
   }
 
   virtual Reference getReference_v( int dims, const index_t *x )
   {
-    if( inRange_v( dims, x ) )
-    {
-      return createReference( x );
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, x ) );
-    }
+    checkRange_v( dims, x );
+    return createReference( x );
   }
 
   virtual ConstReference getReference_v( int dims, const index_t *x ) const
   {
-    if( inRange_v( dims, x ) )
-    {
-      return createReference( x );
-    }
-    else
-    {
-      throw OutOfRange( getSize(), Coordinates( dims, x ) );
-    }
+    checkRange_v( dims, x );
+    return createReference( x );
   }
 
   void fill( const Element &e )
@@ -702,21 +679,6 @@ public:
     return m_element0;
   }
 
-  bool inRange_v( int dims, const index_t *x ) const
-  {
-  #ifndef NDEBUG
-    if( m_dims != dims ) throw DimensionsMismatch( dims, m_dims );
-  #endif
-    for( int d=0; d<dims; ++d )
-    {
-      if( x[ d ] > m_size[ d ] )
-      {
-        return false;
-      }
-    }
-    return true;
-  }
-
   CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = 0 ) const
   {
     CountPtr< Array > ret = copy( _ret );
@@ -821,7 +783,12 @@ public:
     {
       if( x[ d ] + s[ d ] > m_size[ d ] )
       {
-        throw Exception() << "ROI is out of range";
+        throw Exception()
+          << "ROI is out of range"
+          << ": Array size is " << getSize()
+          << ", x is " << Coordinates( dims, x )
+          << ", s is " << Size( dims, s )
+          ;
       }
     }
 
@@ -1288,6 +1255,49 @@ private:
   pointer m_element0;
 };
 
+extern template class Array< bool                       >;
+extern template class Array< uint8_t                    >;
+extern template class Array< int8_t                     >;
+extern template class Array< uint16_t                   >;
+extern template class Array< int16_t                    >;
+extern template class Array< uint32_t                   >;
+extern template class Array< int32_t                    >;
+extern template class Array< uint64_t                   >;
+extern template class Array< int64_t                    >;
+extern template class Array< float                      >;
+extern template class Array< double                     >;
+extern template class Array< String                     >;
+extern template class Array< CountPtr< Frame          > >;
+extern template class Array< CountPtr< Function       > >;
+extern template class Array< CountPtr< Node           > >;
+extern template class Array< CountPtr< Output         > >;
+extern template class Array< CountPtr< Input          > >;
+extern template class Array< CountPtr< Param          > >;
+extern template class Array< CountPtr< const Sequence > >;
+extern template class Array< CountPtr< ArrayBase      > >;
+
+typedef Array< bool                       >     BoolArray;
+typedef Array< uint8_t                    >    UInt8Array;
+typedef Array< int8_t                     >     Int8Array;
+typedef Array< uint16_t                   >   UInt16Array;
+typedef Array< int16_t                    >    Int16Array;
+typedef Array< uint32_t                   >   UInt32Array;
+typedef Array< int32_t                    >    Int32Array;
+typedef Array< uint64_t                   >   UInt64Array;
+typedef Array< int64_t                    >    Int64Array;
+typedef Array< float                      >    FloatArray;
+typedef Array< double                     >   DoubleArray;
+typedef Array< String                     >   StringArray;
+typedef Array< CountPtr< Frame          > >    FrameArray;
+typedef Array< CountPtr< Function       > > FunctionArray;
+typedef Array< CountPtr< Node           > >     NodeArray;
+typedef Array< CountPtr< Output         > >   OutputArray;
+typedef Array< CountPtr< Input          > >    InputArray;
+typedef Array< CountPtr< Param          > >    ParamArray;
+typedef Array< CountPtr< const Sequence > > SequenceArray;
+typedef Array< CountPtr< ArrayBase      > >    ArrayArray;
+typedef Array< int                        >      IntArray;
+
 template< class Element >
 CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 )
 {
@@ -1314,38 +1324,6 @@ CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Va
   return new_Array< Element >( gc, dims );
 }
 
-/*
-template< class Element >
-CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
-{
-  switch( base->getType().getEnum() )
-  {
-    case Type::BOOL    : return base->getAs< Array< bool                       > >()->cloneAs< Element >();
-    case Type::UINT8   : return base->getAs< Array< uint8_t                    > >()->cloneAs< Element >();
-    case Type::INT8    : return base->getAs< Array< int8_t                     > >()->cloneAs< Element >();
-    case Type::UINT16  : return base->getAs< Array< uint16_t                   > >()->cloneAs< Element >();
-    case Type::INT16   : return base->getAs< Array< int16_t                    > >()->cloneAs< Element >();
-    case Type::UINT32  : return base->getAs< Array< uint32_t                   > >()->cloneAs< Element >();
-    case Type::INT32   : return base->getAs< Array< int32_t                    > >()->cloneAs< Element >();
-    case Type::UINT64  : return base->getAs< Array< uint64_t                   > >()->cloneAs< Element >();
-    case Type::INT64   : return base->getAs< Array< int64_t                    > >()->cloneAs< Element >();
-    case Type::FLOAT   : return base->getAs< Array< float                      > >()->cloneAs< Element >();
-    case Type::DOUBLE  : return base->getAs< Array< double                     > >()->cloneAs< Element >();
-    case Type::STRING  : return base->getAs< Array< String                     > >()->cloneAs< Element >();
-    case Type::FRAME   : return base->getAs< Array< CountPtr< Frame          > > >()->cloneAs< Element >();
-    case Type::FUNCTION: return base->getAs< Array< CountPtr< Function       > > >()->cloneAs< Element >();
-    case Type::NODE    : return base->getAs< Array< CountPtr< Node           > > >()->cloneAs< Element >();
-    case Type::OUTPUT  : return base->getAs< Array< CountPtr< Output         > > >()->cloneAs< Element >();
-    case Type::INPUT   : return base->getAs< Array< CountPtr< Input          > > >()->cloneAs< Element >();
-    case Type::INOUT   : return base->getAs< Array< CountPtr< InOut          > > >()->cloneAs< Element >();
-    case Type::PARAM   : return base->getAs< Array< CountPtr< Param          > > >()->cloneAs< Element >();
-    case Type::SEQUENCE: return base->getAs< Array< CountPtr< const Sequence > > >()->cloneAs< Element >();
-    case Type::ARRAY   : return base->getAs< Array< CountPtr< ArrayBase      > > >()->cloneAs< Element >();
-    default:
-      throw Exception() << "Cannot cloneAs() Array of Other or Ref Type, is '" << base->getType() << "'";
-  }
-}
-*/
 template< class Element >
 CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
 {
@@ -1365,28 +1343,6 @@ CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
 
   return ret;
 }
-
-typedef Array< bool                       >     BoolArray;
-typedef Array< uint8_t                    >    UInt8Array;
-typedef Array< int8_t                     >     Int8Array;
-typedef Array< uint16_t                   >   UInt16Array;
-typedef Array< int16_t                    >    Int16Array;
-typedef Array< uint32_t                   >   UInt32Array;
-typedef Array< int32_t                    >    Int32Array;
-typedef Array< uint64_t                   >   UInt64Array;
-typedef Array< int64_t                    >    Int64Array;
-typedef Array< float                      >    FloatArray;
-typedef Array< double                     >   DoubleArray;
-typedef Array< String                     >   StringArray;
-typedef Array< CountPtr< Frame          > >    FrameArray;
-typedef Array< CountPtr< Function       > > FunctionArray;
-typedef Array< CountPtr< Node           > >     NodeArray;
-typedef Array< CountPtr< Output         > >   OutputArray;
-typedef Array< CountPtr< Input          > >    InputArray;
-typedef Array< CountPtr< Param          > >    ParamArray;
-typedef Array< CountPtr< const Sequence > > SequenceArray;
-typedef Array< CountPtr< ArrayBase      > >    ArrayArray;
-typedef Array< int                        >      IntArray;
 
 template< class Element >
 struct MakeSigned< Array< Element > >

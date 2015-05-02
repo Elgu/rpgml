@@ -440,6 +440,7 @@ ArrayContainer< bool >::const_pointer operator+( ptrdiff_t n, const ArrayContain
   return ( i + n );
 }
 
+inline
 const ArrayContainer< bool >::reference &ArrayContainer< bool >::reference::operator=( const const_reference &r ) const
 {
   return ( (*this) = r.get() );
@@ -485,11 +486,13 @@ public:
 
   virtual void gc_clear( void )
   {
-    m_elements = pointer();
+    Base::gc_clear();
   }
 
-  virtual void gc_getChildren( Children & ) const
-  {}
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+  }
 
   pointer first( void )
   {
@@ -607,7 +610,7 @@ public:
   virtual ~ContainerArrayData( void )
   {}
 
-  virtual void gc_clear( void )
+  void gc_clear( void )
   {
     Base::gc_clear();
     m_container.clear();
@@ -628,6 +631,69 @@ public:
 private:
   Container m_container;
 };
+
+extern template class ArrayContainer< bool                       >;
+extern template class ArrayContainer< int8_t                     >;
+extern template class ArrayContainer< uint8_t                    >;
+extern template class ArrayContainer< uint16_t                   >;
+extern template class ArrayContainer< int16_t                    >;
+extern template class ArrayContainer< uint32_t                   >;
+extern template class ArrayContainer< int32_t                    >;
+extern template class ArrayContainer< uint64_t                   >;
+extern template class ArrayContainer< int64_t                    >;
+extern template class ArrayContainer< float                      >;
+extern template class ArrayContainer< double                     >;
+extern template class ArrayContainer< String                     >;
+extern template class ArrayContainer< CountPtr< Frame          > >;
+extern template class ArrayContainer< CountPtr< Function       > >;
+extern template class ArrayContainer< CountPtr< Node           > >;
+extern template class ArrayContainer< CountPtr< Output         > >;
+extern template class ArrayContainer< CountPtr< Input          > >;
+extern template class ArrayContainer< CountPtr< Param          > >;
+extern template class ArrayContainer< CountPtr< const Sequence > >;
+extern template class ArrayContainer< CountPtr< ArrayBase      > >;
+
+extern template class ArrayData< bool                       >;
+extern template class ArrayData< uint8_t                    >;
+extern template class ArrayData< int8_t                     >;
+extern template class ArrayData< uint16_t                   >;
+extern template class ArrayData< int16_t                    >;
+extern template class ArrayData< uint32_t                   >;
+extern template class ArrayData< int32_t                    >;
+extern template class ArrayData< uint64_t                   >;
+extern template class ArrayData< int64_t                    >;
+extern template class ArrayData< float                      >;
+extern template class ArrayData< double                     >;
+extern template class ArrayData< String                     >;
+extern template class ArrayData< CountPtr< Frame          > >;
+extern template class ArrayData< CountPtr< Function       > >;
+extern template class ArrayData< CountPtr< Node           > >;
+extern template class ArrayData< CountPtr< Output         > >;
+extern template class ArrayData< CountPtr< Input          > >;
+extern template class ArrayData< CountPtr< Param          > >;
+extern template class ArrayData< CountPtr< const Sequence > >;
+extern template class ArrayData< CountPtr< ArrayBase      > >;
+
+extern template class ContainerArrayData< bool                       >;
+extern template class ContainerArrayData< uint8_t                    >;
+extern template class ContainerArrayData< int8_t                     >;
+extern template class ContainerArrayData< uint16_t                   >;
+extern template class ContainerArrayData< int16_t                    >;
+extern template class ContainerArrayData< uint32_t                   >;
+extern template class ContainerArrayData< int32_t                    >;
+extern template class ContainerArrayData< uint64_t                   >;
+extern template class ContainerArrayData< int64_t                    >;
+extern template class ContainerArrayData< float                      >;
+extern template class ContainerArrayData< double                     >;
+extern template class ContainerArrayData< String                     >;
+extern template class ContainerArrayData< CountPtr< Frame          > >;
+extern template class ContainerArrayData< CountPtr< Function       > >;
+extern template class ContainerArrayData< CountPtr< Node           > >;
+extern template class ContainerArrayData< CountPtr< Output         > >;
+extern template class ContainerArrayData< CountPtr< Input          > >;
+extern template class ContainerArrayData< CountPtr< Param          > >;
+extern template class ContainerArrayData< CountPtr< const Sequence > >;
+extern template class ContainerArrayData< CountPtr< ArrayBase      > >;
 
 } // namespace RPGML
 

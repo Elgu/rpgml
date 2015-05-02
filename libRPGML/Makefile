@@ -9,7 +9,9 @@ all: libRPGML.so
 
 libRPGML_SOURCE=\
 	rpgml.tab.cc\
+	Array.cpp\
 	ArrayBase.cpp\
+	ArrayData.cpp\
 	Backtrace.cpp\
 	StringUnifier.cpp\
 	Location.cpp\
