@@ -112,6 +112,23 @@ public:
     }
   };
 
+  class ExitNode : public Node
+  {
+  public:
+    explicit
+    ExitNode( GarbageCollector *_gc )
+    : Node( _gc, String::Static( "exit" ), 0, 0, 0, 0 )
+    {}
+
+    virtual ~ExitNode( void ) {}
+    virtual const char *getName( void ) const { return "ExitNode"; }
+
+    virtual bool tick( void )
+    {
+      throw ExitRequest();
+    }
+  };
+
   class EndWorker : public JobQueue::Job
   {
   public:
@@ -165,6 +182,7 @@ public:
     CountPtr< ConstNode > c1( new ConstNode( &gc, String::Static( "c1" ), 1 ) );
     CountPtr< ConstNode > c2( new ConstNode( &gc, String::Static( "c2" ), 2 ) );
     CountPtr< AddNode   > add( new AddNode( &gc, String::Static( "add" ) ) );
+    CountPtr< ExitNode  > ex ( new ExitNode( &gc ) );
 
     c1->getOutput( "out" )->connect( add->getInput( "in1" ) );
     c2->getOutput( "out" )->connect( add->getInput( "in2" ) );
@@ -196,6 +214,9 @@ public:
     CPPUNIT_ASSERT_EQUAL( true, graph->alreadyAdded( c1 ) );
     CPPUNIT_ASSERT_EQUAL( true, graph->alreadyAdded( c2 ) );
     CPPUNIT_ASSERT_EQUAL( true, graph->alreadyAdded( add ) );
+
+    CPPUNIT_ASSERT_NO_THROW( graph->addNode( ex ) );
+    CPPUNIT_ASSERT_EQUAL( true, graph->alreadyAdded( ex ) );
 
     CPPUNIT_ASSERT_NO_THROW( graph->execute( queue ) );
 

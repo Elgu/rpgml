@@ -221,26 +221,19 @@ int main( int argc, char **argv )
     gc.run();
 
     CountPtr< ThreadPool > pool = new ThreadPool( &gc, num_threads );
+    CountPtr< JobQueue > main_thread_queue = new JobQueue( &gc );
 
-//    std::cerr << "executing ..." << std::endl;
-    graph->setEverythingChanged( true );
-    for(;;)
+    graph->execute( pool->getQueue() );
+
+    if( graph->hasErrors() )
     {
-      graph->execute( pool->getQueue() );
-      if( graph->hasErrors() )
-      {
-//        std::cerr << "execution done" << std::endl;
-        graph->printErrors( std::cerr );
-        return 1;
-      }
-      if( graph->hasExitRequest() )
-      {
-        return 0;
-      }
-      graph->setEverythingChanged( false );
+      graph->printErrors( std::cerr );
+      return -1;
     }
-
-    return 0;
+    else
+    {
+      return 0;
+    }
   }
   catch( const RPGML::Exception &e )
   {

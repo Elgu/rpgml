@@ -218,7 +218,21 @@ void Graph::setEverythingChanged( bool changed )
   }
 }
 
-void Graph::execute( JobQueue *queue )
+void Graph::execute( const CountPtr< JobQueue > &queue )
+{
+  CountPtr< JobQueue > main_thread_queue = new JobQueue( getGC() );
+
+  schedule( queue, main_thread_queue );
+
+  for(;;)
+  {
+    CountPtr< JobQueue::Job > job = main_thread_queue->getJob();
+    const size_t job_ret = job->work( main_thread_queue );
+    if( JobQueue::End == job_ret ) break;
+  }
+}
+
+void Graph::schedule( const CountPtr< JobQueue > &queue, const CountPtr< JobQueue > &main_thread_queue )
 {
   if( m_nodes->empty() ) return;
 
@@ -234,7 +248,6 @@ void Graph::execute( JobQueue *queue )
   }
   m_end_node->reset_predecessor_counter();
 
-  CountPtr< JobQueue > main_thread_queue = new JobQueue( getGC() );
   m_end_node->main_thread = main_thread_queue;
 
   for( index_t gni( 0 ), end( m_nodes->size() ); gni < end; ++gni )
@@ -244,13 +257,6 @@ void Graph::execute( JobQueue *queue )
     {
       gn->schedule( queue, main_thread_queue );
     }
-  }
-
-  for(;;)
-  {
-    CountPtr< JobQueue::Job > job = main_thread_queue->getJob();
-    const size_t job_ret = job->work( main_thread_queue );
-    if( JobQueue::End == job_ret ) break;
   }
 }
 
@@ -361,13 +367,14 @@ void Graph::determine_order( void )
 
 void Graph::gc_clear( void )
 {
+  Base::gc_clear();
   m_nodes.reset();
-  m_Node_to_index.clear();
   m_end_node.reset();
 }
 
 void Graph::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children
     << m_nodes
     << m_end_node
@@ -382,6 +389,7 @@ Graph::Error Graph::error( void )
 void Graph::report( const std::string &error_text )
 {
   Mutex::ScopedLock lock( &m_errors_lock );
+//  std::cerr << "Graph::report( '" << error_text << "' )" << std::endl;
   m_errors.push_back( error_text );
 }
 
@@ -389,9 +397,9 @@ void Graph::printErrors( std::ostream &o ) const
 {
   Mutex::ScopedLock lock( &m_errors_lock );
 
-  for( errors_t::const_iterator i( m_errors.begin() ), end( m_errors.end() ); i != end; ++i )
+  for( const auto &i : m_errors )
   {
-    o << (*i) << std::endl;
+    o << i << std::endl;
   }
 }
 
@@ -438,6 +446,48 @@ void Graph::clearExitRequest( void )
   m_exit_request.clear();
 }
 
+/*
+Graph::ScheduleGraphJob::ScheduleGraphJob( GarbageCollector *_gc, const CountPtr< Graph > &graph )
+: JobQueue::Job( _gc )
+, m_graph( graph )
+{}
+
+Graph::ScheduleGraphJob::~ScheduleGraphJob( void )
+{}
+
+void Graph::ScheduleGraphJob::gc_clear( void )
+{
+  Base::gc_clear();
+  m_graph.reset();
+}
+
+void Graph::ScheduleGraphJob::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+  children
+    << m_graph
+    ;
+}
+
+size_t Graph::ScheduleGraphJob::doit( CountPtr< JobQueue > queue )
+{
+  m_graph->( queue );
+  if( m_graph->hasErrors() )
+  {
+//        std::cerr << "execution done" << std::endl;
+    m_graph->printErrors( std::cerr );
+    return 1;
+  }
+  if( m_graph->hasExitRequest() )
+  {
+    return 0;
+  }
+  m_graph->setEverythingChanged( false );
+
+  queue->addJob( this );
+  return 0;
+}
+*/
 Graph::Error::Error( Graph *graph )
 : m_str( new Stream )
 , m_graph( graph )
@@ -593,14 +643,16 @@ int Graph::GraphNode::compare( const GraphNode *other ) const
 
 void Graph::GraphNode::gc_clear( void )
 {
-  predecessors.reset();
-  successors.reset();
+  Base::gc_clear();
   graph.reset();
   node.reset();
+  predecessors.reset();
+  successors.reset();
 }
 
 void Graph::GraphNode::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children
     << graph
     << node
@@ -621,7 +673,7 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
   }
   catch( const RPGML::ExitRequest &e )
   {
-//    std::cerr << "RPGML::Node::ExitRequest" << std::endl;
+    std::cerr << "RPGML::Node::ExitRequest at " << node->getIdentifier() << std::endl;
     graph->setExitRequest( e.what() );
     ret = 1;
   }
@@ -656,13 +708,21 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
     ret = 0;
   }
 
-  // Try to schedule successors
-  for( GraphNodeArray::const_iterator succ( successors->begin() ), end( successors->end() ); succ != end; ++succ )
+  if( !graph->hasErrors() && !graph->hasExitRequest() )
   {
-    if( 0 == --(*succ)->predecessors_to_be_executed )
+    // Try to schedule successors
+    for( GraphNodeArray::const_iterator succ( successors->begin() ), end( successors->end() ); succ != end; ++succ )
     {
-      (*succ)->schedule( queue, main_thread );
+      if( 0 == --(*succ)->predecessors_to_be_executed )
+      {
+        (*succ)->schedule( queue, main_thread );
+      }
     }
+  }
+  else
+  {
+//    std::cerr << "graph->hasErrors()" << std::endl;
+    main_thread->addJob( new JobQueue::EndJob( getGC() ) );
   }
 
   return ret;
@@ -672,13 +732,25 @@ Graph::EndNode::EndNode( GarbageCollector *_gc, Graph *_graph )
 : GraphNode( _gc, _graph, 0 )
 {}
 
-size_t Graph::EndNode::doit( CountPtr< JobQueue > )
+size_t Graph::EndNode::doit( CountPtr< JobQueue > queue )
 {
-//  std::cerr << "executing EndNode " << std::endl;
   if( !main_thread.isNull() )
   {
-//    std::cerr << "adding EndJob" << std::endl;
-    main_thread->addJob( new JobQueue::EndJob( getGC() ) );
+    if( graph->hasErrors() )
+    {
+      graph->printErrors( std::cerr );
+      main_thread->addJob( new JobQueue::EndJob( getGC() ) );
+      return 0;
+    }
+    if( graph->hasExitRequest() )
+    {
+      main_thread->addJob( new JobQueue::EndJob( getGC() ) );
+      return 0;
+    }
+
+    graph->setEverythingChanged( false );
+    //main_thread->addJob( new ScheduleGraphJob( getGC() ) );
+    graph->schedule( queue, main_thread );
   }
   return 0;
 }

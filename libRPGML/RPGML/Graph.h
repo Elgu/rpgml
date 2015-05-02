@@ -23,6 +23,7 @@
 #include "GarbageCollector.h"
 #include "JobQueue.h"
 #include "Mutex.h"
+#include "JobQueue.h"
 
 #include <map>
 #include <sstream>
@@ -30,8 +31,6 @@
 #include <iostream>
 
 namespace RPGML {
-
-class JobQueue;
 
 class Graph : public Collectable
 {
@@ -55,8 +54,20 @@ public:
 
   void setEverythingChanged( bool changed = true );
 
-  //! Must be called by the main thread of a process
-  void execute( JobQueue *queue );
+  /*
+  class ScheduleGraphJob : public JobQueue::Job
+  {
+  public:
+    explicit ScheduleGraphJob( GarbageCollector *_gc, const CountPtr< Graph > &graph );
+    virtual ~ScheduleGraphJob( void );
+    virtual void gc_clear( void );
+    virtual void gc_getChildren( Children &children ) const;
+  protected:
+    virtual size_t doit( CountPtr< JobQueue > queue );
+  private:
+    CountPtr< Graph > m_graph;
+  };
+  */
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
@@ -90,7 +101,12 @@ public:
   std::string getExitRequest( void ) const;
   void clearExitRequest( void );
 
+  //! @brief Must be called by the main thread
+  void execute( const CountPtr< JobQueue > &queue );
+  //! @brief can be called by any thread, as long as main_thread_queue is served by the main thread
+  void schedule( const CountPtr< JobQueue > &queue, const CountPtr< JobQueue > &main_thread_queue );
 private:
+
   friend class Error;
   class GraphNode;
   typedef Array< CountPtr< GraphNode > > GraphNodeArray;
