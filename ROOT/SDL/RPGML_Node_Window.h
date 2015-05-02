@@ -29,6 +29,7 @@ namespace SDL {
 
 class Window : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 
