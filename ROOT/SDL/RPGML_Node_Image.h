@@ -18,6 +18,7 @@
 #ifndef RPGML_Node_SDL_Image_h
 #define RPGML_Node_SDL_Image_h
 
+#include "RPGML_SDL.h"
 #include <RPGML/Node.h>
 
 namespace RPGML {
@@ -38,8 +39,6 @@ public:
 
   virtual void gc_clear( void );
   virtual void gc_getChildren( Children &children ) const;
-
-  void set_foo( const Value &value, index_t, int, const index_t* );
 
 private:
   typedef NodeParam< Image > NParam;
@@ -62,11 +61,10 @@ private:
 
   enum Params
   {
-    PARAM_FOO,
     NUM_PARAMS
   };
 
-  String m_foo;
+  SDL_Surface_Guard m_image;
 };
 
  } // namespace SDL {
