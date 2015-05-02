@@ -136,11 +136,13 @@ public:
 
   virtual void gc_clear( void )
   {
+    Base::gc_clear();
     clear();
   }
 
   virtual void gc_getChildren( Children &children ) const
   {
+    Base::gc_getChildren( children );
     if( isCollectable( (Element*)0 ) )
     {
       for( size_t i=0; i<m_elements.size(); ++i )
