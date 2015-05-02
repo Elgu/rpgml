@@ -92,7 +92,7 @@ bool Print::tick( void )
 
 void Print::gc_clear( void )
 {
-  RPGML::Node::gc_clear();
+  Base::gc_clear();
 }
 
 void Print::gc_getChildren( Children &children ) const

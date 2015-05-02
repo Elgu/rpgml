@@ -87,7 +87,7 @@ bool Constant::tick( void )
 
 void Constant::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void Constant::gc_getChildren( Children &children ) const

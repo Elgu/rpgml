@@ -116,7 +116,7 @@ bool Get::tick( void )
 
 void Get::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void Get::gc_getChildren( Children &children ) const

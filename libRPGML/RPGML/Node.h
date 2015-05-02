@@ -152,26 +152,17 @@
   } \
 
 #define GET_OUTPUT_INIT( OUTPUT_ENUM, var_identifier, type, dims, size ) \
-  Array< type > *var_identifier = 0; \
-  { \
-    Output *const output = getOutput( OUTPUT_ENUM ); \
-    output->initData< type >( dims, size ); \
-    if( !output->getAs( var_identifier ) ) \
-    { \
-      throw GetAsFailed( output, var_identifier ); \
-    } \
-  } \
+  Array< type > *var_identifier = getOutput( OUTPUT_ENUM )->initData< type >( dims, size );
 
 #define GET_OUTPUT_INIT_IF_CONNECTED( OUTPUT_ENUM, var_identifier, type, dims, size ) \
   Array< type > *var_identifier = 0; \
   { \
     Output *const output = getOutput( OUTPUT_ENUM ); \
-    output->initData< type >( dims, size ); \
-    if( output->isConnected() && !output->getAs( var_identifier ) ) \
+    if( output->isConnected() ) \
     { \
-      throw GetAsFailed( getOutput( OUTPUT_ENUM ), var_identifier ); \
+      var_identifier = output->initData< type >( dims, size ); \
     } \
-  } \
+  }
 
 class utest_Node;
 
@@ -366,7 +357,7 @@ public:
   virtual ~Param( void );
 
   virtual void gc_clear( void );
-  virtual void gc_getChildren( Children & ) const;
+  virtual void gc_getChildren(Children & children) const;
 
   virtual void set( const Value &value, int n_coords=0, const index_t *coords=0 ) = 0;
   virtual Node *getParent( void ) const = 0;
@@ -474,8 +465,8 @@ protected:
   template< class ParentNode >
   class NodeParam : public Param
   {
-  public:
     typedef Param Base;
+  public:
     typedef void (ParentNode::*callback_t)( const Value &value, index_t, int, const index_t* );
 
     explicit NodeParam(
@@ -486,7 +477,7 @@ protected:
       , index_t index
       , bool is_array
       )
-    : Param( _gc, identifier )
+    : Base( _gc, identifier )
     , m_parent( parent )
     , m_callback( callback )
     , m_index( index )
@@ -494,11 +485,16 @@ protected:
     {}
     virtual ~NodeParam( void ) {}
 
-    virtual void gc_clear( void ) { Param::gc_clear(); m_parent.clear(); }
+    virtual void gc_clear( void )
+    {
+      Base::gc_clear();
+      m_parent.reset();
+    }
+
     virtual void gc_getChildren( Children &children ) const
     {
-      Param::gc_getChildren( children );
-      children.add( static_cast< Collectable* >( m_parent.get() ) );
+      Base::gc_getChildren( children );
+      children << m_parent;
     }
 
     virtual void set( const Value &value, int n_coords=0, const index_t *coords=0 )

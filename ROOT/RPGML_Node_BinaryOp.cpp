@@ -812,7 +812,7 @@ bool BinaryOp::tick( void )
 
 void BinaryOp::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void BinaryOp::gc_getChildren( Children &children ) const

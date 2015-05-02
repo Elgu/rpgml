@@ -226,12 +226,14 @@ void Function::setupFunctionFrame( Frame &frame, index_t n_args, const Value *ar
 
 void Function::gc_clear( void )
 {
+  Base::gc_clear();
   m_parent.reset();
   m_decl.reset();
 }
 
 void Function::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children << m_parent;
 
   if( !m_decl.isNull() )

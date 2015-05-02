@@ -133,7 +133,7 @@ bool NamedWindow::tick( void )
 
 void NamedWindow::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void NamedWindow::gc_getChildren( Children &children ) const

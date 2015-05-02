@@ -60,15 +60,18 @@ Context::~Context( void )
 
 void Context::gc_clear( void )
 {
+  Base::gc_clear();
   m_root.reset();
   m_unifier.reset();
-  m_searchPaths.clear();
 }
 
 void Context::gc_getChildren( Children &children ) const
 {
-  children << m_root;
-  children << m_unifier;
+  Base::gc_getChildren( children );
+  children
+    << m_root
+    << m_unifier
+    ;
 }
 
 Context &Context::setSearchPath( const String &searchPath )

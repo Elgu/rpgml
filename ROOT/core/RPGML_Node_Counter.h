@@ -25,6 +25,7 @@ namespace core {
 
 class Counter : public Node
 {
+  typedef Node Base;
 public:
   EXCEPTION_BASE( Exception );
 

@@ -49,10 +49,14 @@ Thread::~Thread( void )
 }
 
 void Thread::gc_clear( void )
-{}
+{
+  Base::gc_clear();
+}
 
-void Thread::gc_getChildren( Children & ) const
-{}
+void Thread::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+}
 
 bool Thread::isRunning( void ) const
 {

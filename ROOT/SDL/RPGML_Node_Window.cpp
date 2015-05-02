@@ -480,7 +480,7 @@ bool Window::pop_event( SDL_Event *event )
 
 void Window::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
   m_update.reset();
   m_purge.reset();
   m_rgba.reset();
@@ -488,7 +488,7 @@ void Window::gc_clear( void )
 
 void Window::gc_getChildren( Children &children ) const
 {
-  Node::gc_getChildren( children );
+  Base::gc_getChildren( children );
   children.add( m_update );
   children.add( m_purge );
   children.add( m_rgba );

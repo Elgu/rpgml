@@ -35,6 +35,7 @@ static const index_t MAX_RECURSION_DEPTH = 256;
 
 class Function : public Collectable
 {
+  typedef Collectable Base;
 public:
   EXCEPTION_BASE( Exception );
 

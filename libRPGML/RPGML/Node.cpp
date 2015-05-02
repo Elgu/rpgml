@@ -51,12 +51,13 @@ void Port::setIdentifier( const String &identifier )
 
 void Port::gc_clear( void )
 {
+  Base::gc_clear();
   m_parent.reset();
-  m_identifier.clear();
 }
 
 void Port::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children << m_parent;
 }
 
@@ -93,14 +94,14 @@ const ArrayBase *Input::getData( void ) const
 
 void Input::gc_clear( void )
 {
-  Port::gc_clear();
+  Base::gc_clear();
   m_output.reset();
 }
 
 void Input::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_output );
+  children << m_output;
 }
 
 void Input::disconnect( void )
@@ -185,8 +186,10 @@ void Output::gc_clear( void )
 void Output::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_inputs );
-  children.add( m_data );
+  children
+    << m_inputs
+    << m_data
+    ;
 }
 
 void Output::disconnect( void )
@@ -347,9 +350,11 @@ void Node::gc_clear( void )
 void Node::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-  children.add( m_inputs  );
-  children.add( m_outputs );
-  children.add( m_params  );
+  children
+    << m_inputs
+    << m_outputs
+    << m_params
+    ;
 }
 
 Input *Node::getInput( index_t i ) const
@@ -665,7 +670,9 @@ const char *Identity::getName( void ) const
 bool Identity::tick( CountPtr< JobQueue > )
 {
   GET_INPUT_BASE( 0, in_base );
-  getOutput( 0 )->setData( const_cast< ArrayBase* >( in_base ) );
+  Output *const output = getOutput( 0 );
+  output->setData( const_cast< ArrayBase* >( in_base ) );
+  output->setChanged( getInput( 0 )->hasChanged() );
   return true;
 }
 
@@ -679,11 +686,13 @@ InOut::~InOut( void )
 
 void InOut::gc_clear( void )
 {
+  Base::gc_clear();
   m_id.reset();
 }
 
 void InOut::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children << m_id;
 }
 
@@ -727,10 +736,14 @@ Param::~Param( void )
 {}
 
 void Param::gc_clear( void )
-{}
+{
+  Base::gc_clear();
+}
 
-void Param::gc_getChildren( Children & ) const
-{}
+void Param::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+}
 
 void Param::set( const Setting &setting )
 {

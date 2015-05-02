@@ -23,6 +23,7 @@ namespace RPGML {
 
 JobQueue::JobQueue( GarbageCollector *_gc )
 : Collectable( _gc )
+, m_queue( new Queue( _gc ) )
 {}
 
 JobQueue::~JobQueue( void )
@@ -32,11 +33,13 @@ JobQueue::~JobQueue( void )
 
 void JobQueue::clear( void )
 {
+  if( m_queue.isNull() ) return;
+
   size_t n = 0;
   {
     Mutex::ScopedLock lock( &m_lock );
-    n = m_queue.size();
-    m_queue.clear();
+    n = m_queue->size();
+    m_queue->clear();
     while( m_fill.trylock() ) --n;
   }
   for( size_t i=0; i<n; ++i )
@@ -48,7 +51,7 @@ void JobQueue::clear( void )
 void JobQueue::addJob( Job *job )
 {
   Mutex::ScopedLock lock( &m_lock );
-  m_queue.push( job );
+  m_queue->push( job );
   ++m_fill;
 }
 
@@ -58,10 +61,10 @@ CountPtr< JobQueue::Job > JobQueue::getJob( void )
   {
     --m_fill;
     Mutex::ScopedLock lock( &m_lock );
-    if( !m_queue.empty() )
+    if( !m_queue->empty() )
     {
-      CountPtr< Job > ret( m_queue.top() );
-      m_queue.pop();
+      CountPtr< Job > ret( m_queue->top() );
+      m_queue->pop();
       return ret;
     }
     // was deleted
@@ -83,11 +86,16 @@ size_t JobQueue::doJob( Job *_job )
 void JobQueue::gc_clear( void )
 {
   clear();
+  Base::gc_clear();
+  m_queue.reset();
 }
 
 void JobQueue::gc_getChildren( Children &children ) const
 {
-  m_queue.gc_getChildren( children );
+  Base::gc_getChildren( children );
+  children
+    << m_queue
+    ;
 }
 
 bool JobQueue::cmp_priority_less( const CountPtr< Job > &x, const CountPtr< Job > &y )
@@ -137,10 +145,14 @@ size_t JobQueue::Job::done( size_t return_value )
 }
 
 void JobQueue::Job::gc_clear( void )
-{}
+{
+  Base::gc_clear();
+}
 
-void JobQueue::Job::gc_getChildren( Children & ) const
-{}
+void JobQueue::Job::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+}
 
 CountPtr< JobQueue::Job::Token > JobQueue::Job::getToken( void )
 {
@@ -163,12 +175,21 @@ JobQueue::Job::Token::~Token( void )
 
 void JobQueue::Job::Token::gc_clear( void )
 {
-  destroy();
+  m_job.reset();
+  if( !m_token.isNull() )
+  {
+    m_token->destroy();
+    m_token.reset();
+  }
 }
 
 void JobQueue::Job::Token::gc_getChildren( Children &children ) const
 {
-  children << m_job;
+  Base::gc_getChildren( children );
+  children
+    << m_job
+    << m_token
+    ;
 }
 
 size_t JobQueue::Job::Token::wait( void )
@@ -248,11 +269,13 @@ size_t JobQueue::Queue::size( void ) const
 
 void JobQueue::Queue::gc_clear( void )
 {
-  clear();
+  Base::gc_clear();
+  m_heap.reset();
 }
 
 void JobQueue::Queue::gc_getChildren( Children &children ) const
 {
+  Base::gc_getChildren( children );
   children << m_heap;
 }
 

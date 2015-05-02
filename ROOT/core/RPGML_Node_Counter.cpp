@@ -84,7 +84,7 @@ bool Counter::tick( void )
 
 void Counter::gc_clear( void )
 {
-  Node::gc_clear();
+  Base::gc_clear();
 }
 
 void Counter::gc_getChildren( Children &children ) const

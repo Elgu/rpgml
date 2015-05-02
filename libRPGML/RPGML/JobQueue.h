@@ -125,7 +125,7 @@ private:
   {
     typedef Collectable Base;
   public:
-    Queue( GarbageCollector *_gc = 0 );
+    explicit Queue( GarbageCollector *_gc );
     virtual ~Queue( void );
     bool empty( void ) const;
     size_t size( void ) const;
@@ -140,8 +140,7 @@ private:
     CountPtr< JobArray > m_heap;
   };
 
-  typedef Queue queue_t;
-  queue_t m_queue;
+  CountPtr< Queue > m_queue;
   Semaphore m_fill;
   Mutex m_lock;
 };
