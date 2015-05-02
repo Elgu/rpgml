@@ -69,4 +69,15 @@ nil -> node.in2;
 #PRINT( p ); PRINT( "\n" );
 #PRINT( f ); PRINT( "\n" );
 
+{
+  Output[ 3 ] out;
+  PRINT( getType( out ) + "\n" );
+  PRINT( getType( getSize( out ) ) + "\n" );
+}
+{
+  Output[ 3 ] out = [ counter(), counter(), counter() ];
+  PRINT( getType( out ) + "\n" );
+  PRINT( getType( getSize( out ) ) + "\n" );
+}
+
 
