@@ -39,7 +39,7 @@ void GarbageCollector::add( const Collectable *c )
 {
   if( 0 == this ) return;
   if( 0 == c ) return;
-	if( c->gc == this ) return;
+  if( c->gc == this ) return;
   if( c->gc ) c->gc->remove( c );
 
   { Mutex::ScopedLock lock( &m_lock );
