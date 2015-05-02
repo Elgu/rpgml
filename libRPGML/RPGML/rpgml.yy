@@ -39,6 +39,8 @@ namespace RPGML
   }
 }
 #define RPGML_LOC(L) toLocation( scanner.unified_filename, (L) )
+#define RPGML_GC scanner.getScannerGC()
+#define RPGML_GC_LOC(L) RPGML_GC, RPGML_LOC(L)
 }
 
 %union
@@ -247,25 +249,25 @@ array_constant_line
 
 array_constant_slice
   : array_constant_slice ';' array_constant_line { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_line { ($$) = new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
+  | array_constant_line { ($$) = new ArrayConstantExpression::SequenceExpressionArray( RPGML_GC, 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant_volume
   : array_constant_volume DOUBLE_SEMI array_constant_slice { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_slice { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
+  | array_constant_slice { ($$) = new ArrayConstantExpression::ArrayBaseArray( RPGML_GC, 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant_hyper
   : array_constant_hyper TRI_SEMI array_constant_volume { ($1)->push_back( ($3) ); ($$) = ($1); }
-  | array_constant_volume { ($$) = new ArrayConstantExpression::ArrayBaseArray( scanner.getScannerGC(), 1 ); ($$)->push_back( ($1) ); }
+  | array_constant_volume { ($$) = new ArrayConstantExpression::ArrayBaseArray( RPGML_GC, 1 ); ($$)->push_back( ($1) ); }
   ;
 
 array_constant
   : '[' ']'
     {
       ($$) = new ArrayConstantExpression(
-          RPGML_LOC(@$)
-        , new ArrayConstantExpression::SequenceExpressionArray( scanner.getScannerGC(), 1 )
+          RPGML_GC_LOC(@$)
+        , new ArrayConstantExpression::SequenceExpressionArray( RPGML_GC, 1 )
         , 1
         );
     }
@@ -280,12 +282,12 @@ array_constant
         if( !ret->getAs( arr ) ) break;
         ret = arr->at( 0 );
       }
-      ($$) = new ArrayConstantExpression( RPGML_LOC(@$), ret, dims );
+      ($$) = new ArrayConstantExpression( RPGML_GC_LOC(@$), ret, dims );
     }
   ;
 
 frame_constant
-  : FRAME compound_statement { ($1); ($2)->creates_own_frame = false; ($$) = new FrameConstantExpression( RPGML_LOC(@$), ($2) ); }
+  : FRAME compound_statement { ($1); ($2)->creates_own_frame = false; ($$) = new FrameConstantExpression( RPGML_GC_LOC(@$), ($2) ); }
   ;
 
 primary_expression
@@ -295,14 +297,14 @@ primary_expression
   ;
 
 constant
-  : I_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
-  | U_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
-  | F_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
-  | S_CONSTANT { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value($1) ); }
-  | TRUE       { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value( true ) ); }
-  | FALSE      { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value( false ) ); }
-  | NIL        { ($$) = new ConstantExpression( RPGML_LOC(@$), RPGML::Value() ); }
-  | THIS       { ($$) = new ThisExpression( RPGML_LOC(@$) ); }
+  : I_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | U_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | F_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | S_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | TRUE       { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value( true ) ); }
+  | FALSE      { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value( false ) ); }
+  | NIL        { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value() ); }
+  | THIS       { ($$) = new ThisExpression( RPGML_GC_LOC(@$) ); }
   | array_constant 
   | frame_constant
   ;
@@ -311,33 +313,33 @@ constant
 callable_expression
   : postfix_expression '[' array_coordinates_expression ']'
     {
-      ($$) = new ArrayAccessExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new ArrayAccessExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     }
   | postfix_expression '.' identifier
     {
-      ($$) = new FrameAccessExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new FrameAccessExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     }
-  | identifier         { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($1) ); }
-  | '.' identifier     { ($$) = new LookupVariableExpression( RPGML_LOC(@$), ($2), true ); }
+  | identifier         { ($$) = new LookupVariableExpression( RPGML_GC_LOC(@$), ($1) ); }
+  | '.' identifier     { ($$) = new LookupVariableExpression( RPGML_GC_LOC(@$), ($2), true ); }
   ;
 
 postfix_expression
   : callable_expression { ($$) = ($1); }
   | callable_expression '(' ')'
     {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() );
+      ($$) = new FunctionCallExpression( RPGML_GC_LOC(@$), ($1), new FunctionCallExpression::Args( RPGML_GC ) );
     } 
   | callable_expression '(' argument_expression_list ')'
     {
-      ($$) = new FunctionCallExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new FunctionCallExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     } 
   | primitive_type_expression '(' expression ')'
     {
-      ($$) = new CastExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new CastExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     } 
   | OUTPUT '(' expression ')'
     {
-      ($$) = new CastExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new CastExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     } 
 //  | postfix_expression INC_OP
 //  | postfix_expression DEC_OP
@@ -347,18 +349,18 @@ postfix_expression
 argument_expression
   : expression
     {
-      ($$) = new FunctionCallExpression::Arg( RPGML_LOC(@$), ($1) );
+      ($$) = new FunctionCallExpression::Arg( RPGML_GC_LOC(@$), ($1) );
     }
   | identifier '=' expression
     {
-      ($$) = new FunctionCallExpression::Arg( RPGML_LOC(@$), ($3), ($1) );
+      ($$) = new FunctionCallExpression::Arg( RPGML_GC_LOC(@$), ($3), ($1) );
     }
   ;
 
 argument_expression_list
   : argument_expression 
     {
-      ($$) = new FunctionCallExpression::Args();
+      ($$) = new FunctionCallExpression::Args( RPGML_GC );
       ($$)->append( ($1) );
     }
   | argument_expression_list ',' argument_expression
@@ -372,7 +374,7 @@ unary_expression
   : postfix_expression { ($$) = ($1); }
 //  | INC_OP unary_expression
 //  | DEC_OP unary_expression
-  | unary_operator unary_expression { ($$) = new UnaryExpression( RPGML_LOC(@$), ($1), ($2) ); }
+  | unary_operator unary_expression { ($$) = new UnaryExpression( RPGML_GC_LOC(@$), ($1), ($2) ); }
   ;
 
 unary_operator
@@ -386,15 +388,15 @@ multiplicative_expression
   : unary_expression { ($$) = ($1); }
   | multiplicative_expression '*' unary_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_MUL, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_MUL, ($3) );
     }
   | multiplicative_expression '/' unary_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_DIV, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_DIV, ($3) );
     }
   | multiplicative_expression '%' unary_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_MOD, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_MOD, ($3) );
     }
   ;
 
@@ -402,11 +404,11 @@ additive_expression
   : multiplicative_expression  { ($$) = ($1); }
   | additive_expression '+' multiplicative_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_ADD, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_ADD, ($3) );
     }
   | additive_expression '-' multiplicative_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_SUB, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_SUB, ($3) );
     }
   ;
 
@@ -414,11 +416,11 @@ shift_expression
   : additive_expression { ($$) = ($1); }
   | shift_expression LEFT_OP additive_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LEFT, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LEFT, ($3) );
     }
   | shift_expression RIGHT_OP additive_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_RIGHT, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_RIGHT, ($3) );
     }
   ;
 
@@ -426,19 +428,19 @@ relational_expression
   : shift_expression { ($$) = ($1); }
   | relational_expression '<' shift_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LT, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LT, ($3) );
     }
   | relational_expression '>' shift_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_GT, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_GT, ($3) );
     }
   | relational_expression LE_OP shift_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LE, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LE, ($3) );
     }
   | relational_expression GE_OP shift_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_GE, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_GE, ($3) );
     }
   ;
 
@@ -446,11 +448,11 @@ equality_expression
   : relational_expression { ($$) = ($1); }
   | equality_expression EQ_OP relational_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_EQ, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_EQ, ($3) );
     }
   | equality_expression NE_OP relational_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_NE, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_NE, ($3) );
     }
   ;
 
@@ -458,7 +460,7 @@ and_expression
   : equality_expression { ($$) = ($1); }
   | and_expression '&' equality_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_BIT_AND, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_BIT_AND, ($3) );
     }
   ;
 
@@ -466,7 +468,7 @@ exclusive_or_expression
   : and_expression { ($$) = ($1); }
   | exclusive_or_expression '^' and_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_BIT_XOR, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_BIT_XOR, ($3) );
     }
   ;
 
@@ -474,7 +476,7 @@ inclusive_or_expression
   : exclusive_or_expression { ($$) = ($1); }
   | inclusive_or_expression '|' exclusive_or_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_BIT_OR, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_BIT_OR, ($3) );
     }
   ;
 
@@ -482,7 +484,7 @@ logical_and_expression
   : inclusive_or_expression { ($$) = ($1); }
   | logical_and_expression AND_OP inclusive_or_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LOG_AND, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LOG_AND, ($3) );
     }
   ;
 
@@ -490,7 +492,7 @@ logical_exclusive_or_expression
   : logical_and_expression { ($$) = ($1); }
   | logical_exclusive_or_expression XOR_OP logical_and_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LOG_XOR, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LOG_XOR, ($3) );
     }
   ;
 
@@ -498,7 +500,7 @@ logical_inclusive_or_expression
   : logical_exclusive_or_expression { ($$) = ($1); }
   | logical_inclusive_or_expression OR_OP logical_exclusive_or_expression
     {
-      ($$) = new BinaryExpression( RPGML_LOC(@$), ($1), BOP_LOG_OR, ($3) );
+      ($$) = new BinaryExpression( RPGML_GC_LOC(@$), ($1), BOP_LOG_OR, ($3) );
     }
   ;
 
@@ -506,7 +508,7 @@ conditional_expression
   : logical_inclusive_or_expression { ($$) = ($1); }
   | logical_inclusive_or_expression '?' expression ':' conditional_expression
     {
-      ($$) = new IfThenElseExpression( RPGML_LOC(@$), ($1), ($3), ($5) );
+      ($$) = new IfThenElseExpression( RPGML_GC_LOC(@$), ($1), ($3), ($5) );
     }
   ;
 
@@ -517,22 +519,22 @@ expression
 connect_statement
   : expression ARROW expression semicolon
     {
-      ($$) = new ConnectStatement( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new ConnectStatement( RPGML_GC_LOC(@$), ($1), ($3) );
     }
   ;
 
 assignment_statement
   : identifier assignment_operator expression semicolon
     {
-      ($$) = new AssignIdentifierStatement( RPGML_LOC(@$), ($1), ($2), ($3) );
+      ($$) = new AssignIdentifierStatement( RPGML_GC_LOC(@$), ($1), ($2), ($3) );
     }
   | postfix_expression '.' identifier assignment_operator expression semicolon
     {
-      ($$) = new AssignDotStatement( RPGML_LOC(@$), ($1), ($3), ($4), ($5) );
+      ($$) = new AssignDotStatement( RPGML_GC_LOC(@$), ($1), ($3), ($4), ($5) );
     }
   | postfix_expression '[' array_coordinates_expression ']' assignment_operator expression semicolon
     {
-      ($$) = new AssignBracketStatement( RPGML_LOC(@$), ($1), ($3), ($5), ($6) );
+      ($$) = new AssignBracketStatement( RPGML_GC_LOC(@$), ($1), ($3), ($5), ($6) );
     }
   ;
 
@@ -595,7 +597,7 @@ array_dimensions_expression
     }
   | array_dimension
     {
-      ($$) = new DimensionsExpression( RPGML_LOC(@$) );
+      ($$) = new DimensionsExpression( RPGML_GC_LOC(@$) );
       ($$)->push_back( ($1) );
     }
   ;
@@ -603,7 +605,7 @@ array_dimensions_expression
 array_type_expression
   : type_expression '[' array_dimensions_expression ']'
     {
-      ($$) = new TypeExpression( RPGML_LOC(@$), Type::Array(), ($1), ($3) );
+      ($$) = new TypeExpression( RPGML_GC_LOC(@$), Type::Array(), ($1), ($3) );
     }
   ;
 
@@ -614,7 +616,7 @@ array_coordinates_expression
 type_expression
   : basic_type_expression
     {
-      ($$) = new TypeExpression( RPGML_LOC(@$), ($1) );
+      ($$) = new TypeExpression( RPGML_GC_LOC(@$), ($1) );
     }
   | array_type_expression
   ;
@@ -629,14 +631,14 @@ statement
   | variable_creation_statement
   | return_statement
   | expression_statement
-  | FLUSH { ($$) = new NOPStatement( RPGML_LOC(@$) ); }
-  | semicolon   { ($$) = new NOPStatement( RPGML_LOC(@$) ); }
+  | FLUSH { ($$) = new NOPStatement( RPGML_GC_LOC(@$) ); }
+  | semicolon   { ($$) = new NOPStatement( RPGML_GC_LOC(@$) ); }
   ;
 
 statements
   : statement
     {
-      ($$) = new CompoundStatement( RPGML_LOC(@$) );
+      ($$) = new CompoundStatement( RPGML_GC_LOC(@$) );
       ($$)->append( ($1) );
     }
   | statements statement
@@ -650,14 +652,14 @@ statements
     }
   | error semicolon
     {
-      ($$) = new CompoundStatement( RPGML_LOC(@$) );
+      ($$) = new CompoundStatement( RPGML_GC_LOC(@$) );
     }
   ;
 
 compound_statement
   : '{' '}'
     {
-      ($$) = new CompoundStatement( RPGML_LOC(@$) );
+      ($$) = new CompoundStatement( RPGML_GC_LOC(@$) );
     }
   | '{' statements '}'
     {
@@ -665,32 +667,32 @@ compound_statement
     }
   | '{' error '}'
     {
-      ($$) = new CompoundStatement( RPGML_LOC(@$) );
+      ($$) = new CompoundStatement( RPGML_GC_LOC(@$) );
     }
   ;
 
 selection_statement
   : IF '(' expression ')' statement ELSE statement
     {
-      ($$) = new IfStatement( RPGML_LOC(@$), ($3), ($5), ($7) );
+      ($$) = new IfStatement( RPGML_GC_LOC(@$), ($3), ($5), ($7) );
     }
   | IF '(' expression ')' statement %prec "then"
     {
-      ($$) = new IfStatement( RPGML_LOC(@$), ($3), ($5) );
+      ($$) = new IfStatement( RPGML_GC_LOC(@$), ($3), ($5) );
     }
   ;
 
 expression_statement
   : expression semicolon
     {
-      ($$) = new ExpressionStatement( RPGML_LOC(@$), ($1) );
+      ($$) = new ExpressionStatement( RPGML_GC_LOC(@$), ($1) );
     }
   ;
 
 expression_sequence
   : expression
     {
-      ($$) = new ExpressionSequenceExpression( RPGML_LOC(@$) );
+      ($$) = new ExpressionSequenceExpression( RPGML_GC_LOC(@$) );
       ($$)->append( ($1) );
     }
   | expression_sequence ',' expression
@@ -703,11 +705,11 @@ expression_sequence
 sequence
   : expression TO expression
     {
-      ($$) = new FromToStepSequenceExpression( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new FromToStepSequenceExpression( RPGML_GC_LOC(@$), ($1), ($3) );
     }
   | expression TO expression STEP expression
     {
-      ($$) = new FromToStepSequenceExpression( RPGML_LOC(@$), ($1), ($3), ($5) );
+      ($$) = new FromToStepSequenceExpression( RPGML_GC_LOC(@$), ($1), ($3), ($5) );
     }
   | expression_sequence
     {
@@ -719,41 +721,41 @@ sequence_expression
   : SEQUENCE '(' sequence ')'
     {
       (void)($1);
-      ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$), ($3) );
+      ($$) = new ParenthisSequenceExpression( RPGML_GC_LOC(@$), ($3) );
     }
   | SEQUENCE '(' ')'
     {
       (void)($1);
-      ($$) = new ParenthisSequenceExpression( RPGML_LOC(@$) );
+      ($$) = new ParenthisSequenceExpression( RPGML_GC_LOC(@$) );
     }
   ;
 
 iteration_statement
   : FOR identifier IN expression statement
     {
-      ($$) = new ForContainerStatement( RPGML_LOC(@$), ($2), ($4), ($5) );
+      ($$) = new ForContainerStatement( RPGML_GC_LOC(@$), ($2), ($4), ($5) );
     }
   | FOR identifier '=' sequence statement
     {
-      ($$) = new ForSequenceStatement( RPGML_LOC(@$), ($2), ($4), ($5) );
+      ($$) = new ForSequenceStatement( RPGML_GC_LOC(@$), ($2), ($4), ($5) );
     }
   ;
 
 function_argument_decl
   : identifier
     {
-      ($$) = new FunctionDefinitionStatement::ArgDecl( RPGML_LOC(@$), ($1) );
+      ($$) = new FunctionDefinitionStatement::ArgDecl( RPGML_GC_LOC(@$), ($1) );
     }
   | identifier '=' expression
     {
-      ($$) = new FunctionDefinitionStatement::ArgDecl( RPGML_LOC(@$), ($1), ($3) );
+      ($$) = new FunctionDefinitionStatement::ArgDecl( RPGML_GC_LOC(@$), ($1), ($3) );
     }
   ;
 
 function_argument_decl_list
   : function_argument_decl
     {
-      ($$) = new FunctionDefinitionStatement::ArgDeclList();
+      ($$) = new FunctionDefinitionStatement::ArgDeclList( RPGML_GC );
       ($$)->append( ($1) );
     }
   | function_argument_decl_list ',' function_argument_decl
@@ -767,25 +769,25 @@ function_definition_statement
   : type_expression identifier '(' ')' compound_statement
     {
       ($5)->creates_own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5) );
+      ($$) = new FunctionDefinitionStatement( RPGML_GC_LOC(@$), ($1), ($2), new FunctionDefinitionStatement::ArgDeclList( RPGML_GC ), ($5) );
       (void)($1);
     }
   | type_expression identifier '(' function_argument_decl_list ')' compound_statement
     {
       ($6)->creates_own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), ($1), ($2), ($4), ($6) );
+      ($$) = new FunctionDefinitionStatement( RPGML_GC_LOC(@$), ($1), ($2), ($4), ($6) );
       (void)($1);
     }
   | METHOD identifier '(' ')' compound_statement
     {
       ($5)->creates_own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), new FunctionDefinitionStatement::ArgDeclList(), ($5), true );
+      ($$) = new FunctionDefinitionStatement( RPGML_GC_LOC(@$), new TypeExpression( RPGML_GC_LOC(@$), ($1) ), ($2), new FunctionDefinitionStatement::ArgDeclList( RPGML_GC ), ($5), true );
       (void)($1);
     }
   | METHOD identifier '(' function_argument_decl_list ')' compound_statement
     {
       ($6)->creates_own_frame = false;
-      ($$) = new FunctionDefinitionStatement( RPGML_LOC(@$), new TypeExpression( RPGML_LOC(@$), ($1) ), ($2), ($4), ($6), true );
+      ($$) = new FunctionDefinitionStatement( RPGML_GC_LOC(@$), new TypeExpression( RPGML_GC_LOC(@$), ($1) ), ($2), ($4), ($6), true );
       (void)($1);
     }
   ;
@@ -793,28 +795,28 @@ function_definition_statement
 variable_creation_statement
   : type_expression identifier '=' expression semicolon
     {
-      ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2), ($4) );
+      ($$) = new VariableCreationStatement( RPGML_GC_LOC(@$), ($1), ($2), ($4) );
     }
   | type_expression identifier semicolon
     {
-      ($$) = new VariableCreationStatement( RPGML_LOC(@$), ($1), ($2) );
+      ($$) = new VariableCreationStatement( RPGML_GC_LOC(@$), ($1), ($2) );
     }
   | callable_expression identifier '(' ')' semicolon
     {
       ($$) =
         new VariableConstructionStatement(
-            RPGML_LOC(@$)
+            RPGML_GC_LOC(@$)
           , ($2)
-          , new FunctionCallExpression( RPGML_LOC(@$), ($1), new FunctionCallExpression::Args() )
+          , new FunctionCallExpression( RPGML_GC_LOC(@$), ($1), new FunctionCallExpression::Args( RPGML_GC ) )
           );
     }
   | callable_expression identifier '(' argument_expression_list ')' semicolon
     {
       ($$) =
         new VariableConstructionStatement(
-            RPGML_LOC(@$)
+            RPGML_GC_LOC(@$)
           , ($2)
-          , new FunctionCallExpression( RPGML_LOC(@$), ($1), ($4) )
+          , new FunctionCallExpression( RPGML_GC_LOC(@$), ($1), ($4) )
           );
     }
   ;
@@ -822,7 +824,7 @@ variable_creation_statement
 return_statement
   : RETURN expression semicolon
     {
-      ($$) = new ReturnStatement( RPGML_LOC(@$), ($2) );
+      ($$) = new ReturnStatement( RPGML_GC_LOC(@$), ($2) );
     }
   ;
 

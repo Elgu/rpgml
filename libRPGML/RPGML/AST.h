@@ -18,7 +18,7 @@
 #ifndef RPGML_AST_h
 #define RPGML_AST_h
 
-#include "Refcounted.h"
+#include "GarbageCollector.h"
 #include "String.h"
 #include "ParserEnums.h"
 #include "Value.h"
@@ -77,10 +77,14 @@ class ForSequenceStatement;
 class ForContainerStatement;
 class ReturnStatement;
 
-class Node : public Refcounted
+class Node : public Collectable
 {
+  typedef Collectable Base;
 public:
-  Node( const Location *_loc ) : loc( _loc ) {}
+  Node( GarbageCollector *_gc, const Location *_loc )
+  : Base( _gc )
+  , loc( _loc )
+  {}
   virtual ~Node( void ) {}
 
   // Implement using visitor->invite_impl( this )
@@ -92,7 +96,7 @@ public:
   virtual Statement          *getStatement         ( void ) { return 0; }
   virtual CompoundStatement  *getCompoundStatement ( void ) { return 0; }
 
-  const CountPtr< const Location > loc;
+  CountPtr< const Location > loc;
 };
 
 class Visitor
@@ -227,40 +231,61 @@ private:
 class Expression : public Node
 {
 public:
-  Expression( const Location *_loc ) : Node( _loc ) {}
+  Expression( GarbageCollector *_gc, const Location *_loc ) : Node( _gc, _loc ) {}
   virtual ~Expression( void ) {}
   virtual Expression *getExpression( void ) { return this; }
 };
 
 class ConstantExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  explicit ConstantExpression( const Location *_loc, const Value &v ) : Expression( _loc ), value( v ) {}
+  explicit ConstantExpression( GarbageCollector *_gc, const Location *_loc, const Value &v )
+  : Expression( _gc, _loc )
+  , value( v )
+  {}
   virtual ~ConstantExpression( void ) {}
+
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    value.clear();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children << value;
+  }
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const Value value;
+  Value value;
 };
 
 class ThisExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  explicit ThisExpression( const Location *_loc ) : Expression( _loc ) {}
+  explicit ThisExpression( GarbageCollector *_gc, const Location *_loc ) : Expression( _gc, _loc ) {}
   virtual ~ThisExpression( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
+
+  virtual void gc_clear( void ) { Base::gc_clear(); }
+  virtual void gc_getChildren( Children &children ) const { Base::gc_getChildren( children ); }
 };
 
 class ArrayConstantExpression : public Expression
 {
+  typedef Expression Base;
 public:
   typedef Array< CountPtr< const SequenceExpression > > SequenceExpressionArray;
   typedef Array< CountPtr< const ArrayBase          > > ArrayBaseArray;
 
   explicit
-  ArrayConstantExpression( const Location *_loc, const ArrayBase *_descr_array, int _dims )
-  : Expression( _loc )
+  ArrayConstantExpression( GarbageCollector *_gc, const Location *_loc, const ArrayBase *_descr_array, int _dims )
+  : Expression( _gc, _loc )
   , descr_array( _descr_array )
   , dims( _dims )
   {}
@@ -269,15 +294,28 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const ArrayBase > descr_array;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    descr_array.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children << descr_array;
+  }
+
+  CountPtr< const ArrayBase > descr_array;
   int dims;
 };
 
 class FrameConstantExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  FrameConstantExpression( const Location *_loc, const CompoundStatement *_body )
-  : Expression( _loc )
+  FrameConstantExpression( GarbageCollector *_gc, const Location *_loc, const CompoundStatement *_body )
+  : Expression( _gc, _loc )
   , body( _body )
   {}
 
@@ -285,14 +323,27 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const CompoundStatement > body;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    body.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children << body;
+  }
+
+  CountPtr< const CompoundStatement > body;
 };
 
 class SequenceExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  SequenceExpression( const Location *_loc )
-  : Expression( _loc )
+  SequenceExpression( GarbageCollector *_gc, const Location *_loc )
+  : Expression( _gc, _loc )
   {}
   virtual ~SequenceExpression( void ) {}
   virtual SequenceExpression *getSequenceExpression( void ) { return this; }
@@ -302,9 +353,10 @@ public:
 
 class ExpressionSequenceExpression : public SequenceExpression
 {
+  typedef SequenceExpression Base;
 public:
-  ExpressionSequenceExpression( const Location *_loc )
-  : SequenceExpression( _loc )
+  ExpressionSequenceExpression( GarbageCollector *_gc, const Location *_loc )
+  : SequenceExpression( _gc, _loc )
   {}
   virtual ~ExpressionSequenceExpression( void ) {}
 
@@ -329,14 +381,32 @@ public:
     }
   }
 
-  std::vector< CountPtr< const Expression > > expressions;
+  typedef std::vector< CountPtr< const Expression > > expressions_t;
+
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    expressions.clear();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    for( expressions_t::const_iterator i( expressions.begin() ), end( expressions.end() ); i != end; ++i )
+    {
+      children << (*i);
+    }
+  }
+
+  expressions_t expressions;
 };
 
 class FromToStepSequenceExpression : public SequenceExpression
 {
+  typedef SequenceExpression Base;
 public:
-  FromToStepSequenceExpression( const Location *_loc, const Expression *_from, const Expression *_to, const Expression *_step = 0 )
-  : SequenceExpression( _loc )
+  FromToStepSequenceExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_from, const Expression *_to, const Expression *_step = 0 )
+  : SequenceExpression( _gc, _loc )
   , from( _from )
   , to( _to )
   , step( _step )
@@ -353,17 +423,36 @@ public:
     return from;
   }
 
-  const CountPtr< const Expression > from;
-  const CountPtr< const Expression > to;
-  const CountPtr< const Expression > step;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    from.reset();
+    to.reset();
+    step.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << from
+      << to
+      << step
+      ;
+  }
+
+  CountPtr< const Expression > from;
+  CountPtr< const Expression > to;
+  CountPtr< const Expression > step;
 };
 
 class ParenthisSequenceExpression : public Expression
 {
+  typedef Expression Base;
 public:
   explicit
-  ParenthisSequenceExpression( const Location *_loc, const SequenceExpression *_sequence=0 )
-  : Expression( _loc )
+  ParenthisSequenceExpression( GarbageCollector *_gc, const Location *_loc, const SequenceExpression *_sequence=0 )
+  : Expression( _gc, _loc )
   , sequence( _sequence )
   {}
   virtual ~ParenthisSequenceExpression( void ) {}
@@ -377,14 +466,27 @@ public:
     return sequence->first();
   }
 
-  const CountPtr< const SequenceExpression > sequence;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    sequence.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children << sequence;
+  }
+
+  CountPtr< const SequenceExpression > sequence;
 };
 
 class LookupVariableExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  LookupVariableExpression( const Location *_loc, const String &_identifier, bool _at_root = false )
-  : Expression( _loc )
+  LookupVariableExpression( GarbageCollector *_gc, const Location *_loc, const String &_identifier, bool _at_root = false )
+  : Expression( _gc, _loc )
   , identifier( _identifier )
   , at_root( _at_root )
   {}
@@ -392,17 +494,21 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
+  virtual void gc_clear( void ) { Base::gc_clear(); }
+  virtual void gc_getChildren( Children &children ) const { Base::gc_getChildren( children ); }
+
   const String identifier;
   bool at_root;
 };
 
 class FunctionCallExpression : public Expression
 {
+  typedef Expression Base;
 public:
   class Args;
 
-  FunctionCallExpression( const Location *_loc, const Expression *_function, const Args *_args )
-  : Expression( _loc )
+  FunctionCallExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_function, const Args *_args )
+  : Expression( _gc, _loc )
   , function( _function )
   , args( _args )
   {}
@@ -410,26 +516,41 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  class Arg : public Refcounted
+  class Arg : public Collectable
   {
+    typedef Collectable Base;
   public:
     explicit
-    Arg( const Location *_loc, const Expression *_value, const String &_identifier = String() )
-    : loc( _loc )
+    Arg( GarbageCollector *_gc, const Location *_loc, const Expression *_value, const String &_identifier = String() )
+    : Base( _gc )
+    , loc( _loc )
     , value( _value )
     , identifier( _identifier )
     {}
     virtual ~Arg( void ) {}
+
+    virtual void gc_clear( void )
+    {
+      Base::gc_clear();
+      value.reset();
+    }
+
+    virtual void gc_getChildren( Children &children ) const
+    {
+      Base::gc_getChildren( children );
+      children << value;
+    }
 
     CountPtr< const Location > loc;
     CountPtr< const Expression > value;
     const String identifier;
   };
 
-  class Args : public Refcounted, public std::vector< CountPtr< Arg > >
+  class Args : public Array< CountPtr< Arg > >
   {
+    typedef Array< CountPtr< Arg > > Base;
   public:
-    Args( void ) {}
+    Args( GarbageCollector *_gc ) : Base( _gc, 1 ) {}
     virtual ~Args( void ) {}
 
     void append( Arg *arg )
@@ -438,15 +559,32 @@ public:
     }
   };
 
-  const CountPtr< const Expression > function;
-  const CountPtr< const Args > args;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    function.reset();
+    args.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << function
+      << args
+      ;
+  }
+
+  CountPtr< const Expression > function;
+  CountPtr< const Args > args;
 };
 
 class DotExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  DotExpression( const Location *_loc, Expression *_left, const String &_member )
-  : Expression( _loc )
+  DotExpression( GarbageCollector *_gc, const Location *_loc, Expression *_left, const String &_member )
+  : Expression( _gc, _loc )
   , left( _left )
   , member( _member )
   {}
@@ -454,15 +592,30 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      ;
+  }
+
+  CountPtr< const Expression > left;
   const String member;
 };
 
 class FrameAccessExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  FrameAccessExpression( const Location *_loc, const Expression *_left, const String &_identifier )
-  : Expression( _loc )
+  FrameAccessExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_left, const String &_identifier )
+  : Expression( _gc, _loc )
   , left( _left )
   , identifier( _identifier )
   {}
@@ -470,15 +623,30 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      ;
+  }
+
+  CountPtr< const Expression > left;
   const String identifier;
 };
 
 class ArrayAccessExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  ArrayAccessExpression( const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord )
-  : Expression( _loc )
+  ArrayAccessExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord )
+  : Expression( _gc, _loc )
   , left( _left )
   , coord( _coord )
   {}
@@ -486,15 +654,32 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
-  const CountPtr< const CoordinatesExpression > coord;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+    coord.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      << coord
+      ;
+  }
+
+  CountPtr< const Expression > left;
+  CountPtr< const CoordinatesExpression > coord;
 };
 
 class UnaryExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  UnaryExpression( const Location *_loc, UOP _op, const Expression *_arg )
-  : Expression( _loc )
+  UnaryExpression( GarbageCollector *_gc, const Location *_loc, UOP _op, const Expression *_arg )
+  : Expression( _gc, _loc )
   , arg( _arg )
   , op( _op )
   {}
@@ -502,15 +687,30 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > arg;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    arg.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << arg
+      ;
+  }
+
+  CountPtr< const Expression > arg;
   const UOP op;
 };
 
 class BinaryExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  BinaryExpression( const Location *_loc, const Expression *_left, BOP _op, const Expression *_right )
-  : Expression( _loc )
+  BinaryExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_left, BOP _op, const Expression *_right )
+  : Expression( _gc, _loc )
   , left ( _left  )
   , right( _right )
   , op( _op )
@@ -519,16 +719,33 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
-  const CountPtr< const Expression > right;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+    right.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      << right
+      ;
+  }
+
+  CountPtr< const Expression > left;
+  CountPtr< const Expression > right;
   const BOP op;
 };
 
 class IfThenElseExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  IfThenElseExpression( const Location *_loc, const Expression *_condition, const Expression *_then_value, const Expression *_else_value )
-  : Expression( _loc )
+  IfThenElseExpression( GarbageCollector *_gc, const Location *_loc, const Expression *_condition, const Expression *_then_value, const Expression *_else_value )
+  : Expression( _gc, _loc )
   , condition( _condition )
   , then_value( _then_value )
   , else_value( _else_value )
@@ -537,16 +754,35 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > condition;
-  const CountPtr< const Expression > then_value;
-  const CountPtr< const Expression > else_value;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    condition.reset();
+    then_value.reset();
+    else_value.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << condition
+      << then_value
+      << else_value
+      ;
+  }
+
+  CountPtr< const Expression > condition;
+  CountPtr< const Expression > then_value;
+  CountPtr< const Expression > else_value;
 };
 
 class TypeExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  TypeExpression( const Location *_loc, Type _type, const TypeExpression *_of = 0, const DimensionsExpression *_dims = 0 )
-  : Expression( _loc )
+  TypeExpression( GarbageCollector *_gc, const Location *_loc, Type _type, const TypeExpression *_of = 0, const DimensionsExpression *_dims = 0 )
+  : Expression( _gc, _loc )
   , of( _of )
   , dims( _dims )
   , type( _type )
@@ -555,16 +791,33 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const TypeExpression > of;
-  const CountPtr< const DimensionsExpression > dims;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    of.reset();
+    dims.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << of
+      << dims
+      ;
+  }
+
+  CountPtr< const TypeExpression > of;
+  CountPtr< const DimensionsExpression > dims;
   Type type;
 };
 
 class DimensionsExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  DimensionsExpression( const Location *_loc )
-  : Expression( _loc )
+  DimensionsExpression( GarbageCollector *_gc, const Location *_loc )
+  : Expression( _gc, _loc )
   {}
   virtual ~DimensionsExpression( void ) {}
 
@@ -575,20 +828,52 @@ public:
     dims.push_back( CountPtr< const Expression >( dim ) );
   }
 
+  typedef std::vector< CountPtr< const Expression > > dims_t;
+
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    dims.clear();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    for( dims_t::const_iterator i( dims.begin() ), end( dims.end() ); i != end; ++i )
+    {
+      children << (*i);
+    }
+  }
+
   std::vector< CountPtr< const Expression > > dims;
 };
 
 class CastExpression : public Expression
 {
+  typedef Expression Base;
 public:
-  CastExpression( const Location *_loc, Type _to, const Expression *_arg )
-  : Expression( _loc )
+  CastExpression( GarbageCollector *_gc, const Location *_loc, Type _to, const Expression *_arg )
+  : Expression( _gc, _loc )
   , arg( _arg )
   , to( _to )
   {}
   virtual ~CastExpression( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
+
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    arg.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << arg
+      ;
+  }
 
   CountPtr< const Expression > arg;
   Type to;
@@ -600,17 +885,18 @@ public:
 class Statement : public Node
 {
 public:
-  Statement( const Location *_loc ) : Node( _loc ) {}
+  Statement( GarbageCollector *_gc, const Location *_loc ) : Node( _gc, _loc ) {}
   virtual ~Statement( void ) {}
   virtual Statement *getStatement( void ) { return this; }
 };
 
 class CompoundStatement : public Statement
 {
+  typedef Statement Base;
 public:
   explicit
-  CompoundStatement( const Location *_loc )
-  : Statement( _loc )
+  CompoundStatement( GarbageCollector *_gc, const Location *_loc )
+  : Statement( _gc, _loc )
   , creates_own_frame( true )
   {}
 
@@ -625,25 +911,43 @@ public:
     statements.push_back( statement );
   }
 
-  std::vector< CountPtr< const Statement > > statements;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    statements.clear();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    for( auto &i : statements )
+    {
+      children << i;
+    }
+  }
+
+  typedef std::vector< CountPtr< const Statement > > statements_t;
+  statements_t statements;
   bool creates_own_frame;
 };
 
 class FunctionDefinitionStatement : public Statement
 {
+  typedef Statement Base;
 public:
   class ArgDecl;
   class ArgDeclList;
 
   FunctionDefinitionStatement(
-      const Location *_loc
+      GarbageCollector *_gc
+    , const Location *_loc
     , const TypeExpression *_ret
     , const String &_identifier
     , const ArgDeclList *_args
     , const CompoundStatement *_body
     , bool _is_method = false
     )
-  : Statement( _loc )
+  : Statement( _gc, _loc )
   , ret( _ret )
   , identifier( _identifier )
   , args( _args )
@@ -655,26 +959,45 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  class ArgDecl : public Refcounted
+  class ArgDecl : public Collectable
   {
+    typedef Collectable Base;
   public:
     explicit
-    ArgDecl( const Location *_loc, const String &_identifier, const Expression *_default_value=0 )
-    : loc( _loc )
+    ArgDecl( GarbageCollector *_gc, const Location *_loc, const String &_identifier, const Expression *_default_value=0 )
+    : Base( _gc )
+    , loc( _loc )
     , identifier( _identifier )
     , default_value( _default_value )
     {}
     virtual ~ArgDecl( void ) {}
 
-    const CountPtr< const Location > loc;
+    virtual void gc_clear( void )
+    {
+      Base::gc_clear();
+      default_value.reset();
+    }
+
+    virtual void gc_getChildren( Children &children ) const
+    {
+      Base::gc_getChildren( children );
+      children
+        << default_value
+        ;
+    }
+
+    CountPtr< const Location > loc;
     const String identifier;
-    const CountPtr< const Expression > default_value;
+    CountPtr< const Expression > default_value;
   };
 
-  class ArgDeclList : public Refcounted, public std::vector< CountPtr< const ArgDecl > >
+  class ArgDeclList : public Array< CountPtr< const ArgDecl > >
   {
+    typedef Array< CountPtr< const ArgDecl > > Base;
   public:
-    ArgDeclList( void )
+    explicit
+    ArgDeclList( GarbageCollector *_gc )
+    : Base( _gc, 1 )
     {}
 
     virtual ~ArgDeclList( void ) {}
@@ -685,18 +1008,37 @@ public:
     }
   };
 
-  const CountPtr< const TypeExpression > ret;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    ret.reset();
+    args.reset();
+    body.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << ret
+      << args
+      << body
+      ;
+  }
+
+  CountPtr< const TypeExpression > ret;
   const String identifier;
-  const CountPtr< const ArgDeclList > args;
-  const CountPtr< const CompoundStatement > body;
+  CountPtr< const ArgDeclList > args;
+  CountPtr< const CompoundStatement > body;
   bool is_method;
 };
 
 class ConnectStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  ConnectStatement ( const Location *_loc, const Expression *_output, const Expression *_input )
-  : Statement( _loc )
+  ConnectStatement ( GarbageCollector *_gc, const Location *_loc, const Expression *_output, const Expression *_input )
+  : Statement( _gc, _loc )
   , output( _output )
   , input( _input )
   {}
@@ -704,15 +1046,32 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > output;
-  const CountPtr< const Expression > input;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    input.reset();
+    output.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << input
+      << output
+      ;
+  }
+
+  CountPtr< const Expression > output;
+  CountPtr< const Expression > input;
 };
 
 class AssignmentStatementBase : public Statement
 {
+  typedef Statement Base;
 public:
-  AssignmentStatementBase( const Location *_loc, ASSIGN _op, const Expression *_value )
-  : Statement( _loc )
+  AssignmentStatementBase( GarbageCollector *_gc, const Location *_loc, ASSIGN _op, const Expression *_value )
+  : Statement( _gc, _loc )
   , value( _value )
   , op( _op )
   {}
@@ -720,29 +1079,48 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > value;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    value.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << value
+      ;
+  }
+
+  CountPtr< const Expression > value;
   const ASSIGN op;
 };
 
 class AssignIdentifierStatement : public AssignmentStatementBase
 {
+  typedef AssignmentStatementBase Base;
 public:
-  AssignIdentifierStatement( const Location *_loc, const String &_identifier, ASSIGN _op, const Expression *_value )
-  : AssignmentStatementBase( _loc, _op, _value )
+  AssignIdentifierStatement( GarbageCollector *_gc, const Location *_loc, const String &_identifier, ASSIGN _op, const Expression *_value )
+  : AssignmentStatementBase( _gc, _loc, _op, _value )
   , identifier( _identifier )
   {}
   virtual ~AssignIdentifierStatement( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
+  virtual void gc_clear( void ) { Base::gc_clear(); }
+  virtual void gc_getChildren( Children &children ) const { Base::gc_getChildren( children ); }
+
   const String identifier;
 };
 
 class AssignDotStatement : public AssignmentStatementBase
 {
+  typedef AssignmentStatementBase Base;
 public:
-  AssignDotStatement( const Location *_loc, const Expression *_left, const String &_identifier, ASSIGN _op, const Expression *_value )
-  : AssignmentStatementBase( _loc, _op, _value )
+  AssignDotStatement( GarbageCollector *_gc, const Location *_loc, const Expression *_left, const String &_identifier, ASSIGN _op, const Expression *_value )
+  : AssignmentStatementBase( _gc, _loc, _op, _value )
   , left( _left )
   , identifier( _identifier )
   {}
@@ -750,15 +1128,30 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      ;
+  }
+
+  CountPtr< const Expression > left;
   const String identifier;
 };
 
 class AssignBracketStatement : public AssignmentStatementBase
 {
+  typedef AssignmentStatementBase Base;
 public:
-  AssignBracketStatement( const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord, ASSIGN _op, const Expression *_value )
-  : AssignmentStatementBase( _loc, _op, _value )
+  AssignBracketStatement( GarbageCollector *_gc, const Location *_loc, const Expression *_left, const CoordinatesExpression *_coord, ASSIGN _op, const Expression *_value )
+  : AssignmentStatementBase( _gc, _loc, _op, _value )
   , left( _left )
   , coord( _coord )
   {}
@@ -766,15 +1159,32 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > left;
-  const CountPtr< const CoordinatesExpression > coord;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    left.reset();
+    coord.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << left
+      << coord
+      ;
+  }
+
+  CountPtr< const Expression > left;
+  CountPtr< const CoordinatesExpression > coord;
 };
 
 class IfStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  IfStatement( const Location *_loc, const Expression *_condition, const Statement *_then_body, const Statement *_else_body=0 )
-  : Statement( _loc )
+  IfStatement( GarbageCollector *_gc, const Location *_loc, const Expression *_condition, const Statement *_then_body, const Statement *_else_body=0 )
+  : Statement( _gc, _loc )
   , condition( _condition )
   , then_body( _then_body )
   , else_body( _else_body )
@@ -783,27 +1193,50 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > condition;
-  const CountPtr< const Statement > then_body;
-  const CountPtr< const Statement > else_body;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    condition.reset();
+    then_body.reset();
+    else_body.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << condition
+      << then_body
+      << else_body
+      ;
+  }
+
+  CountPtr< const Expression > condition;
+  CountPtr< const Statement > then_body;
+  CountPtr< const Statement > else_body;
 };
 
 class NOPStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  NOPStatement( const Location *_loc )
-  : Statement( _loc )
+  NOPStatement( GarbageCollector *_gc, const Location *_loc )
+  : Statement( _gc, _loc )
   {}
   virtual ~NOPStatement( void ) {}
+
+  virtual void gc_clear( void ) { Base::gc_clear(); }
+  virtual void gc_getChildren( Children &children ) const {Base::gc_getChildren( children );}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 };
 
 class ForStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  ForStatement( const Location *_loc, const String &_identifier, const Statement *_body )
-  : Statement( _loc )
+  ForStatement( GarbageCollector *_gc, const Location *_loc, const String &_identifier, const Statement *_body )
+  : Statement( _gc, _loc )
   , identifier( _identifier )
   , body( _body )
   {}
@@ -811,58 +1244,114 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
+  virtual void gc_clear( void ) { Base::gc_clear(); body.reset(); }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << body
+      ;
+  }
+
   const String identifier;
-  const CountPtr< const Statement > body;
+  CountPtr< const Statement > body;
 };
 
 class ForSequenceStatement : public ForStatement
 {
+  typedef ForStatement Base;
 public:
-  ForSequenceStatement( const Location *_loc, const String &_identifier, const SequenceExpression *_sequence, const Statement *_statement )
-  : ForStatement( _loc, _identifier, _statement )
+  ForSequenceStatement( GarbageCollector *_gc, const Location *_loc, const String &_identifier, const SequenceExpression *_sequence, const Statement *_statement )
+  : ForStatement( _gc, _loc, _identifier, _statement )
   , sequence( _sequence )
   {}
   virtual ~ForSequenceStatement( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const SequenceExpression > sequence;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    sequence.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << sequence
+      ;
+  }
+
+  CountPtr< const SequenceExpression > sequence;
 };
 
 class ForContainerStatement : public ForStatement
 {
+  typedef ForStatement Base;
 public:
-  ForContainerStatement( const Location *_loc, const String &_identifier, const Expression *_container, const Statement *_statement )
-  : ForStatement( _loc,_identifier, _statement )
+  ForContainerStatement( GarbageCollector *_gc, const Location *_loc, const String &_identifier, const Expression *_container, const Statement *_statement )
+  : ForStatement( _gc, _loc,_identifier, _statement )
   , container( _container )
   {}
   virtual ~ForContainerStatement( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > container;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    container.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << container
+      ;
+  }
+
+  CountPtr< const Expression > container;
 };
 
 class ExpressionStatement : public Statement
 {
+  typedef Statement Base;
 public:
   explicit
-  ExpressionStatement( const Location *_loc, const Expression *_expr )
-  : Statement( _loc )
+  ExpressionStatement( GarbageCollector *_gc, const Location *_loc, const Expression *_expr )
+  : Statement( _gc, _loc )
   , expr( _expr )
   {}
   virtual ~ExpressionStatement( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > expr;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    expr.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << expr
+      ;
+  }
+
+  CountPtr< const Expression > expr;
 };
 
 class VariableCreationStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  VariableCreationStatement( const Location *_loc, const TypeExpression *_type, const String &_identifier, const Expression *_value = 0 )
-  : Statement( _loc )
+  VariableCreationStatement( GarbageCollector *_gc, const Location *_loc, const TypeExpression *_type, const String &_identifier, const Expression *_value = 0 )
+  : Statement( _gc, _loc )
   , identifier( _identifier )
   , value( _value )
   , type( _type )
@@ -871,16 +1360,33 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    value.reset();
+    type.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << value
+      << type
+      ;
+  }
+
   const String identifier;
-  const CountPtr< const Expression > value;
-  const CountPtr< const TypeExpression > type;
+  CountPtr< const Expression > value;
+  CountPtr< const TypeExpression > type;
 };
 
 class VariableConstructionStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  VariableConstructionStatement( const Location *_loc, const String &_identifier, const FunctionCallExpression *_value )
-  : Statement( _loc )
+  VariableConstructionStatement( GarbageCollector *_gc, const Location *_loc, const String &_identifier, const FunctionCallExpression *_value )
+  : Statement( _gc, _loc )
   , identifier( _identifier )
   , value( _value )
   {}
@@ -888,22 +1394,51 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    value.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << value
+      ;
+  }
+
   const String identifier;
-  const CountPtr< const FunctionCallExpression > value;
+  CountPtr< const FunctionCallExpression > value;
 };
 
 class ReturnStatement : public Statement
 {
+  typedef Statement Base;
 public:
-  ReturnStatement( const Location *_loc, const Expression *_value )
-  : Statement( _loc )
+  ReturnStatement( GarbageCollector *_gc, const Location *_loc, const Expression *_value )
+  : Statement( _gc, _loc )
   , value( _value )
   {}
   virtual ~ReturnStatement( void ) {}
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  const CountPtr< const Expression > value;
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    value.reset();
+  }
+
+  virtual void gc_getChildren( Children &children ) const
+  {
+    Base::gc_getChildren( children );
+    children
+      << value
+      ;
+  }
+
+  CountPtr< const Expression > value;
 };
 
 } // namespace AST
