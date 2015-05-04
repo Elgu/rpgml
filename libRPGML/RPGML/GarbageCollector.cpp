@@ -138,7 +138,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
     }
 
     // Only root objects are referenced from outside
-    if( refcount[ obj->gc_index ] == obj->count() ) continue;
+    if( refcount[ obj->gc_index ] == obj->refCount() ) continue;
 
 #ifdef GC_DEBUG
     std::cerr << "Root object " << obj << std::endl;
@@ -236,7 +236,7 @@ void GarbageCollector::run( uint8_t up_to_generation )
 
 Collectable::Collectable( GarbageCollector *_gc )
 : gc( 0 )
-, m_count( 0 )
+, m_refCount( 0 )
 , gc_index( 0 )
 , gc_generation( 0 )
 {

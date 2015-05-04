@@ -302,7 +302,7 @@ namespace RPGML {
 
   index_t String::count( void ) const
   {
-    return ( m_str ? m_str->count() : index_t(-1) );
+    return ( m_str ? m_str->refCount() : index_t(-1) );
   }
 
   bool String::operator< ( const String &other ) const { return compare( other ) <  0; }

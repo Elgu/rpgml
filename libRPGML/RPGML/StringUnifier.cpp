@@ -78,7 +78,7 @@ void StringUnifier::cleanup( void )
 
   for( map_t::const_iterator i( m_map.begin() ), end( m_map.end() ); i != end; ++i )
   {
-    if( 1 == i->second->count() )
+    if( 1 == i->second->refCount() )
     {
       to_be_removed.push_back( i->second->get() );
     }

@@ -70,7 +70,7 @@ class Collectable
 {
   friend class GarbageCollector;
 public:
-  typedef index_t count_t;
+  typedef index_t refCount_t;
 
   explicit
   Collectable( GarbageCollector *_gc );
@@ -80,20 +80,20 @@ public:
 
   virtual ~Collectable( void );
 
-  count_t ref( void ) const
+  refCount_t ref( void ) const
   {
-    return ++m_count;
+    return ++m_refCount;
   }
 
-  count_t unref( void ) const
+  refCount_t unref( void ) const
   {
     gc_generation = 0;
-    return --m_count;
+    return --m_refCount;
   }
 
-  count_t count( void ) const
+  refCount_t refCount( void ) const
   {
-    return m_count;
+    return m_refCount;
   }
 
   GarbageCollector *getGC( void ) const
@@ -129,11 +129,11 @@ private:
   void deactivate_deletion( void ) const throw()
   {
     // That way the next one gets count_t(-1), which is not 0
-    m_count = 0;
+    m_refCount = 0;
   }
 
   mutable GarbageCollector *gc;
-  mutable Atomic< count_t > m_count;
+  mutable Atomic< refCount_t > m_refCount;
   mutable index_t gc_index;
   mutable uint8_t gc_generation;
 };
