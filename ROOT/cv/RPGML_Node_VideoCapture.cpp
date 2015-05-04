@@ -37,7 +37,6 @@ VideoCapture::VideoCapture( GarbageCollector *_gc, const String &identifier, con
   DEFINE_OUTPUT( OUTPUT_RED  , "red"   );
   DEFINE_OUTPUT( OUTPUT_GREEN, "green" );
   DEFINE_OUTPUT( OUTPUT_BLUE , "blue"  );
-  DEFINE_PARAM ( PARAM_FOO , "foo", VideoCapture::set_foo );
 }
 
 VideoCapture::~VideoCapture( void )
@@ -56,10 +55,6 @@ void VideoCapture::gc_clear( void )
 void VideoCapture::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
-}
-
-void VideoCapture::set_foo( const Value &value, index_t, int, const index_t* )
-{
 }
 
 bool VideoCapture::tick( void )
