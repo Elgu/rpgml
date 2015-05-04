@@ -1,0 +1,14 @@
+
+Function paste( in, dest, x=nil, y=nil, z=nil, t=nil )
+{
+  Paste   ret();
+  in   -> ret.in;
+  dest -> ret.dest;
+  x    -> ret.x;
+  y    -> ret.y;
+  z    -> ret.z;
+  t    -> ret.t;
+
+  return ret.out;
+}
+

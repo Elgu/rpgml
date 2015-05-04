@@ -1,0 +1,47 @@
+
+{
+  int[] dest = [ 0 to 9 ];
+  int[] in = [ 13, 12, 11 ];
+
+  print( .util.paste( in, dest, -3 ) );
+  print( "\n" );
+
+  print( .util.paste( in, dest, 10 ) );
+  print( "\n" );
+
+  print( .util.paste( in, dest, 0 ) );
+  print( "\n" );
+
+  print( .util.paste( in, dest, -1 ) );
+  print( "\n" );
+
+  print( .util.paste( in, dest, 8 ) );
+  print( "\n" );
+}
+
+{
+  int[,] in =
+    [ 15, 14;
+      13, 12;
+      11, 10 ];
+  int[,] dest = 
+    [ 0 to 4;
+      5 to 9;
+      10 to 14;
+      15 to 19 ];
+
+  print( util.paste( in, dest, -2, -3 ) );
+  print( "\n" );
+
+  print( util.paste( in, dest, 0, 0 ) );
+  print( "\n" );
+
+  print( util.paste( in, dest, -1, -2 ) );
+  print( "\n" );
+
+  print( util.paste( in, dest, 4, 3 ) );
+  print( "\n" );
+}
+
+exit();
+
