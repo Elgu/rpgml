@@ -673,7 +673,7 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
   }
   catch( const RPGML::ExitRequest &e )
   {
-    std::cerr << "RPGML::Node::ExitRequest at " << node->getIdentifier() << std::endl;
+//    std::cerr << "RPGML::Node::ExitRequest at " << node->getIdentifier() << std::endl;
     graph->setExitRequest( e.what() );
     ret = 1;
   }
@@ -708,7 +708,7 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
     ret = 0;
   }
 
-  if( !graph->hasErrors() && !graph->hasExitRequest() )
+  if( !graph->hasErrors() ) // Must still be executed: && !graph->hasExitRequest() )
   {
     // Try to schedule successors
     for( GraphNodeArray::const_iterator succ( successors->begin() ), end( successors->end() ); succ != end; ++succ )
