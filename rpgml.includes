@@ -1,0 +1,8 @@
+libRPGML/RPGML
+ROOT
+ROOT/core
+ROOT/cv
+ROOT/math
+ROOT/SDL
+ROOT/util
+templates
