@@ -62,6 +62,11 @@ Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Sco
 
   if( in.isOutput() )
   {
+    if( what_str == "isNull" )
+    {
+      return Value( in.getOutput() == nullptr );
+    }
+
     CountPtr< Node > node( scope->createNode( new Location( LOCATION, loc ), recursion_depth+1, String::Static( ".core.Get" ) ) );
 
     in.getOutput()->connect( node->getInput( "in" ) );
@@ -90,6 +95,11 @@ Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Sco
   else if( in.isArray() )
   {
     const ArrayBase *const in_array = in.getArray();
+
+    if( what_str == "isNull" )
+    {
+      return Value( in.getArray() == nullptr );
+    }
 
     if( what_str == "array_type" )
     {
@@ -131,6 +141,13 @@ Value Function_get::call_impl( const Location *loc, index_t recursion_depth, Sco
     {
       throw Exception()
         << "Type of 'in' must be Output or Array for 'array_type', is " << in.getTypeName()
+        ;
+    }
+
+    if( what_str == "isNull" )
+    {
+      throw Exception()
+        << "'what' string 'isNull' only valid for Output or Array, is " << in.getType()
         ;
     }
 

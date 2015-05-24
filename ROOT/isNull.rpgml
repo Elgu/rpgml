@@ -1,0 +1,6 @@
+
+Function isNull( x )
+{
+  return .core.get( "isNull", x );
+}
+
