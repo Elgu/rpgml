@@ -1,0 +1,10 @@
+
+Function read_textfile( filename, whole_file=true, rewind=nil, strip_newline=false, default=nil )
+{
+  TextFileReader reader( whole_file=whole_file, strip_newline=false );
+  filename    -> reader.filename;
+  rewind      -> reader.rewind;
+  default     -> reader.default;
+  return         reader.out;
+}
+

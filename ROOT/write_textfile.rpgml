@@ -1,0 +1,10 @@
+
+Function write_textfile( filename, in, whole_file=true, append=false )
+{
+  TextFileWriter writer( whole_file=whole_file, append=append );
+  filename    -> writer.filename;
+  in          -> writer.in;
+
+  needing( writer );
+  return         writer.out;
+}
