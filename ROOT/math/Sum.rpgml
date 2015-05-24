@@ -1,0 +1,34 @@
+
+Function Sum( n )
+{
+  if( n < 1 ) ERROR( "Argument 'n' must be greater than 0, is " + n );
+
+  InOut[ n ] in;
+  Output out;
+
+  if( n > 1 )
+  {
+    int n2 = n/2;
+
+    Sum l( n=n2 );
+    Sum u( n=n-n2 );
+
+    for i = 0 to n2-1
+    {
+      in[ i ] -> l.in[ i ];
+    }
+    for i = n2 to n-1
+    {
+      in[ i ] -> u.in[ i-n2 ];
+    }
+
+    out = l.out + u.out;
+  }
+  else
+  {
+    out = in[ 0 ];
+  }
+
+  return this;
+}
+
