@@ -296,8 +296,10 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
   bool has_exp = false;
   bool has_exp_sign = false;
   bool is_float = false;
+  bool is_32bit = true;
   bool is_hex = false;
-  bool is_signed = ( '-' == c );
+  bool has_sign = ( '-' == c );
+  bool is_signed = true;
 
   for(;;)
   {
@@ -316,6 +318,7 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
       }
       has_exp = true;
       is_float = true;
+      is_32bit = false;
     }
     else if( 'p' == c )
     {
@@ -329,6 +332,7 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
       }
       has_exp = true;
       is_float = true;
+      is_32bit = false;
     }
     else if( 'x' == c )
     {
@@ -338,10 +342,11 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
       }
       is_hex = true;
     }
-    else if( ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) )
+    else if( ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' ) )
     {
       if( !is_hex )
       {
+        if( c == 'f' ) break; // 'f' suffix
         throw "hex numbers must start with '0x'";
       }
     }
@@ -350,6 +355,7 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
       if( has_dot ) throw "Invalid float with two dots";
       has_dot = true;
       is_float = true;
+      is_32bit = false;
     }
     else if( '+' == c || '-' == c )
     {
@@ -372,30 +378,109 @@ int parse_number( char c, Scanner::ScannerSource *s, StringUnifier *, semantic_t
     }
   }
 
-  s->putBackChar();
+  // Check for suffix
+  switch( c )
+  {
+    case 'f':
+      is_float = true;
+      is_32bit = true;
+      break;
+
+    case 'u':
+    case 'U':
+      if( is_float ) throw "'u' suffix is only for integers";
+      if( has_sign ) throw "minus '-' in front of unsigned 'u' constant";
+      is_signed = false;
+      c = s->next( loc );
+      if( c == 'l' || c == 'L' )
+      {
+        is_32bit = false;
+      }
+      else
+      {
+        s->putBackChar();
+      }
+      break;
+
+    case 'l':
+    case 'L':
+      if( is_float ) throw "'l' suffix is only for integers, use decimal point '.' for doubles";
+      is_32bit = false;
+      c = s->next( loc );
+      if( c == 'u' || c == 'U' )
+      {
+        if( is_float ) throw "'u' suffix is only for integers";
+        if( has_sign ) throw "minus '-' in front of unsigned 'u' constant";
+        is_signed = true;
+      }
+      else
+      {
+        s->putBackChar();
+      }
+      break;
+
+    default:
+      s->putBackChar();
+  }
 
   s->tokenEnd( loc );
 
   if( is_float )
   {
-    const double f = strtod( str.c_str(), 0 );
-    token->fval = f;
-    return _Parser::token::F_CONSTANT;
+    if( is_32bit )
+    {
+      const float f = strtof( str.c_str(), 0 );
+      if( errno == ERANGE ) throw "floating point out of range";
+      token->fval = f;
+      return _Parser::token::F_CONSTANT;
+    }
+    else
+    {
+      const double d = strtod( str.c_str(), 0 );
+      if( errno == ERANGE ) throw "floating point out of range";
+      token->dval = d;
+      return _Parser::token::D_CONSTANT;
+    }
   }
   else if( is_signed )
   {
-    const int base = ( is_hex ? 16 : 10 );
-    const int64_t i = int64_t( strtoll( str.c_str(), 0, base ) );
-    token->ival = i;
-    return _Parser::token::I_CONSTANT;
+    if( is_32bit )
+    {
+      const int base = ( is_hex ? 16 : 10 );
+      const int32_t i = int32_t( strtol( str.c_str(), 0, base ) );
+      if( errno == ERANGE ) throw "integer constant out of range, try using 'u' or 'l'";
+      token->ival = i;
+      return _Parser::token::I_CONSTANT;
+    }
+    else
+    {
+      const int base = ( is_hex ? 16 : 10 );
+      const int64_t l = int64_t( strtoll( str.c_str(), 0, base ) );
+      if( errno == ERANGE ) throw "integer constant out of range, try using 'u' or 'l'";
+      token->lval = l;
+      return _Parser::token::L_CONSTANT;
+    }
   }
   else
   {
-    const int base = ( is_hex ? 16 : 10 );
-    const uint64_t u = uint64_t( strtoull( str.c_str(), 0, base ) );
-    token->uval = u;
-    return _Parser::token::I_CONSTANT;
+    if( is_32bit )
+    {
+      const int base = ( is_hex ? 16 : 10 );
+      const uint32_t u = uint32_t( strtoul( str.c_str(), 0, base ) );
+      if( errno == ERANGE ) throw "integer constant out of range, try using 'u' or 'l'";
+      token->uval = u;
+      return _Parser::token::U_CONSTANT;
+    }
+    else
+    {
+      const int base = ( is_hex ? 16 : 10 );
+      const uint64_t ul = uint64_t( strtoull( str.c_str(), 0, base ) );
+      if( errno == ERANGE ) throw "integer constant out of range, try using 'u' or 'l'";
+      token->ulval = ul;
+      return _Parser::token::UL_CONSTANT;
+    }
   }
+
 }
 
 static

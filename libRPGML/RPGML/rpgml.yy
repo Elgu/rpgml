@@ -45,9 +45,12 @@ namespace RPGML
 
 %union
 {
-  int64_t      ival;
-  uint64_t     uval;
-  double       fval;
+  int32_t      ival;
+  uint32_t     uval;
+  int64_t      lval;
+  uint64_t     ulval;
+  float        fval;
+  double       dval;
   Type::Enum   type_enum;
   UOP          uop;
   ASSIGN       assign;
@@ -69,7 +72,10 @@ namespace RPGML
 
 %destructor {} <ival>
 %destructor {} <uval>
+%destructor {} <lval>
+%destructor {} <ulval>
 %destructor {} <fval>
+%destructor {} <dval>
 %destructor {} <type_enum>
 %destructor {} <uop>
 %destructor {} <assign>
@@ -92,9 +98,12 @@ namespace RPGML
 %token            END          0 "end of file";
 %token            FLUSH        "flush evaluaton";
 %token  <str>     IDENTIFIER   "identifier";
-%token  <ival>    I_CONSTANT   "integer constant";
-%token  <uval>    U_CONSTANT   "unsigned integer constant";
+%token  <ival>    I_CONSTANT   "int32 constant";
+%token  <uval>    U_CONSTANT   "uint32 constant";
+%token  <lval>    L_CONSTANT   "int64 constant";
+%token  <ulval>   UL_CONSTANT  "uint64 constant";
 %token  <fval>    F_CONSTANT   "floating point constant";
+%token  <dval>    D_CONSTANT   "floating point constant";
 %token  <str>     S_CONSTANT   "string constant";
 %token            NIL          "nil";
 %token            ARROW        "->";
@@ -299,7 +308,10 @@ primary_expression
 constant
   : I_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
   | U_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | L_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | UL_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
   | F_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
+  | D_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
   | S_CONSTANT { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value($1) ); }
   | TRUE       { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value( true ) ); }
   | FALSE      { ($$) = new ConstantExpression( RPGML_GC_LOC(@$), RPGML::Value( false ) ); }
