@@ -66,20 +66,25 @@ bool Image::tick( void )
 
   cerr << "Loaded image '" << (**filename) << "'" << endl;
 
-  SDL_LockSurface_Guard lock_image( m_image );
+  if( m_image->format->BitsPerPixel != 24 && m_image->format->BitsPerPixel != 32 )
+  {
+    m_image.set( SDL_ConvertSurfaceFormat( m_image, SDL_PIXELFORMAT_RGBA8888, 0 ) );
+  }
+
+  if( m_image->format->BitsPerPixel != 24 && m_image->format->BitsPerPixel != 32 )
+  {
+    throw Exception()
+      << "Internal: Image loader returned something other than 24 or 32 bits per pixel."
+      ;
+  }
+
+  //SDL_LockSurface_Guard lock_image( m_image );
   const SDL_PixelFormat *const format = m_image->format;
   const int width  = m_image->w;
   const int height = m_image->h;
   const int pitch  = m_image->pitch;
   uint8_t *const pixels = (uint8_t*)( m_image->pixels );
   const index_t bpp = format->BytesPerPixel;
-
-  if( format->BitsPerPixel != 24 && format->BitsPerPixel != 32 )
-  {
-    throw Exception()
-      << "Internal: Image loader returned something other than 24 or 32 bits per pixel."
-      ;
-  }
 
   GET_OUTPUT_AS( OUTPUT_WIDTH , o_width , int );
   GET_OUTPUT_AS( OUTPUT_HEIGHT, o_height, int );
