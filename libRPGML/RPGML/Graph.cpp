@@ -644,20 +644,22 @@ int Graph::GraphNode::compare( const GraphNode *other ) const
 void Graph::GraphNode::gc_clear( void )
 {
   Base::gc_clear();
-  graph.reset();
-  node.reset();
   predecessors.reset();
   successors.reset();
+  graph.reset();
+  node.reset();
+  main_thread.reset();
 }
 
 void Graph::GraphNode::gc_getChildren( Children &children ) const
 {
   Base::gc_getChildren( children );
   children
-    << graph
-    << node
     << predecessors
     << successors
+    << graph
+    << node
+    << main_thread
     ;
 }
 
@@ -680,7 +682,7 @@ size_t Graph::GraphNode::doit( CountPtr< JobQueue > queue )
   catch( const RPGML::Exception &e )
   {
     graph->error()
-      << e.getBacktrace() << "\n"
+//      << e.getBacktrace() << "\n"
       << node->getIdentifier() << ": " << e.what()
       ;
     ret = 0;
