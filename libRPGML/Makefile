@@ -12,6 +12,7 @@ libRPGML_SOURCE=\
 	Array.cpp\
 	ArrayBase.cpp\
 	ArrayData.cpp\
+	Delay.cpp\
 	Backtrace.cpp\
 	StringUnifier.cpp\
 	Location.cpp\
@@ -51,12 +52,12 @@ SOURCE=\
 	$(libRPGML_SOURCE)\
 
 PARSER_FILES=\
- 	RPGML/rpgml.output\
+	RPGML/rpgml.output\
 	RPGML/location.hh\
- 	RPGML/position.hh\
- 	RPGML/rpgml.tab.cc\
- 	RPGML/rpgml.tab.hh\
- 	RPGML/stack.hh\
+	RPGML/position.hh\
+	RPGML/rpgml.tab.cc\
+	RPGML/rpgml.tab.hh\
+	RPGML/stack.hh\
 
 $(firstword $(PARSER_FILES)): RPGML/rpgml.yy
 	cd RPGML && bison -v rpgml.yy
