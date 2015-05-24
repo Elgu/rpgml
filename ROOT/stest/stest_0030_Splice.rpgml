@@ -1,0 +1,16 @@
+
+Splice s( dims=2, nx=2, ny=3 );
+
+float[,] a = [ 1.0f, 2.0f; 3.0f, 4.0f ];
+
+for x = 0 to 2-1
+for y = 0 to 3-1
+{
+  Output( a ) + x*10.0f + y*100.0f -> s.in[ x, y ];
+}
+
+print( s.out );
+print( "\n" );
+
+exit();
+
