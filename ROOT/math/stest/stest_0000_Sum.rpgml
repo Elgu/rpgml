@@ -1,0 +1,6 @@
+
+math.Sum sum( 5 );
+for i = 0 to 4 { counter()*(1+i) -> sum.in[ i ]; }
+print( sum.out + "\n" );
+exit( counter() >= 10 );
+
