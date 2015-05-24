@@ -27,6 +27,8 @@ namespace RPGML {
 
   typedef int32_t stride_t;
 
+  typedef int32_t refCount_t;
+
   template< bool B > struct StaticAssert { /* false */ };
   template<> struct StaticAssert< true >{ static const bool B = true; };
 
