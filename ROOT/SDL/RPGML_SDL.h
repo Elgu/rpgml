@@ -10,9 +10,8 @@ namespace SDL {
 
   class SDL_Surface_Guard : public Guard< SDL_Surface >
   {
-  public:
     typedef Guard< SDL_Surface > Base;
-
+  public:
     SDL_Surface_Guard( void )
     : Base( 0, SDL_FreeSurface )
     {}
