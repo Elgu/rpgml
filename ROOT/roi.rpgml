@@ -1,0 +1,16 @@
+
+Function roi( in, x, sx, y=nil, sy=nil, z=nil, sz=nil, t=nil, st=nil )
+{
+  ROI ret();
+  in -> ret.in;
+  x -> ret.x;
+  y -> ret.y;
+  z -> ret.z;
+  t -> ret.t;
+  sx -> ret.sx;
+  sy -> ret.sy;
+  sz -> ret.sz;
+  st -> ret.st;
+  return ret.out;
+}
+
