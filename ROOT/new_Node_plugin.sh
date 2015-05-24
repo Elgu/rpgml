@@ -79,9 +79,9 @@ done
 #echo INCLUDE_GUARD_NAMESPACES="'"${INCLUDE_GUARD_NAMESPACES}"'"
 #echo PLUGIN_NAMESPACES_NAME="'"${PLUGIN_NAMESPACES_NAME}"'"
 
-# TODO: Use a better path than ".."
-filter "${ROOT_dir}/../templates/RPGML_Node_TEMPLATE.h" "$PluginHeader"
-filter "${ROOT_dir}/../templates/RPGML_Node_TEMPLATE.cpp" "$PluginCPP"
+# Templates are relative to the script
+filter "$(dirname $0)""/../templates/RPGML_Node_TEMPLATE.h" "$PluginHeader"
+filter "$(dirname $0)""/../templates/RPGML_Node_TEMPLATE.cpp" "$PluginCPP"
 
 echo "Created $PluginHeader $PluginCPP"
 
