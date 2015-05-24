@@ -49,6 +49,7 @@ enum MOP1
   , MOP1_LOG2
   , MOP1_LOG1P
   , MOP1_ABS
+  , MOP1_SQR
 };
 
 static inline
@@ -65,6 +66,7 @@ const char *getMOP1Str( MOP1 op )
     , "sqrt"
     , "log", "log10", "log2", "log1p"
     , "abs"
+    , "sqr"
   };
   return str[ op ];
 };
@@ -127,7 +129,12 @@ MOP1 getMOP1( const char *op )
       switch( op[ 1 ] )
       {
         case 'i': return MOP1_SIN;
-        case 'q': return MOP1_SQRT;
+        case 'q':
+          if( op[ 2 ] == 'r' )
+          {
+            if     ( op[ 3 ] == 't'  ) return MOP1_SQRT;
+            else if( op[ 3 ] == '\0' ) return MOP1_SQR;
+          }
       }
       break;
 
@@ -261,6 +268,19 @@ struct  MathOp1_op< _T, MOP1_ABS >
   Ret operator()( const T &x ) const { return RPGML::math::abs( x ); }
 };
 
+template< class _T >
+struct  MathOp1_op< _T, MOP1_SQR >
+{
+  static const MOP1 op = MOP1_SQR;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef _T T, Ret;
+  Ret operator()( const T &x ) const { return Ret(x*x); }
+};
+
 template< class T, class Ret=T >
 static
 Ret mathOp1( MOP1 op, const T &x )
@@ -287,6 +307,7 @@ Ret mathOp1( MOP1 op, const T &x )
     case MOP1_LOG2   : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG2    > >()( x ) );
     case MOP1_LOG1P  : return Ret( MapOp< T, MathOp1_op< T, MOP1_LOG1P   > >()( x ) );
     case MOP1_ABS    : return Ret( MapOp< T, MathOp1_op< T, MOP1_ABS     > >()( x ) );
+    case MOP1_SQR    : return Ret( MapOp< T, MathOp1_op< T, MOP1_SQR     > >()( x ) );
     default:
       throw Exception() << "Undefined op";
   }
