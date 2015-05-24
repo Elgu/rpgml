@@ -1,0 +1,8 @@
+
+string textfile = "stest_0020_TextFileReader.txt"; 
+
+TextFileReader reader();
+textfile -> reader.filename;
+print( reader.out );
+exit( reader.last );
+
