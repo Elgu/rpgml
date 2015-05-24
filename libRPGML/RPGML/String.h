@@ -252,7 +252,8 @@ String toString( const Type &x )
 {
   std::ostringstream str;
   str << x;
-  return String( str.str() );
+  std::string ret( str.str() );
+  return String::MoveFrom( ret );
 }
 
 template<>
