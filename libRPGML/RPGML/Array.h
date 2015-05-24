@@ -1297,6 +1297,8 @@ typedef Array< CountPtr< Param          > >    ParamArray;
 typedef Array< CountPtr< const Sequence > > SequenceArray;
 typedef Array< CountPtr< ArrayBase      > >    ArrayArray;
 typedef Array< int                        >      IntArray;
+typedef Array< index_t                    >    IndexArray;
+typedef Array< stride_t                   >   StrideArray;
 
 template< class Element >
 CountPtr< Array< Element > > new_Array( GarbageCollector *gc, int dims, const Element *fill_value=0 )
