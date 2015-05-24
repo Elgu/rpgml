@@ -30,8 +30,6 @@ namespace RPGML {
 class Refcounted
 {
 public:
-  typedef index_t node;
-
   Refcounted( void )
   : m_refCount( 0 )
   {}
@@ -39,23 +37,23 @@ public:
   virtual ~Refcounted( void )
   {}
 
-  node ref( void ) const
+  refCount_t ref( void ) const
   {
     return ++m_refCount;
   }
 
-  node unref( void ) const
+  refCount_t unref( void ) const
   {
     return --m_refCount;
   }
 
-  node refCount( void ) const
+  refCount_t refCount( void ) const
   {
     return m_refCount;
   }
 
 private:
-  mutable Atomic< node > m_refCount;
+  mutable Atomic< refCount_t > m_refCount;
 };
 
 template< class _RefcountedType >
