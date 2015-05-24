@@ -33,6 +33,23 @@ void PrettyPrinter::visit( const ConstantExpression           *node )
       break;
     default          :
       node->value.print( (*o) );
+      const Type type = node->value.getType();
+      if( type.isInteger() && !type.isBool() )
+      {
+        if( !type.hasSign() )
+        {
+          (*o) << 'u';
+        }
+        if( type.isUInt64() || type.isInt64() )
+        {
+          (*o) << 'l';
+        }
+      }
+      else if( type.isFloat() )
+      {
+        (*o) << 'f';
+      }
+      break;
   }
 }
 
