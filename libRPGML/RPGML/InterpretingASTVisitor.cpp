@@ -865,41 +865,107 @@ void InterpretingASTVisitor::assign_impl( const AST::AssignmentStatementBase *no
   }
 }
 
+void InterpretingASTVisitor::connect( const Value &output_v, const Value &input_v )
+{
+  // cerr << "connect( " << output_v.getType() << ", " << input_v.getType() << " )" << endl;
+
+  if( input_v.isInput() )
+  {
+    CountPtr< Input > input = input_v.getInput();
+
+    if( input )
+    {
+      CountPtr< Output > output = toOutput( output_v );
+
+      // output might be null, but that is ok
+      CallLoc guard( this, LOCATION );
+      input->connect( output );
+    }
+    else
+    {
+      throw CallLocException( getCallLoc() )
+        << "Right of '->' is an Input, but it is null"
+        ;
+    }
+  }
+  else if( input_v.isInOut() )
+  {
+    connect( output_v, Value( input_v.getInOut()->getInput() ) );
+  }
+  else if( input_v.isArray() )
+  {
+    const ArrayBase *const input_array_base = input_v.getArray();
+
+    if( !output_v.isArray() )
+    {
+      throw CallLocException( getCallLoc() )
+        << "Right of '->' is an Array, presumably an Input array"
+        << ", but left of '->' is not an Array"
+        << ", is " << output_v.getType()
+        ;
+    }
+
+    const ArrayBase *const output_array_base = output_v.getArray();
+
+    if( input_array_base->getSize() != output_array_base->getSize() )
+    {
+      throw CallLocException( getCallLoc() )
+        << "Left and right of '->' are Arrays of different sizes"
+        << ": Left (Output) is " << output_array_base->getSize()
+        << ", right (Input) is " << input_array_base->getSize()
+        ;
+    }
+
+    for(
+        CountPtr< ArrayBase::CoordinatesIterator > X = input_array_base->getCoordinatesIterator()
+      ; !X->done()
+      ; X->next()
+      )
+    {
+      const ArrayBase::Coordinates x = X->get();
+      CallLoc guard( this, new Location( "Output element " + toString( x ) ) );
+      try
+      {
+        connect( output_array_base->getValue( x ), input_array_base->getValue( x ) );
+      }
+      catch( const CallLocException & )
+      {
+        throw;
+      }
+      catch( const RPGML::Exception &e )
+      {
+        // Includes ParseException
+        throw CallLocException( getCallLoc(), e );
+      }
+    }
+  }
+  else
+  {
+    throw CallLocException( getCallLoc() )
+      << "Right of '->' is not an Input or Array, is " << input_v.getTypeName()
+      ;
+  }
+}
+
 void InterpretingASTVisitor::visit( const AST::ConnectStatement *node )
 {
-  CountPtr< Output > output;
-  CountPtr< Input > input;
+  Value output_v;
+  Value input_v;
 
   {
     CallLoc guard( this, node->output->loc );
     node->output->invite( this );
-    Value output_v; output_v.swap( return_value );
-    output = toOutput( output_v );
+    output_v.swap( return_value );
   }
 
   {
     CallLoc guard( this, node->input->loc );
     node->input->invite( this );
-    Value input_v; input_v.swap( return_value );
-    if( input_v.isInput() )
-    {
-      input = input_v.getInput();
-    }
-    else if( input_v.isInOut() )
-    {
-      input = input_v.getInOut()->getInput();
-    }
-    else
-    {
-      throw CallLocException( getCallLoc() )
-        << "Right of '->' is not an Input, is " << input_v.getTypeName()
-        ;
-    }
+    input_v.swap( return_value );
   }
 
-  // output might be null, but that is ok
   CallLoc guard( this, node->loc );
-  input->connect( output );
+  connect( output_v, input_v );
 }
 
 void InterpretingASTVisitor::visit( const AST::AssignIdentifierStatement    *node )

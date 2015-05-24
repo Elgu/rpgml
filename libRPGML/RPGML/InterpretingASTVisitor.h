@@ -104,6 +104,7 @@ private:
   Value save_cast( const Value &x, Type type );
   Value save_cast( const Value &x, const InterpretingASTVisitor::TypeDescr *to );
   void save_assign( Value &lvalue, const Value &x );
+  void connect( const Value &output, const Value &input );
   CountPtr< Output > toOutput( const Value &x );
 
   CountPtr< Scope > scope;
