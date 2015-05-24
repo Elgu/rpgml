@@ -34,6 +34,20 @@ Function_print::Function_print( GarbageCollector *_gc, Frame *parent, const Shar
 Function_print::~Function_print( void )
 {}
 
+void Function_print::gc_clear( void )
+{
+  Base::gc_clear();
+  m_prev.reset();
+}
+
+void Function_print::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+  children
+    << m_prev
+    ;
+}
+
 const char *Function_print::getName( void ) const
 {
   return "print";
