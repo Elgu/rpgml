@@ -27,6 +27,7 @@ class Scope;
 
 class InterpretingFunction : public Function
 {
+  typedef Function Base;
 public:
   InterpretingFunction(
       GarbageCollector *gc
@@ -39,11 +40,14 @@ public:
     );
   virtual ~InterpretingFunction( void );
 
+  virtual void gc_clear( void );
+  virtual void gc_getChildren( Children &children );
+
   virtual Value call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t n_args, const Value *args );
   virtual const char *getName( void ) const { return m_name.get(); }
 
 private:
-  const CountPtr< const AST::CompoundStatement > m_body;
+  CountPtr< const AST::CompoundStatement > m_body;
   const String m_name;
 };
 

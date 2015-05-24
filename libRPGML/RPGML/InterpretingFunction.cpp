@@ -40,6 +40,20 @@ InterpretingFunction::InterpretingFunction(
 InterpretingFunction::~InterpretingFunction( void )
 {}
 
+void InterpretingFunction::gc_clear( void )
+{
+  Base::gc_clear();
+  m_body.reset();
+}
+
+void InterpretingFunction::gc_getChildren( Children &children )
+{
+  Base::gc_getChildren( children );
+  children
+    << m_body
+    ;
+}
+
 Value InterpretingFunction::call_impl( const Location *loc, index_t recursion_depth, Scope *scope, index_t, const Value * )
 {
   CountPtr< Frame > frame = new Frame( scope->getGC(), scope->getCurr() );
