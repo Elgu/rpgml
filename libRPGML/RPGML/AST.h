@@ -362,9 +362,19 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  void append( const Expression *expression )
+  void append( const CountPtr< const Expression > &expression )
   {
-    expressions.push_back( expression );
+    if( !expression.isNull() )
+    {
+      expressions.push_back( expression );
+    }
+    else
+    {
+      throw Exception()
+        << "Internal: expression is Null at" << "\n"
+        << Backtrace()
+        ;
+    }
   }
 
   virtual index_t length( void ) const { return index_t( expressions.size() ); }
@@ -392,9 +402,9 @@ public:
   virtual void gc_getChildren( Children &children ) const
   {
     Base::gc_getChildren( children );
-    for( expressions_t::const_iterator i( expressions.begin() ), end( expressions.end() ); i != end; ++i )
+    for( const auto &i : expressions )
     {
-      children << (*i);
+      children << i;
     }
   }
 
@@ -1244,7 +1254,11 @@ public:
 
   virtual void invite( Visitor *visitor ) const { visitor->invite_impl( this ); }
 
-  virtual void gc_clear( void ) { Base::gc_clear(); body.reset(); }
+  virtual void gc_clear( void )
+  {
+    Base::gc_clear();
+    body.reset();
+  }
 
   virtual void gc_getChildren( Children &children ) const
   {
