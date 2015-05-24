@@ -44,6 +44,8 @@ public:
 
   void run( uint8_t up_to_generation = MaxGenerations );
 
+  void moveObjectsTo( GarbageCollector *other );
+
 protected:
   friend class Collectable;
   void add( const Collectable *c );
@@ -70,8 +72,6 @@ class Collectable
 {
   friend class GarbageCollector;
 public:
-  typedef index_t refCount_t;
-
   explicit
   Collectable( GarbageCollector *_gc );
   Collectable( const Collectable &other );

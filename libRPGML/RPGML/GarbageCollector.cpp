@@ -20,6 +20,7 @@
 #include <cassert>
 #include <memory>
 #include <iostream>
+#include <typeinfo>
 
 using namespace std;
 
@@ -88,7 +89,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
   // Find all root objects:
   // Those who are referenced from outside by "foreign" references
   // will have a different refcount than calculated here
-  vector< index_t > refcount( n );
+  vector< refCount_t > refcount( n );
   for( size_t i=0; i<n; ++i )
   {
     const Collectable *const obj = m_cs[ i ];
@@ -196,7 +197,22 @@ void GarbageCollector::sweep( CollectableArray &garbage )
   for( index_t i=0; i<garbage.size(); ++i )
   {
     const Collectable *const chunk = garbage[ i ];
-    if( chunk ) delete const_cast< Collectable* >( chunk );
+    if( chunk )
+    {
+      if( chunk->refCount() <= 0 )
+      {
+        delete const_cast< Collectable* >( chunk );
+      }
+      else
+      {
+        std::cerr
+          << "warning: Object " << (void*)chunk << " should be sweeped"
+          << ", but still has " << chunk->refCount() << " references to it"
+          << ": is a '" << typeid(*chunk).name() << "'"
+          << std::endl
+          ;
+      }
+    }
   }
 }
 
@@ -232,6 +248,19 @@ void GarbageCollector::run( uint8_t up_to_generation )
 
   // cs_new now contains garbage
   sweep( cs_new );
+}
+
+void GarbageCollector::moveObjectsTo( GarbageCollector *other )
+{
+  for( auto &c : m_cs )
+  {
+    CountPtr< const Collectable > tmp( c );
+    remove( tmp );
+    if( other )
+    {
+      other->add( tmp );
+    }
+  }
 }
 
 Collectable::Collectable( GarbageCollector *_gc )
