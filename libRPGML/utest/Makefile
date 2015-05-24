@@ -1,5 +1,6 @@
 CFLAGS=\
 	`cppunit-config --cflags`\
+	-std=c++11\
 	-O0 -g3\
 	-I..\
 #	-DGC_DEBUG\
