@@ -33,7 +33,7 @@ public:
 
   virtual ~Parser( void );
 
-  virtual void append( CountPtr< Statement > statement ) = 0;
+  virtual void append( const CountPtr< Statement > &statement ) = 0;
 };
 
 class CompoundingParser : public Parser
@@ -47,7 +47,7 @@ public:
   virtual ~CompoundingParser( void )
   {}
 
-  virtual void append( Statement *statement )
+  virtual void append( const CountPtr< Statement > &statement )
   {
     statements.push_back( statement );
   }

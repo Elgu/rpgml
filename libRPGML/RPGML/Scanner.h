@@ -48,7 +48,7 @@ public:
 
   int yylex( semantic_type *yylval, location_type *yylloc );
 
-  virtual void append( CountPtr< Statement > statement ) = 0;
+  virtual void append( const CountPtr< Statement > &statement ) = 0;
 
   class ScannerSource : public Refcounted
   {

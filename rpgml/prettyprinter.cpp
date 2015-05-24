@@ -48,7 +48,7 @@ public:
   virtual ~PrettyPrintingParser( void )
   {}
 
-  virtual void append( CountPtr< Statement > statement )
+  virtual void append( const CountPtr< Statement > &statement )
   {
     statement->invite( &m_printer );
     m_printer.getStream() << std::endl;
