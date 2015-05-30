@@ -882,8 +882,8 @@ bool Value::operator&&( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Value l = left .to( Type::BOOL );
-    const Value r = right.to( Type::BOOL );
+    const bool l = left .save_cast< bool >();
+    const bool r = right.save_cast< bool >();
     return ( l && r );
   }
 
@@ -899,8 +899,8 @@ bool Value::operator||( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Value l = left .to( Type::BOOL );
-    const Value r = right.to( Type::BOOL );
+    const bool l = left .save_cast< bool >();
+    const bool r = right.save_cast< bool >();
     return ( l || r );
   }
 
@@ -916,9 +916,9 @@ bool Value::log_xor   ( const Value &right ) const
   const Value &left = (*this);
   if( left.isScalar() && right.isScalar() )
   {
-    const Value l = left .to( Type::BOOL );
-    const Value r = right.to( Type::BOOL );
-    return ( l.getBool() ^ r.getBool() );
+    const bool l = left .save_cast< bool >();
+    const bool r = right.save_cast< bool >();
+    return ( l ^ r );
   }
 
   throw Exception()
@@ -934,19 +934,19 @@ Value Value::operator<<( const Value &right ) const
 
   if( left.isInteger() && right.isInteger() )
   {
-    const Value r = right.to( Type::INT );
+    const int r = right.save_cast< int >();
 
     switch( left.getType().getEnum() )
     {
-      case Type::BOOL  : return Value( left.getBool  () << r.getInt() );
-      case Type::UINT8 : return Value( left.getUInt8 () << r.getInt() );
-      case Type::INT8  : return Value( left.getInt8  () << r.getInt() );
-      case Type::UINT16: return Value( left.getUInt16() << r.getInt() );
-      case Type::INT16 : return Value( left.getInt16 () << r.getInt() );
-      case Type::UINT32: return Value( left.getUInt32() << r.getInt() );
-      case Type::INT32 : return Value( left.getInt32 () << r.getInt() );
-      case Type::UINT64: return Value( left.getUInt64() << r.getInt() );
-      case Type::INT64 : return Value( left.getInt64 () << r.getInt() );
+      case Type::BOOL  : return Value( left.getBool  () << r );
+      case Type::UINT8 : return Value( left.getUInt8 () << r );
+      case Type::INT8  : return Value( left.getInt8  () << r );
+      case Type::UINT16: return Value( left.getUInt16() << r );
+      case Type::INT16 : return Value( left.getInt16 () << r );
+      case Type::UINT32: return Value( left.getUInt32() << r );
+      case Type::INT32 : return Value( left.getInt32 () << r );
+      case Type::UINT64: return Value( left.getUInt64() << r );
+      case Type::INT64 : return Value( left.getInt64 () << r );
       default:
         throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
@@ -965,19 +965,19 @@ Value Value::operator>>( const Value &right ) const
 
   if( left.isInteger() && right.isInteger() )
   {
-    const Value r = right.to( Type::INT );
+    const int r = right.save_cast< int >();
 
     switch( left.getType().getEnum() )
     {
-      case Type::BOOL  : return Value( left.getBool  () >> r.getInt() );
-      case Type::UINT8 : return Value( left.getUInt8 () >> r.getInt() );
-      case Type::INT8  : return Value( left.getInt8  () >> r.getInt() );
-      case Type::UINT16: return Value( left.getUInt16() >> r.getInt() );
-      case Type::INT16 : return Value( left.getInt16 () >> r.getInt() );
-      case Type::UINT32: return Value( left.getUInt32() >> r.getInt() );
-      case Type::INT32 : return Value( left.getInt32 () >> r.getInt() );
-      case Type::UINT64: return Value( left.getUInt64() >> r.getInt() );
-      case Type::INT64 : return Value( left.getInt64 () >> r.getInt() );
+      case Type::BOOL  : return Value( left.getBool  () >> r );
+      case Type::UINT8 : return Value( left.getUInt8 () >> r );
+      case Type::INT8  : return Value( left.getInt8  () >> r );
+      case Type::UINT16: return Value( left.getUInt16() >> r );
+      case Type::INT16 : return Value( left.getInt16 () >> r );
+      case Type::UINT32: return Value( left.getUInt32() >> r );
+      case Type::INT32 : return Value( left.getInt32 () >> r );
+      case Type::UINT64: return Value( left.getUInt64() >> r );
+      case Type::INT64 : return Value( left.getInt64 () >> r );
       default:
         throw ParseException( new Location( __FILE__, __LINE__ ) ) << "Internal: Unhandled case";
     }
