@@ -36,6 +36,7 @@ TextFileWriter::TextFileWriter( GarbageCollector *_gc, const String &identifier,
 : Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
 {
   DEFINE_INPUT ( INPUT_FILENAME, "filename" );
+  DEFINE_INPUT ( INPUT_DOIT, "doit" );
   DEFINE_INPUT ( INPUT_IN  , "in"  );
   DEFINE_OUTPUT( OUTPUT_OUT, "out" );
   DEFINE_PARAM ( PARAM_APPEND , "append", TextFileWriter::set_append );
@@ -72,9 +73,14 @@ void TextFileWriter::set_whole_file( const Value &value, index_t, int, const ind
 
 bool TextFileWriter::tick( void )
 {
-  setAllOutputChanged();
+  GET_INPUT_AS_DIMS_IF_CONNECTED( INPUT_DOIT, doit, bool, 0 );
 
   GET_INPUT_AS_DIMS( INPUT_FILENAME, filename, String, 0 );
+  getOutput( OUTPUT_OUT )->setData( const_cast< StringArray* >( filename ) );
+
+  if( doit && !(**doit) ) return true;
+
+  setAllOutputChanged();
   GET_INPUT_AS_DIMS( INPUT_IN, in, String, 0 );
 
   if( (**filename) != m_last_filename )
@@ -116,7 +122,7 @@ bool TextFileWriter::tick( void )
     }
   }
 
-  getOutput( OUTPUT_OUT )->setData( const_cast< StringArray* >( filename ) );
+
   return true;
 }
 

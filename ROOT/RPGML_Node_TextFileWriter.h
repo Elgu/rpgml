@@ -48,6 +48,7 @@ private:
   enum Inputs
   {
     INPUT_FILENAME,
+    INPUT_DOIT,
     INPUT_IN,
     NUM_INPUTS
   };
