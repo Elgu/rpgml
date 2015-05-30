@@ -160,6 +160,20 @@ struct MathOp1_op< _T, MOP1_MINUS >
   Ret operator()( const T &x ) const { return Ret( -Ret( x ) ); }
 };
 
+template<>
+struct MathOp1_op< String, MOP1_MINUS >
+{
+  static const MOP1 op = MOP1_MINUS;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef String T;
+  typedef String Ret;
+  Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for unary '-'"; }
+};
+
 template< class _T >
 struct  MathOp1_op< _T, MOP1_PLUS >
 {
@@ -187,6 +201,20 @@ struct MathOp1_op< _T, MOP1_LOG_NOT >
   Ret operator()( const T &x ) const { return bool( x ); }
 };
 
+template<>
+struct MathOp1_op< String, MOP1_LOG_NOT >
+{
+  static const MOP1 op = MOP1_LOG_NOT;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef String T;
+  typedef bool Ret;
+  Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for unary '!', use comparison instead."; }
+};
+
 template< class _T >
 struct MathOp1_op< _T, MOP1_BIT_NOT >
 {
@@ -210,6 +238,20 @@ struct MathOp1_op< _T, MOP1_BIT_NOT >
   }
 };
 
+template<>
+struct MathOp1_op< String, MOP1_BIT_NOT >
+{
+  static const MOP1 op = MOP1_BIT_NOT;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef String T;
+  typedef bool Ret;
+  Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for unary '~'"; }
+};
+
 #define DEFINE_FLOAT_MATHOP1( mop1, func ) \
   template< class _T > \
   struct MathOp1_op< _T, mop1 > \
@@ -225,6 +267,19 @@ struct MathOp1_op< _T, MOP1_BIT_NOT >
     Ret f( float x ) const { return func ## f( x ); } \
     Ret f( double x ) const { return func( x ); } \
     Ret operator()( const T &x ) const { return f( Ret( x ) ); } \
+  }; \
+  template<> \
+  struct MathOp1_op< String, mop1 > \
+  { \
+    static const MOP1 op = mop1; \
+    template< class OtherT > \
+    struct Other \
+    { \
+      typedef MathOp1_op< OtherT, op > Op; \
+    }; \
+    typedef String T; \
+    typedef String Ret; \
+    Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for '" #func "'"; } \
   }
 
 DEFINE_FLOAT_MATHOP1( MOP1_SIN  , sin   );
@@ -268,6 +323,19 @@ struct  MathOp1_op< _T, MOP1_ABS >
   Ret operator()( const T &x ) const { return RPGML::math::abs( x ); }
 };
 
+template<>
+struct  MathOp1_op< String, MOP1_ABS >
+{
+  static const MOP1 op = MOP1_ABS;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef String T, Ret;
+  Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for 'abs()"; }
+};
+
 template< class _T >
 struct  MathOp1_op< _T, MOP1_SQR >
 {
@@ -279,6 +347,19 @@ struct  MathOp1_op< _T, MOP1_SQR >
   };
   typedef _T T, Ret;
   Ret operator()( const T &x ) const { return Ret(x*x); }
+};
+
+template<>
+struct  MathOp1_op< String, MOP1_SQR >
+{
+  static const MOP1 op = MOP1_SQR;
+  template< class OtherT >
+  struct Other
+  {
+    typedef MathOp1_op< OtherT, op > Op;
+  };
+  typedef String T, Ret;
+  Ret operator()( const T & ) const { throw Exception() << "Unsupported type 'string' for 'sqr()"; }
 };
 
 template< class T, class Ret=T >
