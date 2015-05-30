@@ -71,6 +71,7 @@ struct MapOp< Value, _Op >
       case Type::INT64 : return Ret( MapOp< int64_t , Op >()( x.getInt64 () ) );
       case Type::FLOAT : return Ret( MapOp< float   , Op >()( x.getFloat () ) );
       case Type::DOUBLE: return Ret( MapOp< double  , Op >()( x.getDouble() ) );
+      case Type::STRING: return Ret( MapOp< String  , Op >()( x.getString() ) );
       case Type::ARRAY : return Ret( MapOp< const ArrayBase*, Op >()( x.getArray() ) );
       default:
         throw Exception() << "Unsupported Type";
