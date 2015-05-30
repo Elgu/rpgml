@@ -1,0 +1,30 @@
+
+Function clamp( in, min_value, max_value )
+{
+  if( getType( in ) == "Array" )
+  {
+    int dims = getDims( in );
+    if( dims == 1 )
+    {
+      int sx = getSize( in )[ 0 ];
+      
+      Output[ sx ] out = nil;
+
+      for x = 0 to sx-1
+      {
+        out[ x ] = clamp( in[ x ], min_value, max_value );
+      }
+
+      return out;
+    }
+    else
+    {
+      ERROR( dims + " dims not implemented yet" );
+    }
+  }
+  else
+  {
+    return max( min_value, min( in, max_value ) );
+  }
+}
+
