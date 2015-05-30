@@ -1,0 +1,65 @@
+/* This file is part of RPGML.
+ *
+ * Copyright (c) 2014, Gunnar Payer, All rights reserved.
+ *
+ * RPGML is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
+#include "RPGML_Node_Identity.h"
+
+// RPGML_CXXFLAGS=
+// RPGML_LDFLAGS=
+
+#include <algorithm>
+
+using namespace std;
+
+namespace RPGML {
+namespace core {
+
+Identity::Identity( GarbageCollector *_gc, const String &identifier, const RPGML::SharedObject *so )
+: Node( _gc, identifier, so, NUM_INPUTS, NUM_OUTPUTS, NUM_PARAMS )
+{
+  DEFINE_INPUT ( INPUT_IN  , "in"  );
+  DEFINE_OUTPUT( OUTPUT_OUT, "out" );
+}
+
+Identity::~Identity( void )
+{}
+
+const char *Identity::getName( void ) const
+{
+  return "core.Identity";
+}
+
+void Identity::gc_clear( void )
+{
+  Base::gc_clear();
+}
+
+void Identity::gc_getChildren( Children &children ) const
+{
+  Base::gc_getChildren( children );
+}
+
+bool Identity::tick( void )
+{
+  getOutput( OUTPUT_OUT )->setData( const_cast< ArrayBase* >( getInput( INPUT_IN )->getData() ) );
+  return true;
+}
+
+ } // namespace core {
+} // namespace RPGML
+
+RPGML_CREATE_NODE( Identity, core:: )
+

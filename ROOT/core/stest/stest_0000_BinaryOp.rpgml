@@ -1,0 +1,18 @@
+PRINT( ( 1 + 2 ) + "\n" );
+PRINT( ( 2.5 + 1 ) + "\n" );
+PRINT( "foo" + "\n" );
+
+Output i = counter();
+
+print( i + "\n" );
+
+if( false )
+{
+  Output a1 = [ 3, 4, -3 ];
+  Output s1 = [ "foo", "bar", "baz" ];
+  print( a1 + s1 );
+  print( "\n" );
+}
+
+exit( i == 1 );
+

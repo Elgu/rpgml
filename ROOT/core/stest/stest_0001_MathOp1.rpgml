@@ -1,0 +1,12 @@
+Function _mop( op, x )
+{
+  math.MathOp1 ret( op=op );
+  x    -> ret.in;
+  return  ret.out;
+}
+
+Output[ 3 ] c = [ counter(), counter()*2, counter()*3 ];
+print( _mop( "sqr", counter() ) + "\n" );
+print( _mop( "sqr", c ) ); print( "\n" );
+
+exit( counter() >= 2 ); # 0, 1, 2

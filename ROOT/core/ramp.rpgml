@@ -1,0 +1,16 @@
+
+Function ramp( type, dims, c0, sizeX=nil, cx=nil, sizeY=nil, cy=nil, sizeZ=nil, cz=nil, sizeT=nil, ct=nil )
+{
+  .core.Ramp ret( type=type, dims=dims );
+  c0 -> ret.c0;
+  cx -> ret.cx;
+  cy -> ret.cy;
+  cz -> ret.cz;
+  ct -> ret.ct;
+  sizeX -> ret.sizeX;
+  sizeY -> ret.sizeY;
+  sizeZ -> ret.sizeZ;
+  sizeT -> ret.sizeT;
+  return ret.out;
+}
+
