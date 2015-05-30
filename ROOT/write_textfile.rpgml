@@ -1,8 +1,9 @@
 
-Function write_textfile( filename, in, whole_file=true, append=false )
+Function write_textfile( filename, in, whole_file=true, append=false, doit=nil )
 {
   TextFileWriter writer( whole_file=whole_file, append=append );
   filename    -> writer.filename;
+  doit        -> writer.doit;
   in          -> writer.in;
 
   needing( writer );
