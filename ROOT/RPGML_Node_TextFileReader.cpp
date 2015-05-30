@@ -92,6 +92,7 @@ bool TextFileReader::tick( void )
   {
     if( default_output )
     {
+      //cerr << getIdentifier() << ": Filename not ready: using default" << endl;
       (**out) = (**default_output);
       getOutput( OUTPUT_FILENAME_OUT )->setData( const_cast< StringArray* >( filename.get() ) );
       setAllOutputChanged();
@@ -125,6 +126,7 @@ bool TextFileReader::tick( void )
   {
     if( default_output )
     {
+      //cerr << getIdentifier() << ": File '" << (**filename) << "' not found: using default" << endl;
       (**out) = (**default_output);
       getOutput( OUTPUT_FILENAME_OUT )->setData( const_cast< StringArray* >( filename.get() ) );
       setAllOutputChanged();
