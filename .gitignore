@@ -5,7 +5,6 @@
 .depend
 .*.swp
 *.so
-core
 /libRPGML/utest/utest_main
 /rpgml/rpgml
 /rpgml/prettyprinter
