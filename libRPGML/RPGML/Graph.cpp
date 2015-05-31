@@ -230,6 +230,8 @@ void Graph::execute( const CountPtr< JobQueue > &queue )
     const size_t job_ret = job->work( main_thread_queue );
     if( JobQueue::End == job_ret ) break;
   }
+
+  getGC()->run();
 }
 
 void Graph::schedule( const CountPtr< JobQueue > &queue, const CountPtr< JobQueue > &main_thread_queue )
