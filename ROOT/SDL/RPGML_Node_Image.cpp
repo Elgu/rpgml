@@ -64,7 +64,7 @@ bool Image::tick( void )
       ;
   }
 
-  cerr << "Loaded image '" << (**filename) << "'" << endl;
+//  cerr << "Loaded image '" << (**filename) << "'" << endl;
 
   if( m_image->format->BitsPerPixel != 24 && m_image->format->BitsPerPixel != 32 )
   {
