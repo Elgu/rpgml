@@ -1,0 +1,9 @@
+
+Function Mean( n )
+{
+  Sum _ret( n );
+  InOut[ n ] in = _ret.in;
+  Output out = _ret.out / n;
+  return this;
+}
+
