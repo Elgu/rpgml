@@ -276,6 +276,8 @@ std::ostream &ArrayBase::print( std::ostream &o, int newline_dim ) const
   X last( dims, last_p );
   std::fill( last_p, last_p + dims, 0 );
 
+  const bool is_string = getType().isString();
+
   for( ; !i->done() && !c->done(); i->next(), c->next() )
   {
     const X x = c->get();
@@ -304,7 +306,9 @@ std::ostream &ArrayBase::print( std::ostream &o, int newline_dim ) const
     }
 
     const Value v = i->get();
+    if( is_string ) o << "\"";
     v.print( o );
+    if( is_string ) o << "\"";
 
     std::copy( &x[ 0 ], &x[ 0 ] + dims, last_p );
   }
