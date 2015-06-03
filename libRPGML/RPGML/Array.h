@@ -511,24 +511,10 @@ public:
   }
 
   template< class Element >
-  CountPtr< Array< Element > > cloneAs( void ) const
-  {
-    CountPtr< Array< Element > > ret = new Array< Element >( getGC(), getSize() );
+  CountPtr< Array< Element > > cloneAs( void ) const;
 
-    CountPtr< ArrayBase::ConstValueIterator > i = getConstValueIterator();
-
-    for(
-        typename Array< Element >::iterator o( ret->begin() ), e( ret->end() )
-      ; !i->done() && ( o != e )
-      ; i->next(), ++o
-      )
-    {
-      const Value xi = i->get();
-      (*o) = xi.save_cast< Element >();
-    }
-
-    return ret;
-  }
+  template< class Element >
+  CountPtr< Array< Element > > cloneTo( void ) const;
 
   virtual CountPtr< ArrayBase > copy( void ) const
   {
@@ -1339,11 +1325,43 @@ CountPtr< Array< Element > > cloneAs( const ArrayBase *base )
     ; i->next(), ++o
     )
   {
-    const Value xi = i->get();
-    (*o) = xi.save_cast< Element >();
+    (*o) = i->get().save_cast< Element >();
   }
 
   return ret;
+}
+
+template< class Element >
+CountPtr< Array< Element > > cloneTo( const ArrayBase *base )
+{
+  CountPtr< Array< Element > > ret = new Array< Element >( base->getGC(), base->getSize() );
+
+  CountPtr< ArrayBase::ConstValueIterator > i = base->getConstValueIterator();
+
+  for(
+      typename Array< Element >::iterator o( ret->begin() ), e( ret->end() )
+    ; !i->done() && ( o != e )
+    ; i->next(), ++o
+    )
+  {
+    (*o) = i->get().to< Element >();
+  }
+
+  return ret;
+}
+
+template< class Element >
+template< class As >
+CountPtr< Array< As > > Array< Element >::cloneAs( void ) const
+{
+  return RPGML::cloneAs< As >( this );
+}
+
+template< class Element >
+template< class To >
+CountPtr< Array< To > > Array< Element >::cloneTo( void ) const
+{
+  return RPGML::cloneTo< To >( this );
 }
 
 template< class Element >
