@@ -1,0 +1,80 @@
+
+Output i = counter();
+
+exit( i >= 1 );
+
+if( true )
+{
+  core.IfThenElse    ite();
+  ( i == 0 ) -> ite.in_if;
+  23         -> ite.in_then;
+  "foo"      -> ite.in_else;
+
+  print( ite.out + "\n" );
+}
+
+if( true )
+{
+  Output c = [ 0, 1, 2 ] * (counter()+1);
+
+  Output t = [ 1.5, 3.5, 1.25 ];
+  Output e = [ 2  , 3  , 4    ];
+
+  core.IfThenElse    ite();
+  ( c >= 2 ) -> ite.in_if;
+  t -> ite.in_then;
+  e -> ite.in_else;
+
+  print( ite.out );
+  print( "\n" );
+}
+
+if( true )
+{
+  Output c = [ 1, 2, 3, 4 ] + counter();
+
+  Output t = [ "foo", "bar", "bat", "baz" ];
+  Output e = "false";
+
+  core.IfThenElse    ite();
+  bool( c % 2 ) -> ite.in_if;
+  t -> ite.in_then;
+  e -> ite.in_else;
+
+  print( ite.out );
+  print( "\n" );
+}
+
+if( true )
+{
+  Output c = [ 0, 1, 2 ] + counter();
+
+  Output t = 11.5;
+  Output e = [ 2  , 3  , 4    ];
+
+  core.IfThenElse    ite();
+  bool( c % 2 ) -> ite.in_if;
+  t -> ite.in_then;
+  e -> ite.in_else;
+
+  print( ite.out );
+  print( "\n" );
+}
+
+if( true )
+{
+  Output c = [ 1, 2, 3 ] + counter();
+
+  Output t = [ 1.5, 3.5, 1.25 ];
+  Output e = 42;
+
+  core.IfThenElse    ite();
+  bool( c % 2 ) -> ite.in_if;
+  t -> ite.in_then;
+  e -> ite.in_else;
+
+  print( ite.out );
+  print( "\n" );
+}
+
+
