@@ -613,6 +613,13 @@ Value Value::save_cast( Type type ) const
       return Value( x.getInOut()->getOutput() );
     }
   }
+  else if( type.isFrame() )
+  {
+    if( xType.isNode() )
+    {
+      return Value( static_cast< Frame* >( x.getNode() ) );
+    }
+  }
 
   throw Value::CastFailed( x.getType(), type )
     << ": Cannot be cast savely directly, probably needs an explicit cast"
