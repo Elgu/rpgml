@@ -47,7 +47,7 @@ for i in []
 }
 PRINT( "\n" );
 
-for i in [ 23, 0.75, "foo", Frame{ int i=43; } ]
+for i = 23, 0.75, "foo", Frame{ int i=43; }
 {
   PRINT( i );
   PRINT( " " );

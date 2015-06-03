@@ -266,6 +266,8 @@ not_equal_sides:
     ;
 }
 
+
+
 void InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *node )
 {
   const ArrayBase *const array = node->descr_array;
@@ -284,7 +286,108 @@ void InterpretingASTVisitor::visit( const AST::ArrayConstantExpression      *nod
 
   fill_array( array, size, ret->elements(), dims-1 );
 
-  return_value = Value( ret.get() );
+  typedef ArrayBase::Coordinates Pos;
+
+  Type non_primitive;
+  Type scalar;
+  bool has_string = false;
+  for( ValueArray::const_iterator vi( ret->begin() ), end( ret->end() ); vi != end; ++vi )
+  {
+    const Value &v = (*vi);
+
+    if( !non_primitive.isNil() )
+    {
+      if( v.getType() != non_primitive )
+      {
+        throw Exception()
+          << "Arrays of non-primitive types must only that type"
+          << ": First is " << non_primitive
+          << ", at " << Pos( vi.getDims(), vi.getPos() ) << " is " << v.getType()
+          ;
+      }
+    }
+    else if( has_string && !v.isString() )
+    {
+      throw Exception()
+        << "Arrays of string types must only that type"
+        << ": At " << Pos( vi.getDims(), vi.getPos() ) << " is " << v.getType()
+        ;
+    }
+    else if( !scalar.isNil() && !v.isScalar() )
+    {
+      throw Exception()
+        << "Arrays of scalar type must only contain scalar values"
+        << ": At " << Pos( vi.getDims(), vi.getPos() ) << " is " << v.getType()
+        ;
+    }
+
+    if( v.isString() )
+    {
+      has_string = true;
+    }
+    else if( v.isScalar() )
+    {
+      if( !scalar.isNil() )
+      {
+        scalar = Type::Ret( v.getType(), scalar );
+      }
+      else
+      {
+        scalar = v.getType();
+      }
+    }
+    else
+    {
+      non_primitive = v.getType();
+    }
+  }
+
+  if( has_string )
+  {
+    return_value = Value( ret->cloneTo< String >() );
+  }
+  else if( !scalar.isNil() )
+  {
+    switch( scalar.getEnum() )
+    {
+      case Type::BOOL  : return_value = Value( ret->cloneTo< bool     >() ); break;
+      case Type::UINT8 : return_value = Value( ret->cloneTo< uint8_t  >() ); break;
+      case Type::INT8  : return_value = Value( ret->cloneTo< int8_t   >() ); break;
+      case Type::UINT16: return_value = Value( ret->cloneTo< uint16_t >() ); break;
+      case Type::INT16 : return_value = Value( ret->cloneTo< int16_t  >() ); break;
+      case Type::UINT32: return_value = Value( ret->cloneTo< uint32_t >() ); break;
+      case Type::INT32 : return_value = Value( ret->cloneTo< int32_t  >() ); break;
+      case Type::UINT64: return_value = Value( ret->cloneTo< uint64_t >() ); break;
+      case Type::INT64 : return_value = Value( ret->cloneTo< int64_t  >() ); break;
+      case Type::FLOAT : return_value = Value( ret->cloneTo< float    >() ); break;
+      case Type::DOUBLE: return_value = Value( ret->cloneTo< double   >() ); break;
+      default:
+        throw Exception()
+          << "Internal: Expected scalar type, got " << scalar
+          ;
+    }
+  }
+  else
+  {
+    switch( non_primitive.getEnum() )
+    {
+      case Type::NIL     : return_value = Value( ret ); break; // do nothing
+      case Type::FRAME   : return_value = Value( ret->cloneTo< CountPtr< Frame          > >() ); break;
+      case Type::FUNCTION: return_value = Value( ret->cloneTo< CountPtr< Function       > >() ); break;
+      case Type::NODE    : return_value = Value( ret->cloneTo< CountPtr< Node           > >() ); break;
+      case Type::OUTPUT  : return_value = Value( ret->cloneTo< CountPtr< Output         > >() ); break;
+      case Type::INPUT   : return_value = Value( ret->cloneTo< CountPtr< Input          > >() ); break;
+      case Type::INOUT   : return_value = Value( ret->cloneTo< CountPtr< InOut          > >() ); break;
+      case Type::PARAM   : return_value = Value( ret->cloneTo< CountPtr< Param          > >() ); break;
+      case Type::SEQUENCE: return_value = Value( ret->cloneTo< CountPtr< const Sequence > >() ); break;
+      case Type::ARRAY   : return_value = Value( ret->cloneTo< CountPtr< ArrayBase      > >() ); break;
+//      case Type::REF     : return_value = Value( ret->cloneTo< Reference                  >() ); break;
+      default:
+        throw Exception()
+          << "Internal: Expected non-primitive type, got " << scalar
+          ;
+    }
+  }
 }
 
 void InterpretingASTVisitor::visit( const AST::FrameConstantExpression *node )
