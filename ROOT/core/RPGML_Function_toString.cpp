@@ -64,8 +64,7 @@ Value Function_toString::call_impl( const Location *loc, index_t recursion_depth
 
   if( in.isOutput() )
   {
-    CountPtr< Node > node = scope->createNode( loc, recursion_depth+1, String::Static( ".core.Cast" ) );
-    node->getParam( "to" )->set( Value( String::Static( "string" ) ) );
+    CountPtr< Node > node = scope->createNode( loc, recursion_depth+1, String::Static( ".core.ToString" ) );
     in.getOutput()->connect( node->getInput( "in" ) );
     return Value( node->getOutput( "out" ) );
   }
