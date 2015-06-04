@@ -264,3 +264,12 @@ ROOT/RPGML_Node_Splice.h
 ROOT/SDL/RPGML_Node_SaveBMP.cpp
 ROOT/SDL/RPGML_Node_SaveBMP.h
 libRPGML/RPGML/rpgml.yy
+ROOT/core/RPGML_Block.h
+ROOT/core/RPGML_Node_IfThenElse.cpp
+ROOT/core/RPGML_Node_IfThenElse.h
+ROOT/core/RPGML_Function_toString.cpp
+ROOT/core/RPGML_Function_toString.h
+ROOT/core/RPGML_Function_toString.cpp
+ROOT/core/RPGML_Function_toString.h
+ROOT/core/RPGML_Node_ToString.cpp
+ROOT/core/RPGML_Node_ToString.h
