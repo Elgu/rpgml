@@ -736,25 +736,68 @@ void InterpretingASTVisitor::visit( const AST::IfThenElseExpression         *nod
   node->condition->invite( this );
   Value condition; condition.swap( return_value );
 
-  bool is_true;
-  try
+  if( condition.isScalar() )
   {
-    is_true = condition.to( Type::Bool() ).getBool();
+    bool is_true;
+    try
+    {
+      is_true = condition.to( Type::Bool() ).getBool();
+    }
+    catch( const RPGML::Exception &e )
+    {
+      throw ParseException( node->condition->loc )
+        << ": Unsupported type '" << condition.getType() << "' for condition"
+        ;
+    }
+
+    if( is_true )
+    {
+      node->then_value->invite( this );
+    }
+    else
+    {
+      node->else_value->invite( this );
+    }
   }
-  catch( const RPGML::Exception &e )
+  else if( condition.isString() )
   {
-    throw ParseException( node->condition->loc, e )
-      << ": Unsupported type for condition."
+    throw ParseException( node->condition->loc )
+      << ": Cannot use string directly as condition, use a comparison instead"
       ;
   }
-
-  if( is_true )
+  else if( condition.isOutput() )
   {
     node->then_value->invite( this );
+    Value then_value;
+    {
+      CallLoc guard( this, node->then_value->loc );
+      then_value.set( toOutput( return_value ) );
+    }
+
+    node->else_value->invite( this );
+    Value else_value;
+    {
+      CallLoc guard( this, node->else_value->loc );
+      else_value.set( toOutput( return_value ) );
+    }
+
+    CountPtr< Node > ifthenelse;
+    {
+      CallLoc guard( this, node->loc );
+      ifthenelse = scope->createNode( getCallLoc(), getRD()+1, ".core.IfThenElse" );
+    }
+
+    condition .getOutput()->connect( ifthenelse->getInput( String::Static( "in_if"   ) ) );
+    then_value.getOutput()->connect( ifthenelse->getInput( String::Static( "in_then" ) ) );
+    else_value.getOutput()->connect( ifthenelse->getInput( String::Static( "in_else" ) ) );
+
+    return_value = Value( ifthenelse->getOutput( String::Static( "out" ) ) );
   }
   else
   {
-    node->else_value->invite( this );
+    throw ParseException( node->condition->loc )
+      << ": Unsupported type '" << condition.getType() << "' for condition"
+      ;
   }
 }
 

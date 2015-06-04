@@ -74,7 +74,7 @@ struct MapOp< Value, _Op >
       case Type::STRING: return Ret( MapOp< String  , Op >()( x.getString() ) );
       case Type::ARRAY : return Ret( MapOp< const ArrayBase*, Op >()( x.getArray() ) );
       default:
-        throw Exception() << "Unsupported Type";
+        throw Exception() << "Unsupported Type '" << x.getType() << "'";
     }
   }
 };
@@ -104,9 +104,10 @@ struct MapOp< const ArrayBase*, Op >
       case Type::INT64 : return Ret( MapOp< CountPtr< Array< int64_t  > >, Op >()( x ) );
       case Type::FLOAT : return Ret( MapOp< CountPtr< Array< float    > >, Op >()( x ) );
       case Type::DOUBLE: return Ret( MapOp< CountPtr< Array< double   > >, Op >()( x ) );
+      case Type::STRING: return Ret( MapOp< CountPtr< Array< String   > >, Op >()( x ) );
       case Type::ARRAY : return Ret( MapOp< CountPtr< Array< CountPtr< ArrayBase > > >, Op >()( x ) );
       default:
-        throw Exception() << "Unsupported Array Type";
+        throw Exception() << "Unsupported Array Type '" << x->getType() << "'";
     }
   }
 };
