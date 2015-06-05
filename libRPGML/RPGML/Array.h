@@ -56,6 +56,19 @@ public:
   typedef iterator_base<       Element,       reference,       pointer >       iterator;
   typedef iterator_base< const Element, const_reference, const_pointer > const_iterator;
 
+  //! Use a custom elements_data, can be resized within its limits, takes its size by default
+  explicit
+  Array( GarbageCollector *_gc, const CountPtr< ArrayData< Element > > &elements_data )
+  : Base( _gc, elements_data->getDims() )
+  , m_elements_data( elements_data )
+  , m_element0( elements_data->first() )
+  {
+    _check_dims();
+    const index_t *s = elements_data->getSize();
+    std::copy( s, s+m_dims, m_size );
+    _setDenseStride();
+  }
+
   explicit
   Array( GarbageCollector *_gc, int dims, const index_t *s=0 )
   : Base( _gc, dims )
@@ -186,12 +199,7 @@ public:
     }
     else
     {
-      index_t stride_d = 1;
-      for( int d=0; d<dims; ++d )
-      {
-        m_stride[ d ] = stride_d;
-        stride_d *= _size[ d ];
-      }
+      _setDenseStride();
     }
   }
 
@@ -1014,7 +1022,7 @@ public:
   }
 
   //! Adds new dimension before position 'dim' (is that position in the result), this dimension has size 1
-  CountPtr< Array > addDim( int dim, Array *_ret = 0 ) const
+  CountPtr< Array > addDim( int d, Array *_ret = 0 ) const
   {
     if( getDims() >= 4 )
     {
@@ -1035,12 +1043,12 @@ public:
         ;
     }
 
-    if( dim < 0 || dim > getDims() )
+    if( d < 0 || d > getDims() )
     {
       throw Exception()
         << "'dim' must not be negative and at most getDims()"
         << ": getDims() is " << dims
-        << ", 'dim' is " << dim
+        << ", 'd' is " << d
         ;
     }
 
@@ -1049,20 +1057,20 @@ public:
     index_t new_size[ new_dims ];
     stride_t new_stride[ new_dims ];
 
-    std::copy( m_size, m_size+dim, new_size );
-    new_size[ dim ] = 1;
-    std::copy( m_size+dim, m_size+dims, new_size+dim+1 );
+    std::copy( m_size, m_size+d, new_size );
+    new_size[ d ] = 1;
+    std::copy( m_size+d, m_size+dims, new_size+d+1 );
 
-    std::copy( m_stride, m_stride+dim, new_stride );
-    if( dim < dims )
+    std::copy( m_stride, m_stride+d, new_stride );
+    if( d < dims )
     {
-      new_stride[ dim ] = m_stride[ dim ];
+      new_stride[ d ] = m_stride[ d ];
     }
     else
     {
-      new_stride[ dim ] = m_stride[ dims-1 ] * m_size[ dims-1 ];
+      new_stride[ d ] = m_stride[ dims-1 ] * m_size[ dims-1 ];
     }
-    std::copy( m_stride+dim, m_stride+dims, new_stride+dim+1 );
+    std::copy( m_stride+d, m_stride+dims, new_stride+d+1 );
 
     ret->wrap( m_element0, new_dims, new_size, new_stride );
 
@@ -1214,7 +1222,6 @@ public:
       m_stride[ d ] = stride_d;
       stride_d *= res[ d ];
     }
-    std::fill( m_stride + dims, m_stride + 4, stride_t( 0 ) );
 
     // Allocate new data
     m_elements_data = new ContainerArrayData< Element >( getGC(), dims, res );
