@@ -273,3 +273,6 @@ ROOT/core/RPGML_Function_toString.cpp
 ROOT/core/RPGML_Function_toString.h
 ROOT/core/RPGML_Node_ToString.cpp
 ROOT/core/RPGML_Node_ToString.h
+ROOT/util/RPGML_Node_FileMapper.cpp
+ROOT/util/RPGML_Node_FileMapper.h
+ROOT/util/RPGML_util.h
