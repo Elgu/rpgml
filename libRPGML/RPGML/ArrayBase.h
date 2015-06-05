@@ -327,13 +327,15 @@ public:
     }
   }
 
-  std::ostream &print( std::ostream &o ) const;
+  std::ostream &print( std::ostream &o, bool no_quot=false ) const;
 private:
-  std::ostream &print( std::ostream &o, int newline_dim ) const;
+  std::ostream &print( std::ostream &o, int newline_dim, bool no_quot ) const;
 
 protected:
   Reference      createReference( const index_t *x );
   ConstReference createReference( const index_t *x ) const;
+
+  void _setDenseStride( void );
 
   void _check_dims( void );
   void _check_dims( int expected );

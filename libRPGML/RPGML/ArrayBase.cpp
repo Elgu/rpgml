@@ -91,6 +91,7 @@ ArrayBase::ArrayBase( GarbageCollector *_gc, int dims )
 {
   std::fill( m_size, m_size+dims, 0 );
   std::fill( m_size+dims, m_size+4, 1 );
+  std::fill( m_stride, m_stride+4, 0 );
 }
 
 ArrayBase::~ArrayBase( void )
@@ -106,6 +107,19 @@ bool ArrayBase::isDense( void ) const
     dense_stride *= m_size[ d ];
   }
   return true;
+}
+
+void ArrayBase::_setDenseStride( void )
+{
+  stride_t dense_stride = 1;
+  for( int d( 0 ), dims( m_dims ); d<dims; ++d )
+  {
+    m_stride[ d ] = dense_stride;
+    if( m_size[ d ] > 0 )
+    {
+      dense_stride *= m_size[ d ];
+    }
+  }
 }
 
 index_t ArrayBase::size( void ) const
@@ -236,7 +250,7 @@ void ArrayBase::swap( ArrayBase &other )
   }
 }
 
-std::ostream &ArrayBase::print( std::ostream &o ) const
+std::ostream &ArrayBase::print( std::ostream &o, bool no_quot ) const
 {
   const int dims = getDims();
 
@@ -250,18 +264,18 @@ std::ostream &ArrayBase::print( std::ostream &o ) const
     }
   }
 
-  o << "[ ";
+  if( dims > 0 ) o << "[ ";
   if( dims > newline_dim ) o << std::endl;
 
-  print( o, newline_dim );
+  print( o, newline_dim, no_quot && dims == 0 );
 
   if( dims > newline_dim ) o << std::endl;
-  o << " ]";
+  if( dims > 0 ) o << " ]";
 
   return o;
 }
 
-std::ostream &ArrayBase::print( std::ostream &o, int newline_dim ) const
+std::ostream &ArrayBase::print( std::ostream &o, int newline_dim, bool no_quot ) const
 {
   const index_t dims = getDims();
 
@@ -306,9 +320,9 @@ std::ostream &ArrayBase::print( std::ostream &o, int newline_dim ) const
     }
 
     const Value v = i->get();
-    if( is_string ) o << "\"";
+    if( is_string && !no_quot ) o << "\"";
     v.print( o );
-    if( is_string ) o << "\"";
+    if( is_string && !no_quot ) o << "\"";
 
     std::copy( &x[ 0 ], &x[ 0 ] + dims, last_p );
   }
