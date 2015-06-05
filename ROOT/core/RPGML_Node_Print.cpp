@@ -38,55 +38,10 @@ const char *Print::getName( void ) const
   return "core.Print";
 }
 
-template< class T >
-bool Print::tick_scalar( const ArrayBase *in_base )
-{
-  const Array< T > *in = 0;
-  if( !in_base->getAs( in ) ) throw Exception() << "Could not get 'in'";
-
-  if( in->getDims() != 0 ) throw Exception() << "Only printing of 0-dimensional (scalar) data supported at the moment.";
-
-  std::cout << (**in);
-  return true;
-}
-
 bool Print::tick( void )
 {
   GET_INPUT_BASE( INPUT_IN, in_base );
-  const index_t in_dims = in_base->getDims();
-
-  if( in_dims > 4 )
-  {
-    throw Exception()
-      << "Only dimensions up to 4 supported, has " << in_dims << " dimensions"
-      ;
-  }
-  else if( in_dims == 0 )
-  {
-    switch( in_base->getType().getEnum() )
-    {
-      case Type::BOOL  : return tick_scalar< bool     >( in_base );
-      case Type::UINT8 : return tick_scalar< uint8_t  >( in_base );
-      case Type::INT8  : return tick_scalar< int8_t   >( in_base );
-      case Type::UINT16: return tick_scalar< uint16_t >( in_base );
-      case Type::INT16 : return tick_scalar< int16_t  >( in_base );
-      case Type::UINT32: return tick_scalar< uint32_t >( in_base );
-      case Type::INT32 : return tick_scalar< int32_t  >( in_base );
-      case Type::UINT64: return tick_scalar< uint64_t >( in_base );
-      case Type::INT64 : return tick_scalar< int64_t  >( in_base );
-      case Type::FLOAT : return tick_scalar< float    >( in_base );
-      case Type::DOUBLE: return tick_scalar< double   >( in_base );
-      case Type::STRING: return tick_scalar< String   >( in_base );
-      default:
-        throw IncompatibleOutput( getInput( INPUT_IN ) );
-    }
-  }
-  else
-  {
-    const Value array( const_cast< ArrayBase* >( in_base ) );
-    array.print( std::cout );
-  }
-
+  in_base->print( std::cout, true );
   return true;
 }
 

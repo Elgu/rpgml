@@ -56,9 +56,6 @@ private:
   {
     NUM_PARAMS
   };
-
-  template< class T >
-  bool tick_scalar( const ArrayBase *in_base );
 };
 
 } // namespace core
