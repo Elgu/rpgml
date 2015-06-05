@@ -1,0 +1,37 @@
+
+Output i = counter();
+exit();
+
+# 0123 start at 48
+# ABC starts at 65
+# abc starts at 97
+
+Output filename = "stest_0010_FileMapper.data";
+
+if( true )
+{
+  util.FileMapper map();
+  filename -> map.filename;
+  "uint8"  -> map.type;
+  2        -> map.dims;
+  20       -> map.sx;
+  3        -> map.sy;
+  
+  print( core.toString( getSize( map.out ) ) + "\n" );
+  print( core.toString( map.out ) + "\n" );
+  print( getArrayType( map.out ) + "\n" );
+}
+
+if( true )
+{
+  util.FileMapper map();
+  filename -> map.filename;
+  "uint8"  -> map.type;
+  1        -> map.dims;
+  10       -> map.sx;
+  
+  print( core.toString( getSize( map.out ) ) + "\n" );
+  print( core.toString( map.out ) + "\n" );
+  print( getArrayType( map.out ) + "\n" );
+}
+
