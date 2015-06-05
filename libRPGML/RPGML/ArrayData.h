@@ -522,6 +522,11 @@ public:
     return m_capacity;
   }
 
+  int getDims( void ) const
+  {
+    return m_dims;
+  }
+
   ArrayBase::Size getSize( void ) const
   {
     return ArrayBase::Size( m_dims, m_size );
@@ -540,6 +545,10 @@ public:
     index_t pos = index_t( e - this_e ); // checked above
     for( int d=0; d<dims; ++d )
     {
+      if( pos == 0 || m_size[ d ] == 0 )
+      {
+        std::fill( x+d, x+dims, index_t( 0 ) );
+      }
       x[ d ] = pos % m_size[ d ];
       pos /= m_size[ d ];
     }
