@@ -70,7 +70,7 @@ public:
   }
 
   explicit
-  Array( GarbageCollector *_gc, int dims, const index_t *s=0 )
+  Array( GarbageCollector *_gc, int dims, const index_t *s=nullptr )
   : Base( _gc, dims )
   , m_element0( pointer() )
   {
@@ -125,7 +125,7 @@ public:
   }
 
   //! Wrapper
-  Array( GarbageCollector *_gc, pointer element0, int dims, const index_t *_size, const stride_t *_stride = 0 )
+  Array( GarbageCollector *_gc, pointer element0, int dims, const index_t *_size, const stride_t *_stride = nullptr )
   : Base( _gc, dims )
   , m_element0( pointer() )
   {
@@ -134,12 +134,56 @@ public:
   }
 
   //! Wrapper
-  Array( GarbageCollector *_gc, pointer element0, const Size &_size, const stride_t *_stride = 0 )
+  Array( GarbageCollector *_gc, pointer element0, const Size &_size, const stride_t *_stride = nullptr )
   : Base( _gc, _size.getDims() )
   , m_element0( pointer() )
   {
     _check_dims();
     wrap( element0, _size, _stride );
+  }
+
+  //! Wrapper
+  explicit
+  Array( GarbageCollector *_gc, pointer element0, int dims, index_t sx )
+  : Base( _gc, dims )
+  , m_element0( pointer() )
+  {
+    _check_dims( 1 );
+    const index_t  _size[] = { sx };
+    wrap( element0, 1, _size, nullptr );
+  }
+
+  //! Wrapper
+  explicit
+  Array( GarbageCollector *_gc, pointer element0, int dims, index_t sx, index_t sy )
+  : Base( _gc, dims )
+  , m_element0( pointer() )
+  {
+    _check_dims( 2 );
+    const index_t  _size[] = { sx, sy };
+    wrap( element0, 2, _size, nullptr );
+  }
+
+  //! Wrapper
+  explicit
+  Array( GarbageCollector *_gc, pointer element0, int dims, index_t sx, index_t sy, index_t sz )
+  : Base( _gc, dims )
+  , m_element0( pointer() )
+  {
+    _check_dims( 3 );
+    const index_t  _size[] = { sx, sy, sz };
+    wrap( element0, 3, _size, nullptr );
+  }
+
+  //! Wrapper
+  explicit
+  Array( GarbageCollector *_gc, pointer element0, int dims, index_t sx, index_t sy, index_t sz, index_t st )
+  : Base( _gc, dims )
+  , m_element0( pointer() )
+  {
+    _check_dims( 4 );
+    const index_t  _size[] = { sx, sy, sz, st };
+    wrap( element0, 4, _size, nullptr );
   }
 
   virtual ~Array( void )
@@ -181,7 +225,7 @@ public:
     return assign( other.get() );
   }
 
-  void wrap( pointer element0, int dims, const index_t *_size, const stride_t *_stride = 0 )
+  void wrap( pointer element0, int dims, const index_t *_size, const stride_t *_stride = nullptr )
   {
     if( dims != m_dims )
     {
@@ -203,7 +247,7 @@ public:
     }
   }
 
-  void wrap( pointer element0, const Size &_size, const stride_t *_stride = 0 )
+  void wrap( pointer element0, const Size &_size, const stride_t *_stride = nullptr )
   {
     wrap( element0, _size.getDims(), _size.getCoords(), _stride );
   }
@@ -673,35 +717,35 @@ public:
     return m_element0;
   }
 
-  CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = 0 ) const
+  CountPtr< const Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = nullptr ) const
   {
     CountPtr< Array > ret = copy( _ret );
     ret->setROI( dims, x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = 0 )
+  CountPtr< Array > getROI( int dims, const index_t *x, const index_t *s, Array *_ret = nullptr )
   {
     CountPtr< Array > ret = copy( _ret );
     ret->setROI( dims, x, s );
     return ret;
   }
 
-  CountPtr< const Array > getROI( const Coordinates &x, const Size &s, Array *_ret = 0 ) const
+  CountPtr< const Array > getROI( const Coordinates &x, const Size &s, Array *_ret = nullptr ) const
   {
     CountPtr< Array > ret = copy( _ret );
     ret->setROI( x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( const Coordinates &x, const Size &s, Array *_ret = 0 )
+  CountPtr< Array > getROI( const Coordinates &x, const Size &s, Array *_ret = nullptr )
   {
     CountPtr< Array > ret = copy( _ret );
     ret->setROI( x, s );
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t w, Array *_ret = 0 ) const
+  CountPtr< Array > getROI( index_t x, index_t w, Array *_ret = nullptr ) const
   {
     if( 1 != m_dims )
     {
@@ -714,7 +758,7 @@ public:
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t y, index_t sx, index_t sy, Array *_ret = 0 ) const
+  CountPtr< Array > getROI( index_t x, index_t y, index_t sx, index_t sy, Array *_ret = nullptr ) const
   {
     if( 2 != m_dims )
     {
@@ -729,7 +773,7 @@ public:
     return ret;
   }
 
-  CountPtr< Array > getROI( index_t x, index_t y, index_t z, index_t sx, index_t sy, index_t sz, Array *_ret = 0 ) const
+  CountPtr< Array > getROI( index_t x, index_t y, index_t z, index_t sx, index_t sy, index_t sz, Array *_ret = nullptr ) const
   {
     if( 3 != m_dims )
     {
@@ -953,19 +997,19 @@ public:
     return (*this);
   }
 
-  CountPtr< Array > getTransposed( int d1=0, int d2=1, Array *_ret = 0 ) const
+  CountPtr< Array > getTransposed( int d1=0, int d2=1, Array *_ret = nullptr ) const
   {
     CountPtr< Array > ret = copy( _ret );
     ret->setTransposed( d1, d2 );
     return ret;
   }
 
-  CountPtr< Array > T( int d1=0, int d2=1, Array *_ret = 0 ) const
+  CountPtr< Array > T( int d1=0, int d2=1, Array *_ret = nullptr ) const
   {
     return getTransposed( d1, d2, _ret );
   }
 
-  CountPtr< Array > getLine( int dims, const index_t *pos, int direction = 0, Array *_ret = 0 ) const
+  CountPtr< Array > getLine( int dims, const index_t *pos, int direction = 0, Array *_ret = nullptr ) const
   {
     if( dims != m_dims )
     {
@@ -997,25 +1041,25 @@ public:
     return ret;
   }
 
-  CountPtr< Array > line( int direction, index_t x, Array *_ret = 0 ) const
+  CountPtr< Array > line( int direction, index_t x, Array *_ret = nullptr ) const
   {
     const index_t pos[ 1 ] = { x };
     return getLine( 1, pos, direction, _ret );
   }
 
-  CountPtr< Array > line( int direction, index_t x, index_t y, Array *_ret = 0 ) const
+  CountPtr< Array > line( int direction, index_t x, index_t y, Array *_ret = nullptr ) const
   {
     const index_t pos[ 2 ] = { x, y };
     return getLine( 2, pos, direction, _ret );
   }
 
-  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, Array *_ret = 0 ) const
+  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, Array *_ret = nullptr ) const
   {
     const index_t pos[ 3 ] = { x, y, z };
     return getLine( 3, pos, direction, _ret );
   }
 
-  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, index_t t, Array *_ret = 0 ) const
+  CountPtr< Array > line( int direction, index_t x, index_t y, index_t z, index_t t, Array *_ret = nullptr ) const
   {
     const index_t pos[ 4 ] = { x, y, z, t };
     return getLine( 4, pos, direction, _ret );
