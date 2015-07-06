@@ -1,0 +1,47 @@
+
+Function ArgMax( n )
+{
+  int n = n;
+  InOut[ n ] in;
+  InOut[ n ] arg;
+
+  Output out = nil;
+  Output max_in = nil;
+
+  if( n < 1 )
+  {
+    ERROR( "Argument 'n' must at least be 1, is " + n );
+  }
+  else if( n == 1 )
+  {
+    out = arg[ 0 ];
+    max_in = in[ 0 ];
+  }
+  else if( n == 2 )
+  {
+    out    = ( in[ 0 ] > in[ 1 ] ? arg[ 0 ] : arg[ 1 ] );
+    max_in = ( in[ 0 ] > in[ 1 ] ?  in[ 0 ] :  in[ 1 ] );
+  }
+  else
+  {
+    ArgMax lo( n/2 );
+    for i = 0 to n/2-1
+    {
+      in[ i ] -> lo.in[ i ];
+      arg[ i ] -> lo.arg[ i ];
+    }
+
+    ArgMax hi( n-n/2 );
+    for i = 0 to (n-n/2)-1
+    {
+      in[ i + n/2 ] -> hi.in[ i ];
+      arg[ i + n/2 ] -> hi.arg[ i ];
+    }
+
+    out    = ( lo.max_in > hi.max_in ? lo.out    : hi.out    ); 
+    max_in = ( lo.max_in > hi.max_in ? lo.max_in : hi.max_in ); 
+  }
+
+  return this;
+}
+

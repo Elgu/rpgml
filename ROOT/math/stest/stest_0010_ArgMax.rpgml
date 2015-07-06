@@ -1,0 +1,72 @@
+#!/usr/bin/env rpgml
+
+{
+  .math.ArgMax a( n=1 );
+
+  Output x = 1.25;
+  Output arg = 23;
+
+  x -> a.in[ 0 ];
+  arg -> a.arg[ 0 ];
+
+  print( 
+      getArrayType( a.out ) + " " + a.out 
+    + ": " + getArrayType( a.max_in ) + " " + a.max_in
+    + "\n"
+    );
+}
+
+{
+  .math.ArgMax a( n=2 );
+
+  Output x0 = [ 1.25, 3.25 ];
+  Output x1 = [ 2.25, -1.25 ];
+  Output arg0 = 23;
+  Output arg1 = 42;
+
+  x0 -> a.in[ 0 ];
+  x1 -> a.in[ 1 ];
+  arg0 -> a.arg[ 0 ];
+  arg1 -> a.arg[ 1 ];
+
+  print( 
+      getArrayType( a.out ) + " " + core.toString( a.out )
+    + ": " + getArrayType( a.max_in ) + " " + core.toString( a.max_in )
+    + "\n"
+    );
+}
+
+{
+  .math.ArgMax a( n=5 );
+
+  Output x0 = [  1.25, 3.25, 2.25, 3.25, 9.25 ];
+  Output x1 = [  2.25, 4.25, 3.25, 4.25, 4.25 ];
+  Output x2 = [ -1.25, 6.25, 1.25, 0.25, 6.25 ];
+  Output x3 = [  3.25, 1.25, 5.25, 1.25, 1.25 ];
+  Output x4 = [  7.25, 0.25, 0.25, 0.25, 0.25 ];
+  Output arg0 = 10;
+  Output arg1 = 11;
+  Output arg2 = 12;
+  Output arg3 = 13;
+  Output arg4 = 14;
+
+  x0 -> a.in[ 0 ];
+  x1 -> a.in[ 1 ];
+  x2 -> a.in[ 2 ];
+  x3 -> a.in[ 3 ];
+  x4 -> a.in[ 4 ];
+  arg0 -> a.arg[ 0 ];
+  arg1 -> a.arg[ 1 ];
+  arg2 -> a.arg[ 2 ];
+  arg3 -> a.arg[ 3 ];
+  arg4 -> a.arg[ 4 ];
+
+  print( 
+      getArrayType( a.out ) + " " + core.toString( a.out )
+    + ": " + getArrayType( a.max_in ) + " " + core.toString( a.max_in )
+    + "\n"
+    );
+}
+
+exit();
+
