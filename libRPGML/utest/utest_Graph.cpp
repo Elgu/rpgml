@@ -177,12 +177,12 @@ public:
 
   void test_addNode( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
-    CountPtr< ConstNode > c1( new ConstNode( &gc, String::Static( "c1" ), 1 ) );
-    CountPtr< ConstNode > c2( new ConstNode( &gc, String::Static( "c2" ), 2 ) );
-    CountPtr< AddNode   > add( new AddNode( &gc, String::Static( "add" ) ) );
-    CountPtr< ExitNode  > ex ( new ExitNode( &gc ) );
+    CountPtr< ConstNode > c1( new ConstNode( gc, String::Static( "c1" ), 1 ) );
+    CountPtr< ConstNode > c2( new ConstNode( gc, String::Static( "c2" ), 2 ) );
+    CountPtr< AddNode   > add( new AddNode( gc, String::Static( "add" ) ) );
+    CountPtr< ExitNode  > ex ( new ExitNode( gc ) );
 
     c1->getOutput( "out" )->connect( add->getInput( "in1" ) );
     c2->getOutput( "out" )->connect( add->getInput( "in2" ) );
@@ -197,14 +197,14 @@ public:
     CPPUNIT_ASSERT_EQUAL( 3, (**out) );
 
     // Run with Graph execution
-    CountPtr< Graph > graph( new Graph( &gc ) );
-    CountPtr< JobQueue > queue( new JobQueue( &gc ) );
+    CountPtr< Graph > graph( new Graph( gc ) );
+    CountPtr< JobQueue > queue( new JobQueue( gc ) );
 
     // Create thread pool
     const index_t num_workers = 16;
     typedef Array< CountPtr< Worker > > WorkerArray;
-    CountPtr< WorkerArray > workers( new WorkerArray( &gc, 1, num_workers ) );
-    for( index_t i=0; i<num_workers; ++i ) (*workers)[ i ] = new Worker( &gc, queue );
+    CountPtr< WorkerArray > workers( new WorkerArray( gc, 1, num_workers ) );
+    for( index_t i=0; i<num_workers; ++i ) (*workers)[ i ] = new Worker( gc, queue );
 
     CPPUNIT_ASSERT_EQUAL( true, c1->set_value( Value( 23 ), 0 ) );
     CPPUNIT_ASSERT_EQUAL( true, c2->set_value( Value( 42 ), 0 ) );
@@ -221,7 +221,7 @@ public:
     CPPUNIT_ASSERT_NO_THROW( graph->execute( queue ) );
 
     // Clear thread pool
-    CountPtr< EndWorker > end( new EndWorker( &gc ) );
+    CountPtr< EndWorker > end( new EndWorker( gc ) );
     for( index_t i=0; i<num_workers; ++i ) queue->addJob( end );
     for( index_t i=0; i<num_workers; ++i ) (*workers)[ i ]->join();
   }

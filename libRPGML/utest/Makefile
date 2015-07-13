@@ -17,6 +17,8 @@ vpath %.cc ../RPGML/
 
 OBJECTS=\
 	utest_main.o\
+	Array.o\
+	ArrayData.o\
 	ArrayBase.o\
 	Type.o\
 	Backtrace.o\

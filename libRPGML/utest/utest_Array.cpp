@@ -143,8 +143,8 @@ public:
 
   void test_CoordinatesIterator( void )
   {
-    GarbageCollector gc;
-    CountPtr< Array< int > > a = new Array< int >( &gc, 2, 2, 3 );
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
+    CountPtr< Array< int > > a = new Array< int >( gc, 2, 2, 3 );
 
     CountPtr< ArrayBase::CoordinatesIterator > coord( a->getCoordinatesIterator() );
 
@@ -232,7 +232,7 @@ public:
       Base::gc_clear();
     }
 
-    virtual void gc_getChildren( Children & ) const
+    virtual void gc_getChildren( Children &children ) const
     {
       Base::gc_getChildren( children );
     }
@@ -243,53 +243,53 @@ public:
 
   void test_gc( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     typedef Array< CountPtr< ArrayBase > > root_array_t;
     typedef Array< CountPtr< Marker > > marker_array_t;
     typedef Array< int8_t > bool_array_t;
 
-    CountPtr< root_array_t > root( new root_array_t( &gc, 1, 4 ) );
-    CountPtr< marker_array_t > markers( new marker_array_t( &gc, 1, 5 ) );
-    CountPtr< bool_array_t > bool_array( new bool_array_t( &gc, 1, 3 ) );
+    CountPtr< root_array_t > root( new root_array_t( gc, 1, 4 ) );
+    CountPtr< marker_array_t > markers( new marker_array_t( gc, 1, 5 ) );
+    CountPtr< bool_array_t > bool_array( new bool_array_t( gc, 1, 3 ) );
 
     bool m0 = false;
     bool m1 = false;
     bool m2 = false;
 
-    markers->at( 0 ) = new Marker( &gc, &m0 );
-    markers->at( 1 ) = new Marker( &gc, &m1 );
-    markers->at( 2 ) = new Marker( &gc, &m2 );
+    markers->at( 0 ) = new Marker( gc, &m0 );
+    markers->at( 1 ) = new Marker( gc, &m1 );
+    markers->at( 2 ) = new Marker( gc, &m2 );
 
     root->at( 1 ) = markers;
     root->at( 2 ) = markers;
     root->at( 3 ) = bool_array;
 
-    gc.run();
+    gc->run();
     CPPUNIT_ASSERT_EQUAL( false, m0 );
     CPPUNIT_ASSERT_EQUAL( false, m1 );
     CPPUNIT_ASSERT_EQUAL( false, m2 );
 
     markers->at( 1 ).clear();
-    gc.run();
+    gc->run();
     CPPUNIT_ASSERT_EQUAL( false, m0 );
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( false, m2 );
 
     markers.clear();
-    gc.run();
+    gc->run();
     CPPUNIT_ASSERT_EQUAL( false, m0 );
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( false, m2 );
 
     root->at( 1 ).clear();
-    gc.run();
+    gc->run();
     CPPUNIT_ASSERT_EQUAL( false, m0 );
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( false, m2 );
 
     root->at( 2 ).clear();
-    gc.run();
+    gc->run();
     CPPUNIT_ASSERT_EQUAL( true, m0 );
     CPPUNIT_ASSERT_EQUAL( true , m1 );
     CPPUNIT_ASSERT_EQUAL( true, m2 );
@@ -311,12 +311,12 @@ public:
   template< class T >
   void test_getAs_t( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     typedef Array< T > TArray;
 
     {
-      CountPtr< TArray         > a = new TArray( &gc, 2 );
+      CountPtr< TArray         > a = new TArray( gc, 2 );
       CountPtr< ArrayBase      > a_base     = a.get();
       CountPtr< const TArray       > ac          = a.get();
       CountPtr< const ArrayBase    > ac_base     = a.get();
@@ -433,10 +433,10 @@ public:
 
   void test_getROI( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 1, 5 );
+      CountPtr< IntArray > a = new IntArray( gc, 1, 5 );
 
       for( index_t x=0; x<5; ++x )
       {
@@ -497,7 +497,7 @@ public:
     }
 
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 3, 5 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 3, 5 );
 
       for( index_t y=0; y<5; ++y )
       for( index_t x=0; x<3; ++x )
@@ -558,10 +558,10 @@ public:
 
   void test_getLine( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 3, 5 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 3, 5 );
 
       for( index_t y=0, i=0; y<5; ++y )
       for( index_t x=0     ; x<3; ++x, ++i )
@@ -638,7 +638,7 @@ public:
         CPPUNIT_ASSERT_EQUAL( 10, (*line)[ 2 ] );
         CPPUNIT_ASSERT_EQUAL( 13, (*line)[ 3 ] );
 
-        CountPtr< IntArray > line2 = new IntArray( &gc, 1 );
+        CountPtr< IntArray > line2 = new IntArray( gc, 1 );
 
         CPPUNIT_ASSERT_NO_THROW( a->getLine( 2, pos, 0, line2 ) );
         CPPUNIT_ASSERT( !line2.isNull() );
@@ -662,11 +662,11 @@ public:
 
   void test_reserve( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
     typedef Array< int > IntArray;
 
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 1, 5 );
+      CountPtr< IntArray > a = new IntArray( gc, 1, 5 );
 
       for( index_t x=0; x<5; ++x )
       {
@@ -686,7 +686,7 @@ public:
     }
 
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 5, 7 );
       CountPtr< IntArray > b = new IntArray( *a );
 
       CPPUNIT_ASSERT_EQUAL( a->elements(), b->elements() );
@@ -762,12 +762,12 @@ public:
 
   void test_mirror_sparse_rotate( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
     typedef Array< int > IntArray;
 
     // mirror
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 5, 7 );
 
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
@@ -821,7 +821,7 @@ public:
 
     // sparse
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 5, 7 );
 
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
@@ -910,7 +910,7 @@ public:
 
     // sparse mirror
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 5, 7 );
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
       {
@@ -958,7 +958,7 @@ public:
 
     // rotate
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 5, 7 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 5, 7 );
       for( index_t y=0; y<7; ++y )
       for( index_t x=0; x<5; ++x )
       {
@@ -1024,7 +1024,7 @@ public:
 
     // transform resize
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 2, 10, 10 );
+      CountPtr< IntArray > a = new IntArray( gc, 2, 10, 10 );
       for( index_t y=0; y<10; ++y )
       for( index_t x=0; x<10; ++x )
       {
@@ -1140,7 +1140,7 @@ public:
 
   void test_BoolContainer( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
     typedef ArrayContainer< bool > BoolContainer;
     typedef Array< bool > BoolArray;
 
@@ -1280,12 +1280,12 @@ public:
 
   void test_Array_bool( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     typedef Array< bool > BoolArray;
 
     {
-      CountPtr< BoolArray > a = new BoolArray( &gc, 0 );
+      CountPtr< BoolArray > a = new BoolArray( gc, 0 );
 
       (**a) = true;
 
@@ -1316,7 +1316,7 @@ public:
     }
 
     {
-      CountPtr< BoolArray > a = new BoolArray( &gc, 2, 3, 5 );
+      CountPtr< BoolArray > a = new BoolArray( gc, 2, 3, 5 );
 
       const uint32_t bits  = 0x519ea375;
       const uint32_t bits2 = 0xa375519e;
@@ -1371,7 +1371,7 @@ public:
         bits[ i ] = bool( rand_r( &seed ) & 1 );
       }
 
-      CountPtr< BoolArray > a = new BoolArray( &gc, 2, 10, 10 );
+      CountPtr< BoolArray > a = new BoolArray( gc, 2, 10, 10 );
       for( index_t y=0; y<10; ++y )
       for( index_t x=0; x<10; ++x )
       {
@@ -1486,10 +1486,10 @@ public:
 
   void test_random_access_iterator( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     {
-      CountPtr< IntArray > b = new IntArray( &gc, 2, 13, 17 );
+      CountPtr< IntArray > b = new IntArray( gc, 2, 13, 17 );
       CountPtr< IntArray > a = b->getROI( 2, 3, 10, 10 );
 
       for( index_t y=0; y<10; ++y )
@@ -1563,7 +1563,7 @@ public:
         bits[ i ] = bool( rand_r( &seed ) & 1 );
       }
 
-      CountPtr< BoolArray > b = new BoolArray( &gc, 2, 13, 17 );
+      CountPtr< BoolArray > b = new BoolArray( gc, 2, 13, 17 );
       CountPtr< BoolArray > a = b->getROI( 2, 3, 10, 10 );
 
       for( index_t y=0; y<10; ++y )
@@ -1632,7 +1632,7 @@ public:
 
   void test_wrapper( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     int data[ 8*4 ] =
     {
@@ -1644,7 +1644,7 @@ public:
 
     {
       const index_t size[ 1 ] = { 4 };
-      CountPtr< IntArray > a = new IntArray( &gc, data, 1, size );
+      CountPtr< IntArray > a = new IntArray( gc, data, 1, size );
 
       CPPUNIT_ASSERT_EQUAL( 1, a->getDims() );
       CPPUNIT_ASSERT_EQUAL( index_t( 4 ), a->getSizeX() );
@@ -1657,7 +1657,7 @@ public:
     {
       const index_t size  [ 2 ] = { 3, 2 };
       const stride_t stride[ 2 ] = { 3, 16 };
-      CountPtr< IntArray > a = new IntArray( &gc, data, 2, size, stride );
+      CountPtr< IntArray > a = new IntArray( gc, data, 2, size, stride );
 
       CPPUNIT_ASSERT_EQUAL( 2, a->getDims() );
       CPPUNIT_ASSERT_EQUAL( index_t( 3 ), a->getSizeX() );
@@ -1672,7 +1672,7 @@ public:
 
     {
       const index_t size[ 1 ] = { 4 };
-      CountPtr< IntArray > a = new IntArray( &gc, 1 );
+      CountPtr< IntArray > a = new IntArray( gc, 1 );
       a->wrap( data, 1, size );
 
       CPPUNIT_ASSERT_EQUAL( 1, a->getDims() );
@@ -1686,7 +1686,7 @@ public:
     {
       const index_t size  [ 2 ] = { 3, 2 };
       const stride_t stride[ 2 ] = { 3, 16 };
-      CountPtr< IntArray > a = new IntArray( &gc, 2 );
+      CountPtr< IntArray > a = new IntArray( gc, 2 );
       a->wrap( data, 2, size, stride );
 
       CPPUNIT_ASSERT_EQUAL( 2, a->getDims() );
@@ -1705,7 +1705,7 @@ public:
   {
     try
     {
-      GarbageCollector gc;
+      CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
       int data[ 8*4 ] =
       {
@@ -1717,7 +1717,7 @@ public:
 
       {
         const index_t size[ 1 ] = { 4 };
-        CountPtr< IntArray > a = new IntArray( &gc, data, 1, size );
+        CountPtr< IntArray > a = new IntArray( gc, data, 1, size );
 
         CPPUNIT_ASSERT_THROW( a->addDim( -1 ), IntArray::Exception );
         CPPUNIT_ASSERT_THROW( a->addDim( 2 ), IntArray::Exception );
@@ -1787,7 +1787,7 @@ public:
       {
         const index_t size  [ 2 ] = { 3, 2 };
         const stride_t stride[ 2 ] = { 3, 16 };
-        CountPtr< IntArray > a = new IntArray( &gc, data, 2, size, stride );
+        CountPtr< IntArray > a = new IntArray( gc, data, 2, size, stride );
 
         CPPUNIT_ASSERT_THROW( a->addDim( -1 ), IntArray::Exception );
         CPPUNIT_ASSERT_THROW( a->addDim( 3 ), IntArray::Exception );
@@ -1878,11 +1878,11 @@ public:
 
   void test_sort( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     if( true )
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 1, 4 );
+      CountPtr< IntArray > a = new IntArray( gc, 1, 4 );
       (*a)[ 0 ] = 4;
       (*a)[ 1 ] = 3;
       (*a)[ 2 ] = 2;
@@ -1898,7 +1898,7 @@ public:
 
     if( true )
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 1, 4 );
+      CountPtr< IntArray > a = new IntArray( gc, 1, 4 );
       (*a)[ 0 ] = 1;
       (*a)[ 1 ] = 4;
       (*a)[ 2 ] = 3;
@@ -1915,7 +1915,7 @@ public:
 
     if( true )
     {
-      CountPtr< IntArray > a = new IntArray( &gc, 1, 4 );
+      CountPtr< IntArray > a = new IntArray( gc, 1, 4 );
       (*a)[ 0 ] = 2;
       (*a)[ 1 ] = 4;
       (*a)[ 2 ] = 3;

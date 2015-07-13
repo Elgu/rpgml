@@ -39,6 +39,7 @@ public:
 
   class TestNode : public Collectable
   {
+    typedef Collectable Base;
   public:
     TestNode( GarbageCollector *_gc, bool *_deleted )
     : Collectable( _gc )
@@ -114,17 +115,17 @@ public:
 
   void test_ring( void )
   {
-    GarbageCollector gc;
+    CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector() );
 
     bool deleted1;
     bool deleted2;
     bool deleted3;
     bool deleted4;
 
-    CountPtr< TestNode > node1( new TestNode( &gc, &deleted1 ) ); // root
-    CountPtr< TestNode > node2( new TestNode( &gc, &deleted2 ) );
-    CountPtr< TestNode > node3( new TestNode( &gc, &deleted3 ) );
-    CountPtr< TestNode > node4( new TestNode( &gc, &deleted4 ) );
+    CountPtr< TestNode > node1( new TestNode( gc, &deleted1 ) ); // root
+    CountPtr< TestNode > node2( new TestNode( gc, &deleted2 ) );
+    CountPtr< TestNode > node3( new TestNode( gc, &deleted3 ) );
+    CountPtr< TestNode > node4( new TestNode( gc, &deleted4 ) );
 
     CPPUNIT_ASSERT_EQUAL( false, deleted1 );
     CPPUNIT_ASSERT_EQUAL( false, deleted2 );
@@ -156,7 +157,7 @@ public:
     CPPUNIT_ASSERT_EQUAL( false, deleted3 );
     CPPUNIT_ASSERT_EQUAL( false, deleted4 );
 
-    gc.run();
+    gc->run();
 
     /*
     std::cerr
