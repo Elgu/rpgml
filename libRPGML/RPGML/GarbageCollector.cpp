@@ -26,28 +26,105 @@ using namespace std;
 
 namespace RPGML {
 
-GarbageCollector::GarbageCollector( uint8_t num_generations )
+void GarbageCollector::deactivate_deletion( const Collectable *c )
+{
+  c->deactivate_deletion();
+}
+
+void GarbageCollector::setGC( const Collectable *c, GarbageCollector *gc )
+{
+  c->m_gc = gc;
+}
+
+void GarbageCollector::setGCIndex( const Collectable *c, index_t index )
+{
+  c->m_gc_index = index;
+}
+
+void GarbageCollector::incGCGeneration( const Collectable *c )
+{
+  ++c->m_gc_generation;
+}
+
+void GarbageCollector::setGCGeneration( const Collectable *c, uint8_t generation )
+{
+  c->m_gc_generation = generation;
+}
+
+class GenerationalGarbageCollector : public GarbageCollector
+{
+public:
+  static const uint8_t MaxGenerations = 255;
+
+  explicit
+  GenerationalGarbageCollector( uint8_t num_generations = 1 );
+  ~GenerationalGarbageCollector( void );
+
+  void run( uint8_t up_to_generation = MaxGenerations );
+
+  void moveObjectsTo( GarbageCollector *other );
+
+  virtual void add( const Collectable *c );
+  virtual void remove( const Collectable *c );
+
+private:
+  typedef std::vector< const Collectable* > CollectableArray;
+  void compact( CollectableArray &cs_new, uint8_t up_to_generation );
+  void sweep( CollectableArray &garbage );
+
+  void removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new );
+
+  CollectableArray m_cs;
+  Mutex m_lock;
+  uint8_t m_num_generations;
+
+private:
+  GenerationalGarbageCollector( const GenerationalGarbageCollector &other );
+  GenerationalGarbageCollector &operator=( const GenerationalGarbageCollector &other );
+};
+
+class GenerationalGarbageCollectorChildren : public Collectable::Children
+{
+public:
+  GenerationalGarbageCollectorChildren( void ) {}
+  virtual ~GenerationalGarbageCollectorChildren( void ) {}
+  virtual void add( const Collectable *c ) { if( c ) m_children.push_back( c ); }
+  //! For testing (utest) only
+  virtual bool contains( const Collectable *c ) const
+  {
+    return ( m_children.end() != std::find( m_children.begin(), m_children.end(), c ) );
+  }
+
+  void reserve( size_t n ) { m_children.reserve( n ); }
+  size_t size( void ) const { return m_children.size(); }
+  void clear( void ) { m_children.clear(); }
+  const Collectable *const &operator[]( size_t i ) const { return m_children[ i ]; }
+  const Collectable *      &operator[]( size_t i ) { return m_children[ i ]; }
+  std::vector< const Collectable* > m_children;
+};
+
+GenerationalGarbageCollector::GenerationalGarbageCollector( uint8_t num_generations )
 : m_lock( Mutex::Recursive() )
 , m_num_generations( num_generations )
 {}
 
-GarbageCollector::~GarbageCollector( void )
+GenerationalGarbageCollector::~GenerationalGarbageCollector( void )
 {
   sweep( m_cs );
 }
 
-void GarbageCollector::add( const Collectable *c )
+void GenerationalGarbageCollector::add( const Collectable *c )
 {
   if( 0 == this ) return;
   if( 0 == c ) return;
-  if( c->gc == this ) return;
-  if( c->gc ) c->gc->remove( c );
+  if( c->getGC() == this ) return;
+  if( c->getGC() ) c->getGC()->remove( c );
 
   { Mutex::ScopedLock lock( &m_lock );
 
-    c->gc = this;
-    c->gc_index = index_t( m_cs.size() );
-    c->gc_generation = 0;
+    setGC( c, this );
+    setGCIndex( c, index_t( m_cs.size() ) );
+    setGCGeneration( c, 0 );
     m_cs.push_back( c );
   } // m_lock
 
@@ -56,34 +133,34 @@ void GarbageCollector::add( const Collectable *c )
 #endif
 }
 
-void GarbageCollector::remove( const Collectable *c )
+void GenerationalGarbageCollector::remove( const Collectable *c )
 {
   if( 0 == this ) return;
-  assert( c->gc == this );
+  assert( c->getGC() == this );
 
   { Mutex::ScopedLock lock( &m_lock );
 
-    const index_t index = c->gc_index;
+    const index_t index = c->getGCIndex();
     if( index < m_cs.size() )
     {
       if( m_cs[ index ] == c )
       {
 #ifdef GC_DEBUG
-        std::cerr << "remove " << c << " from " << this << ", index = " << c->gc_index << std::endl;
+        std::cerr << "remove " << c << " from " << this << ", index = " << c->m_gc_index << std::endl;
 #endif
 
         m_cs[ index ] = 0;
-        c->gc = 0;
-        c->gc_index = 0;
+        setGC( c, nullptr );
+        setGCIndex( c, 0 );
       }
     }
   } // m_lock
 }
 
-void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generation )
+void GenerationalGarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generation )
 {
   const size_t n = m_cs.size();
-  Collectable::Children children;
+  GenerationalGarbageCollectorChildren children;
   children.reserve( 512 );
 
   // Find all root objects:
@@ -95,7 +172,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
     const Collectable *const obj = m_cs[ i ];
     if( !obj ) continue;
 
-    if( obj->gc_generation > up_to_generation )
+    if( obj->getGCGeneration() > up_to_generation )
     {
       // Ignore "older" objects at this point
       // They will just implicitly contribute to the "foreign" references.
@@ -111,9 +188,9 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
       const Collectable *const child = children[ j ];
       if( !child ) continue;
 
-      if( child->gc != this ) continue;
+      if( child->getGC() != this ) continue;
 
-      ++refcount[ child->gc_index ];
+      ++refcount[ child->getGCIndex() ];
     }
   }
 
@@ -130,7 +207,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
     const Collectable *const obj = m_cs[ i ];
     if( !obj ) continue;
 
-    if( obj->gc_generation > up_to_generation )
+    if( obj->getGCGeneration() > up_to_generation )
     {
       // Just keep "older" objects, they will not play any role in the
       // rest of the garbage collecting process.
@@ -139,7 +216,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
     }
 
     // Only root objects are referenced from outside
-    if( refcount[ obj->gc_index ] == obj->refCount() ) continue;
+    if( refcount[ obj->getGCIndex() ] == obj->refCount() ) continue;
 
 #ifdef GC_DEBUG
     std::cerr << "Root object " << obj << std::endl;
@@ -167,7 +244,7 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
       if( !child ) continue;
 
       // Check, if not compacted yet
-      if( child->gc == this && m_cs[ child->gc_index ] == child )
+      if( child->getGC() == this && m_cs[ child->getGCIndex() ] == child )
       {
         // Remove from old storage, add to new
         removeFromOldAddToNew( child, cs_new );
@@ -179,12 +256,12 @@ void GarbageCollector::compact( CollectableArray &cs_new, uint8_t up_to_generati
   }
 }
 
-void GarbageCollector::sweep( CollectableArray &garbage )
+void GenerationalGarbageCollector::sweep( CollectableArray &garbage )
 {
   for( index_t i=0; i<garbage.size(); ++i )
   {
     const Collectable *const chunk = garbage[ i ];
-    if( chunk ) chunk->deactivate_deletion();
+    if( chunk ) deactivate_deletion( chunk );
 //    if( chunk ) std::cerr << "Sweeping " << chunk << std::endl;
   }
 
@@ -216,22 +293,23 @@ void GarbageCollector::sweep( CollectableArray &garbage )
   }
 }
 
-void GarbageCollector::removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new )
+void GenerationalGarbageCollector::removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new )
 {
   assert( obj );
-  assert( obj->gc_index < m_cs.size() );
-  assert( m_cs[ obj->gc_index ] != 0 );
-  m_cs[ obj->gc_index ] = 0;
-  obj->gc_index = index_t( cs_new.size() );
+  assert( obj->getGCIndex() < m_cs.size() );
+  assert( m_cs[ obj->getGCIndex() ] != 0 );
+  m_cs[ obj->getGCIndex() ] = 0;
+
+  setGCIndex( obj, index_t( cs_new.size() ) );
   cs_new.push_back( obj );
 
-  if( obj->gc_generation < m_num_generations-1 )
+  if( obj->getGCGeneration() < m_num_generations-1 )
   {
-    ++obj->gc_generation;
+    incGCGeneration( obj );
   }
 }
 
-void GarbageCollector::run( uint8_t up_to_generation )
+void GenerationalGarbageCollector::run( uint8_t up_to_generation )
 {
   if( m_cs.empty() ) return;
 
@@ -250,7 +328,7 @@ void GarbageCollector::run( uint8_t up_to_generation )
   sweep( cs_new );
 }
 
-void GarbageCollector::moveObjectsTo( GarbageCollector *other )
+void GenerationalGarbageCollector::moveObjectsTo( GarbageCollector *other )
 {
   for( auto &c : m_cs )
   {
@@ -263,28 +341,33 @@ void GarbageCollector::moveObjectsTo( GarbageCollector *other )
   }
 }
 
-Collectable::Collectable( GarbageCollector *_gc )
-: gc( 0 )
-, m_refCount( 0 )
-, gc_index( 0 )
-, gc_generation( 0 )
+CountPtr< GarbageCollector > newGenerationalGarbageCollector( uint8_t up_to_generation )
+{
+  return new GenerationalGarbageCollector( up_to_generation );
+}
+
+Collectable::Collectable( GarbageCollector *gc )
+: m_gc( nullptr )
+, m_gc_refCount( 0 )
+, m_gc_index( 0 )
+, m_gc_generation( 0 )
 {
 #ifdef GC_DEBUG
   std::cerr << "create " << this << std::endl;
 #endif
-  if( _gc ) _gc->add( this );
+  if( gc ) gc->add( this );
 }
 
 Collectable::Collectable( const Collectable &other )
-: gc( 0 )
-, gc_index( 0 )
-, gc_generation( 0 )
+: m_gc( nullptr )
+, m_gc_index( 0 )
+, m_gc_generation( 0 )
 {
 #ifdef GC_DEBUG
   std::cerr << "create " << this << std::endl;
 #endif
-  GarbageCollector *const _gc = other.gc;
-  if( _gc ) _gc->add( this );
+  GarbageCollector *const gc = other.m_gc;
+  if( gc ) gc->add( this );
 }
 
 Collectable &Collectable::operator=( const Collectable & )
@@ -295,15 +378,18 @@ Collectable &Collectable::operator=( const Collectable & )
 
 Collectable::~Collectable( void )
 {
-  if( gc ) gc->remove( this );
+  if( m_gc ) m_gc->remove( this );
 #ifdef GC_DEBUG
   std::cerr << "delete " << this << std::endl;
 #endif
 }
 
-bool Collectable::Children::contains( const Collectable *c ) const
+void Collectable::gc_clear( void )
+{}
+
+void Collectable::gc_getChildren( Children &children ) const
 {
-  return ( m_children.end() != std::find( m_children.begin(), m_children.end(), c ) );
+  (void)children;
 }
 
 } // namespace RPGML

@@ -33,47 +33,41 @@ namespace RPGML {
 
 class Collectable;
 
-class GarbageCollector
+class GarbageCollector : public Refcounted
 {
 public:
   static const uint8_t MaxGenerations = 255;
 
-  explicit
-  GarbageCollector( uint8_t num_generations = 1 );
-  ~GarbageCollector( void );
+  GarbageCollector( void ) {}
+  virtual ~GarbageCollector( void ) {}
 
-  void run( uint8_t up_to_generation = MaxGenerations );
+  virtual void run( uint8_t up_to_generation = MaxGenerations ) = 0;
+  virtual void moveObjectsTo( GarbageCollector *other ) = 0;
 
-  void moveObjectsTo( GarbageCollector *other );
+  virtual void add( const Collectable *c ) = 0;
+  virtual void remove( const Collectable *c ) = 0;
 
 protected:
-  friend class Collectable;
-  void add( const Collectable *c );
-  void remove( const Collectable *c );
-  void setRoot( const Collectable *c );
+  static void deactivate_deletion( const Collectable *c );
+  static void setGC( const Collectable *c, GarbageCollector *gc );
+  static void setGCIndex( const Collectable *c, index_t index );
+  static void incGCGeneration( const Collectable *c );
+  static void setGCGeneration( const Collectable *c, uint8_t generation );
 
 private:
-  typedef std::vector< const Collectable* > CollectableArray;
-  void compact( CollectableArray &cs_new, uint8_t up_to_generation );
-  void sweep( CollectableArray &garbage );
-
-  void removeFromOldAddToNew( const Collectable *obj, CollectableArray &cs_new );
-
-  CollectableArray m_cs;
-  Mutex m_lock;
-  uint8_t m_num_generations;
-
-private:
-  GarbageCollector( const GarbageCollector &other );
-  GarbageCollector &operator=( const GarbageCollector &other );
+  GarbageCollector( const GarbageCollector &other ) = delete;
+  GarbageCollector &operator=( const GarbageCollector &other ) = delete;
 };
+
+extern
+CountPtr< GarbageCollector > newGenerationalGarbageCollector( uint8_t up_to_generation = GarbageCollector::MaxGenerations );
 
 class Collectable
 {
   friend class GarbageCollector;
 public:
   explicit
-  Collectable( GarbageCollector *_gc );
+  Collectable( GarbageCollector *gc );
   Collectable( const Collectable &other );
 
   Collectable &operator=( const Collectable & );
@@ -82,23 +76,23 @@ public:
 
   refCount_t ref( void ) const
   {
-    return ++m_refCount;
+    return ++m_gc_refCount;
   }
 
   refCount_t unref( void ) const
   {
-    gc_generation = 0;
-    return --m_refCount;
+    m_gc_generation = 0;
+    return --m_gc_refCount;
   }
 
   refCount_t refCount( void ) const
   {
-    return m_refCount;
+    return m_gc_refCount;
   }
 
   GarbageCollector *getGC( void ) const
   {
-    return gc;
+    return m_gc;
   }
 
   class Children
@@ -106,36 +100,32 @@ public:
     friend class GarbageCollector;
   public:
     Children( void ) {}
-    ~Children( void ) {}
-    void add( const void * ) {}
-    void add( const Collectable *c ) { if( c ) m_children.push_back( c ); }
+    virtual ~Children( void ) {}
+    void add( const void * ) const {}
+    virtual void add( const Collectable *c ) = 0;
     //! For testing (utest) only
-    bool contains( const Collectable *c ) const;
-  private:
-    void reserve( size_t n ) { m_children.reserve( n ); }
-    size_t size( void ) const { return m_children.size(); }
-    void clear( void ) { m_children.clear(); }
-    const Collectable *const &operator[]( size_t i ) const { return m_children[ i ]; }
-    const Collectable *      &operator[]( size_t i ) { return m_children[ i ]; }
-    std::vector< const Collectable* > m_children;
+    virtual bool contains( const Collectable *c ) const = 0;
   };
 
   //! Do not implement recursively, only clear what is not reachable over gc_getChildren(), clear references to those
-  virtual void gc_clear( void ) {}
+  virtual void gc_clear( void );
   //! Do not implement recursively
-  virtual void gc_getChildren( Children &children ) const { (void)children; }
+  virtual void gc_getChildren( Children &children ) const;
+
+  index_t getGCIndex( void ) const { return m_gc_index; }
+  uint8_t getGCGeneration( void ) const { return m_gc_generation; }
 
 private:
   void deactivate_deletion( void ) const throw()
   {
     // That way the next one gets count_t(-1), which is not 0
-    m_refCount = 0;
+    m_gc_refCount = 0;
   }
 
-  mutable GarbageCollector *gc;
-  mutable Atomic< refCount_t > m_refCount;
-  mutable index_t gc_index;
-  mutable uint8_t gc_generation;
+  mutable GarbageCollector *m_gc;
+  mutable Atomic< refCount_t > m_gc_refCount;
+  mutable index_t m_gc_index;
+  mutable uint8_t m_gc_generation;
 };
 
 static inline bool isCollectable( const Collectable * ) { return true; }
