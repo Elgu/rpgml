@@ -200,6 +200,9 @@ public:
   {
     return PseudoContainer< GCIterator >( this );
   }
+
+  virtual void gc_clear( void ) { Collectable::gc_clear(); }
+  virtual void gc_getChildren( Children &children ) const { Collectable::gc_getChildren( children ); }
 };
 
 template< class BaseIterator >
