@@ -254,7 +254,9 @@ bool ConstantArray::tick( void )
   if( m_first )
   {
     if( m_array.isNull() ) create_array();
-    getOutput( OUTPUT_OUT )->setData( m_array );
+    Output *const output = getOutput( OUTPUT_OUT );
+    output->setData( m_array );
+    output->setChanged();
     m_first = false;
   }
 
