@@ -58,7 +58,7 @@ private:
   AST::PrettyPrinter m_printer;
 };
 
-static GarbageCollector gc( 5 );
+static CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector( 5 ) );
 
 int main( int argc, char **argv )
 {
@@ -88,10 +88,10 @@ int main( int argc, char **argv )
     }
 
     CountPtr< StringUnifier > unifier = new StringUnifier();
-    CountPtr< Context > context = new Context( &gc, unifier, searchPath );
+    CountPtr< Context > context = new Context( gc, unifier, searchPath );
     CountPtr< Scope > scope = context->createScope();
 
-    PrettyPrintingParser parser( &gc, unifier, source, &std::cout );
+    PrettyPrintingParser parser( gc, unifier, source, &std::cout );
     parser.setFilename( filename );
 
     parser.parse();

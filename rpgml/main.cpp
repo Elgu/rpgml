@@ -89,7 +89,7 @@ protected:
   CharPtrGuard m_line;
 };
 
-static GarbageCollector gc( 5 );
+static CountPtr< GarbageCollector > gc( newGenerationalGarbageCollector( 5 ) );
 
 static const char *rpgml_file = 0;
 static int         num_threads = -1;
@@ -142,7 +142,7 @@ void parse_argv( int argc, char **argv )
     rpgml_file = argv[ optind ];
   }
 
-  rpgml_argv = new StringArray( &gc, 1 );
+  rpgml_argv = new StringArray( gc, 1 );
   for( int i = optind; i < argc; ++i )
   {
     rpgml_argv->push_back( from_printable( String::Static( argv[ i ] ) ) );
@@ -195,13 +195,13 @@ int main( int argc, char **argv )
     }
 
     CountPtr< StringUnifier > unifier = new StringUnifier();
-    CountPtr< Context > context = new Context( &gc, unifier, searchPath );
+    CountPtr< Context > context = new Context( gc, unifier, searchPath );
     CountPtr< Scope > scope = context->createScope();
 
     scope->create( String::Static( "argc" ), Value( int( rpgml_argv->size() ) ) );
     scope->create( String::Static( "argv" ), Value( rpgml_argv ) );
 
-    CountPtr< InterpretingParser >  parser = new InterpretingParser( &gc, scope, source );
+    CountPtr< InterpretingParser >  parser = new InterpretingParser( gc, scope, source );
     parser->setFilename( filename );
 
     parser->parse();
@@ -212,16 +212,16 @@ int main( int argc, char **argv )
     source.reset();
     scope.reset();
 
-    gc.run();
+    gc->run();
 
     CountPtr< Graph > graph = context->createGraph();
     if( graph->empty() ) return 0;
 
     graph->merge();
-    gc.run();
+    gc->run();
 
-    CountPtr< ThreadPool > pool = new ThreadPool( &gc, num_threads );
-    CountPtr< JobQueue > main_thread_queue = new JobQueue( &gc );
+    CountPtr< ThreadPool > pool = new ThreadPool( gc, num_threads );
+    CountPtr< JobQueue > main_thread_queue = new JobQueue( gc );
 
     graph->execute( pool->getQueue() );
 
