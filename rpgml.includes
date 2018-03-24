@@ -7,3 +7,9 @@ ROOT/math
 ROOT/SDL
 ROOT/util
 templates
+.
+rpgml
+ROOT/stest
+ROOT/math/stest
+ROOT/util/stest
+libRPGML/utest
