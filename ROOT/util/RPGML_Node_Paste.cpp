@@ -70,7 +70,7 @@ bool Paste::tick2(
   const Array< T > *const in   = in_base  ->getAs< Array< T > >();
   const Array< T > *const dest = dest_base->getAs< Array< T > >();
 
-  CountPtr< Array< T > > out = dest->cloneAs< T >();
+  CountPtr< Array< T > > out = dest-> template cloneAs< T >();
 
   Array< T > roi_in ( (*in)  ); roi_in .setROI( dims, pos_in  , size );
   Array< T > roi_out( (*out) ); roi_out.setROI( dims, pos_dest, size );
