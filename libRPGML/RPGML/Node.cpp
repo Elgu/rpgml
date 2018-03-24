@@ -221,11 +221,6 @@ void Output::disconnect( Input *input )
 void Output::connect( Input *input )
 {
   if( !input ) return;
-  if( !this )
-  {
-    input->disconnect();
-    return;
-  }
 
   CountPtr< Input > *free_pos = 0;
   if( !m_inputs->empty() )

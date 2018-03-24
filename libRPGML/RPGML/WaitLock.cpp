@@ -32,7 +32,6 @@ CountPtr< WaitLock::Token > WaitLock::getToken( void )
 
 void WaitLock::Token::destroy( void )
 {
-  if( !this ) return;
   if( !m_lock ) return;
   --m_lock->m_num_waiting;
   m_lock = 0;

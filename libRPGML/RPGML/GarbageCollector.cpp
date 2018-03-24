@@ -115,7 +115,6 @@ GenerationalGarbageCollector::~GenerationalGarbageCollector( void )
 
 void GenerationalGarbageCollector::add( const Collectable *c )
 {
-  if( 0 == this ) return;
   if( 0 == c ) return;
   if( c->getGC() == this ) return;
   if( c->getGC() ) c->getGC()->remove( c );
@@ -135,7 +134,6 @@ void GenerationalGarbageCollector::add( const Collectable *c )
 
 void GenerationalGarbageCollector::remove( const Collectable *c )
 {
-  if( 0 == this ) return;
   assert( c->getGC() == this );
 
   { Mutex::ScopedLock lock( &m_lock );
