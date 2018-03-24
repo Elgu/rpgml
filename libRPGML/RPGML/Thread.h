@@ -168,7 +168,7 @@ private:
   static void *dispatch_arg( void *arg );
   static void *dispatch_run( void *arg );
 
-  std::auto_ptr< DispatchArg > m_arg;
+  std::unique_ptr< DispatchArg > m_arg;
   pthread_t m_thread;
   bool m_running;
 };
