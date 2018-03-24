@@ -141,7 +141,7 @@ bool Splice::tick2( const index_t *size, const index_t *like_this_size )
 {
   const int dims = m_dims;
   const index_t *const n = m_n;
-  const int N = m_in->size();
+  const index_t N = m_in->size();
 
   index_t out_size[ dims ];
   for( int d=0; d<dims; ++d )
